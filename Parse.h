@@ -7,7 +7,8 @@
 // could changed for unicode
 typedef unsigned char Char;
 
-bool isWhiteSpaceOrLF(const char c);
+bool isWhiteSpaceOrLF(const Char c);
+bool parseLineFeed(const Char*& p);
 
 // tab, space, LF/CR
 void parseWhiteSpaceOrLF(const Char* &p);

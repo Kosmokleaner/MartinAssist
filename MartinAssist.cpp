@@ -1,8 +1,8 @@
 #include <iostream>
 #include "ASCIIFile.h"
-#include "CppParser.h"
+#include "CppParser.h"  // this is only include needed to get the cpp parser
 
-
+/* C style comments */
 struct CppParserSink : public ICppParserSink
 {
     virtual void onInclude(const char* path, bool local) {
@@ -13,6 +13,10 @@ struct CppParserSink : public ICppParserSink
     }
 };
 
+/* This is the main function
+   ** just a few parser confusing constructs / *** *  * / \/ * 
+   this is the third line */
+/* fourth line */
 int main()
 {
     CASCIIFile file;

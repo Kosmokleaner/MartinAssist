@@ -30,6 +30,32 @@ bool parseComment(CppParser& parser, const Char*& p)
         parseWhiteSpaceOrLF(p);
         return true;
     }
+    // C comment, can be multi line
+    if (parseStartsWith(p, "/*"))
+    {
+        const Char* start = p;
+        const Char* lastGood = p;
+        // parse until file end (not clean input) or when C comment ends
+        for(;*p; ++p) {
+            lastGood = p;
+            if(parseLineFeed(p))
+            {
+                parser.temp = std::string((const char*)start, lastGood - start);
+                parser.sink->onCommentLine(parser.temp.c_str());
+                start = p;
+                continue;
+            }
+
+            if (parseStartsWith(p, "*/"))
+                break;
+        }
+        
+        parser.temp = std::string((const char*)start, lastGood - start);
+        parser.sink->onCommentLine(parser.temp.c_str());
+        parseWhiteSpaceOrLF(p);
+        return true;
+    }
+    
     return false;
 }
 

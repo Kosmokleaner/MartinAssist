@@ -2,7 +2,7 @@
 #include "global.h"
 #include "Parse.h"
 
-bool isWhiteSpaceOrLF(const char c) {
+bool isWhiteSpaceOrLF(const Char c) {
 	// todo: refine
 	return c != 0 && c <= ' ';
 }
@@ -73,6 +73,24 @@ bool parseToEndOfLine(const Char* &p)
 		++p;
 	}
 
+	return false;
+}
+
+bool parseLineFeed(const Char*& p) 
+{
+	if (*p == 13)		// CR
+	{
+		++p;
+
+		if (*p == 10)	// CR+LF
+			++p;
+		return true;
+	}
+	if (*p == 10)		// LF
+	{
+		++p;
+		return true;
+	}
 	return false;
 }
 
