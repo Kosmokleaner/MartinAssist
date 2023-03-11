@@ -27,7 +27,7 @@ template <int TSize>
 struct SPushStringA
 {
 	// constructor
-	SPushStringA() :End(dat)
+	SPushStringA() : End(dat)
 	{
 		*dat = 0;
 	}
