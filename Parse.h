@@ -1,10 +1,13 @@
 #pragma once
 
+#include "global.h"
 #include <string>
 
 
 // could changed for unicode
 typedef unsigned char Char;
+
+bool isWhiteSpaceOrLF(const char c);
 
 // tab, space, LF/CR
 void parseWhiteSpaceOrLF(const Char* &p);

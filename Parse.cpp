@@ -2,12 +2,16 @@
 #include "global.h"
 #include "Parse.h"
 
+bool isWhiteSpaceOrLF(const char c) {
+	// todo: refine
+	return c != 0 && c <= ' ';
+}
+
+
 void parseWhiteSpaceOrLF(const Char* &p)
 {
-	while(*p != 0 && *p <= ' ')
-	{
+	while(isWhiteSpaceOrLF(*p))
 		++p;
-	}
 }
 
 void parseWhiteSpaceNoLF(const Char* &p)

@@ -5,7 +5,10 @@
     <ClCompile Include="ASCIIFile.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
-    <ClCompile Include="Parse.cpp" />
+    <ClCompile Include="CppParser.cpp" />
+    <ClCompile Include="Parse.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -18,7 +21,10 @@
       <Filter>Hidden</Filter>
     </ClInclude>
     <ClInclude Include="global.h" />
-    <ClInclude Include="Parse.h" />
+    <ClInclude Include="CppParser.h" />
+    <ClInclude Include="Parse.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

@@ -3,7 +3,8 @@ MartinAssist 3/11/2023
 recreational programming
 
 todo:
-* parse comments and return with interface
+* parse /**/ comments and return with interface
+* compute line number for parse errors
 * parse all files in a folder hierarchy
 * iterate include hierarchy
 * unit tests
