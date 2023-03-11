@@ -10,6 +10,9 @@
       <Filter>Hidden</Filter>
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="Timer.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -27,6 +30,9 @@
       <Filter>Hidden</Filter>
     </ClInclude>
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="Timer.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

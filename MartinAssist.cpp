@@ -2,6 +2,7 @@
 #include "ASCIIFile.h"
 #include "CppParser.h"  // this is only include needed to get the cpp parser
 #include "FileSystem.h"
+#include "Timer.h"
 
 /* C style comments */
 struct CppParserSink : public ICppParserSink
@@ -36,6 +37,13 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
     CppParser parser;
     uint32 fileCount = 0;
+    uint64 size = 0;
+    // from CTimer
+    double startTime = 0.0f;
+
+    DirectoryTraverse() {
+        startTime = g_Timer.GetAbsoluteTime();
+    }
 
     virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory) {
         return true;
@@ -79,6 +87,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         }
 
         parseFile(parser, p);
+        size += fileHnd.GetDataSize();
         ++fileCount;
     }
 };
@@ -97,11 +106,25 @@ int main()
 
 //    directoryTraverse(traverse, L"C:\\P4Depot\\QuickGame Wiggle");
     directoryTraverse(traverse, L"C:\\P4Depot");
+    // in seconds
+    double time = g_Timer.GetAbsoluteTime() - traverse.startTime;
+
+    printf("\n");
 
     printf("FileCount: %d\n", traverse.fileCount);
+    printf("Size: %.2f MB\n", traverse.size / (1024.0f * 1024.0f));
+    printf("Time: %.2f sec\n", time);
+    printf("MB/sec: %.2f MB\n", traverse.size / time / (1024.0f * 1024.0f));
 
+    // 3055 files 58MB
+    // Debug with printf 3.37MB/s
+    // Release with printf 4.32MB/s
+    // Release without printf 19.67 MB/s
+
+    // single file: 
+//    CppParser sink;
 //    parser.sink = &sink;
-    //    file.IO_LoadASCIIFile("MartinAssist.cpp");
+//    file.IO_LoadASCIIFile("MartinAssist.cpp");
 //    file.IO_LoadASCIIFile("C:\\P4Depot\\QuickGame Wiggle\\GameLevel.cpp"); // 60KB wokrs
 //    file.IO_LoadASCIIFile("C:\\P4Depot\\QuickGame Wiggle\\mathlib.h"); // 52 KB
 //    file.IO_LoadASCIIFile("C:\\P4Depot\\QuickGame Wiggle\\WorldUnit.h"); // 50 KB
