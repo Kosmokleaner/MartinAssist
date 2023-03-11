@@ -21,7 +21,8 @@ int main()
 {
     CASCIIFile file;
 
-    file.IO_LoadASCIIFile("MartinAssist.cpp");
+//    file.IO_LoadASCIIFile("MartinAssist.cpp");
+    file.IO_LoadASCIIFile("C:\\P4Depot\\QuickGame Wiggle\\GameLevel.cpp"); // 60KB, good test
 
     const Char *p = (Char*)file.GetDataPtr();
     

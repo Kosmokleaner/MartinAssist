@@ -12,6 +12,8 @@ bool parseCpp(CppParser& parser, const Char*& p)
     if (parseCppToken(parser, p))
         return true;
 
+    // parser error, todo: non runtime error?
+    assert(0);
     return false;
 }
 
@@ -36,18 +38,19 @@ bool parseComment(CppParser& parser, const Char*& p)
         const Char* start = p;
         const Char* lastGood = p;
         // parse until file end (not clean input) or when C comment ends
-        for(;*p; ++p) {
+        for(;*p;) {
             lastGood = p;
             if(parseLineFeed(p))
             {
                 parser.temp = std::string((const char*)start, lastGood - start);
                 parser.sink->onCommentLine(parser.temp.c_str());
                 start = p;
-                continue;
             }
-
-            if (parseStartsWith(p, "*/"))
+            else if (parseStartsWith(p, "*/")) 
+            {
                 break;
+            } 
+            else ++p;
         }
         
         parser.temp = std::string((const char*)start, lastGood - start);
@@ -59,13 +62,29 @@ bool parseComment(CppParser& parser, const Char*& p)
     return false;
 }
 
+bool parseNameOrNumber(const Char*& p)
+{
+    assert(!isWhiteSpaceOrLF(*p)); // call parseWhiteSpace before or last function should have
+
+    bool ret = false;
+
+    while (isNameCharacter(*p) || isDigitCharacter(*p))
+    {
+        ++p;
+        ret = true;
+    }
+
+    parseWhiteSpaceOrLF(p);
+
+    return ret;
+}
+
 bool parseCppToken(CppParser& parser, const Char*& p)
 {
-    if(parseName(p, parser.temp))
-    {
-        parseWhiteSpaceOrLF(p);
+    assert(!isWhiteSpaceOrLF(*p)); // call parseWhiteSpace before or last function should have
+
+    if(parseNameOrNumber(p))
         return true;
-    }
 
     // C++ keywords / operators, can be optimized
     if (parseStartsWith(p, "+") ||
@@ -79,6 +98,8 @@ bool parseCppToken(CppParser& parser, const Char*& p)
         parseStartsWith(p, ">") ||
         parseStartsWith(p, "(") ||
         parseStartsWith(p, ")") ||
+        parseStartsWith(p, "[") ||
+        parseStartsWith(p, "]") ||
         parseStartsWith(p, "{") ||
         parseStartsWith(p, "}") ||
         parseStartsWith(p, "!") ||
@@ -101,7 +122,6 @@ bool parseCppToken(CppParser& parser, const Char*& p)
         parseWhiteSpaceOrLF(p);
         return true;
     }
-
     return false;
 }
 

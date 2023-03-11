@@ -8,6 +8,9 @@
 typedef unsigned char Char;
 
 bool isWhiteSpaceOrLF(const Char c);
+bool isNameCharacter(const Char Value);
+bool isDigitCharacter(const Char Value);
+
 bool parseLineFeed(const Char*& p);
 
 // tab, space, LF/CR

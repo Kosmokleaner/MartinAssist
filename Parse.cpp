@@ -120,13 +120,13 @@ void parseLine(const Char* &p, std::string &Out)
 	}
 }
 
-// without Numbers
-bool isNameCharacter(Char Value)
+// without digits
+bool isNameCharacter(const Char Value)
 {
 	return (Value >= 'a' && Value <= 'z') || (Value >= 'A' && Value <= 'Z') || Value == '_';
 }
 
-bool IsDigitCharacter(Char Value)
+bool isDigitCharacter(const Char Value)
 {
 	return Value >= '0' && Value <= '9';
 }
@@ -145,7 +145,7 @@ bool parseName(const Char* &p, std::string &Out)
 		Ret = true;
 	}
 
-	while(isNameCharacter(*p ) || IsDigitCharacter(*p))
+	while(isNameCharacter(*p ) || isDigitCharacter(*p))
 	{
 		Out += *p++;
 	}
