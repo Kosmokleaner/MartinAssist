@@ -72,7 +72,7 @@ bool parseToEndOfLine(const Char* &p)
 	return false;
 }
 
-void parseLine(const uint8* &p, std::string &Out)
+void parseLine(const Char* &p, std::string &Out)
 {
 	Out.clear();
 
@@ -99,17 +99,17 @@ void parseLine(const uint8* &p, std::string &Out)
 }
 
 // without Numbers
-bool isNameCharacter(uint8 Value)
+bool isNameCharacter(Char Value)
 {
 	return (Value >= 'a' && Value <= 'z') || (Value >= 'A' && Value <= 'Z') || Value == '_';
 }
 
-bool IsDigitCharacter(uint8 Value)
+bool IsDigitCharacter(Char Value)
 {
 	return Value >= '0' && Value <= '9';
 }
 
-bool parseName(const uint8* &p, std::string &Out)
+bool parseName(const Char* &p, std::string &Out)
 {
 	bool Ret = false;
 
@@ -131,13 +131,13 @@ bool parseName(const uint8* &p, std::string &Out)
 	return Ret;
 }
 
-SPushStringA<MAX_PATH> parsePath(const uint8* &p)
+SPushStringA<MAX_PATH> parsePath(const Char* &p)
 {
 	SPushStringA<MAX_PATH> Ret;
 
 	for (;;)
 	{
-		uint8 c = *p++;
+		Char c = *p++;
 
 		if ((c >= 'a' && c <= 'z') ||
 			(c >= 'A' && c <= 'Z') ||
@@ -156,6 +156,7 @@ SPushStringA<MAX_PATH> parsePath(const uint8* &p)
 			break;
 		}
 	}
+	--p;
 
 	return Ret;
 }
