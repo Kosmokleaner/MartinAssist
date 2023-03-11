@@ -9,6 +9,7 @@
     <ClCompile Include="Parse.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
+    <ClCompile Include="FileSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -25,6 +26,7 @@
     <ClInclude Include="Parse.h">
       <Filter>Hidden</Filter>
     </ClInclude>
+    <ClInclude Include="FileSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

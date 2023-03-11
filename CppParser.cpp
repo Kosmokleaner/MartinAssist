@@ -44,7 +44,7 @@ bool parseComment(CppParser& parser, const Char*& p)
             {
                 parser.temp = std::string((const char*)start, lastGood - start);
                 parser.sink->onCommentLine(parser.temp.c_str());
-                start = p;
+                start = lastGood = p;
             }
             else if (parseStartsWith(p, "*/")) 
             {
@@ -53,8 +53,11 @@ bool parseComment(CppParser& parser, const Char*& p)
             else ++p;
         }
         
-        parser.temp = std::string((const char*)start, lastGood - start);
-        parser.sink->onCommentLine(parser.temp.c_str());
+        if(lastGood != start)
+        {
+            parser.temp = std::string((const char*)start, lastGood - start);
+            parser.sink->onCommentLine(parser.temp.c_str());
+        }
         parseWhiteSpaceOrLF(p);
         return true;
     }
@@ -104,10 +107,14 @@ bool parseCppToken(CppParser& parser, const Char*& p)
         parseStartsWith(p, "}") ||
         parseStartsWith(p, "!") ||
         parseStartsWith(p, "~") ||
+        parseStartsWith(p, "`") || // is this C++?
+        parseStartsWith(p, "@") || // is this C++?
+        parseStartsWith(p, "$") || // is this C++?
         parseStartsWith(p, "^") ||
         parseStartsWith(p, "?") ||
         parseStartsWith(p, "%") ||
         parseStartsWith(p, "&") ||
+        parseStartsWith(p, "#") ||
         parseStartsWith(p, "|") ||
         parseStartsWith(p, ":") ||
         parseStartsWith(p, ",") ||
@@ -118,6 +125,7 @@ bool parseCppToken(CppParser& parser, const Char*& p)
         parseStartsWith(p, "'") ||
         parseStartsWith(p, "=")
         )
+
     {
         parseWhiteSpaceOrLF(p);
         return true;

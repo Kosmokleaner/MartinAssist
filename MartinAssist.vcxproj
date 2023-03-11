@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="ASCIIFile.cpp" />
     <ClCompile Include="CppParser.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="MartinAssist.cpp" />
     <ClCompile Include="Parse.cpp" />
   </ItemGroup>
@@ -150,6 +151,7 @@
   <ItemGroup>
     <ClInclude Include="ASCIIFile.h" />
     <ClInclude Include="CppParser.h" />
+    <ClInclude Include="FileSystem.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="Parse.h" />
     <ClInclude Include="types.h" />
