@@ -106,6 +106,8 @@ int main()
 
 //    directoryTraverse(traverse, L"C:\\P4Depot\\QuickGame Wiggle");
     directoryTraverse(traverse, L"C:\\P4Depot");
+//    directoryTraverse(traverse, L"D:"); // 147984 files, 1.4GB, 1035 sec debug with printf, 127sec Release without printf 11.04MB/sec
+//    directoryTraverse(traverse, L""); // test source files of this application
     // in seconds
     double time = g_Timer.GetAbsoluteTime() - traverse.startTime;
 

@@ -3,6 +3,8 @@
 // call parseWhiteSpace before
 bool parseCpp(CppParser& parser, const Char*& p)
 {
+    assert(!isWhiteSpaceOrLF(*p)); // call parseWhiteSpace before or last function should have
+
     if (parsePreprocessorLine(parser, p))
         return true;
 
@@ -12,9 +14,16 @@ bool parseCpp(CppParser& parser, const Char*& p)
     if (parseCppToken(parser, p))
         return true;
 
-    // parser error, todo: non runtime error?
-    assert(0);
-    return false;
+    // parse error
+//    assert(0);
+
+    // can happen e.g. non C++ token in string or non compilable code
+    ++p;
+    parseWhiteSpaceOrLF(p);
+    // e.g. 
+    const char* challenge = "ô";
+
+    return true;
 }
 
 
@@ -123,13 +132,12 @@ bool parseCppToken(CppParser& parser, const Char*& p)
         parseStartsWith(p, "\\") ||
         parseStartsWith(p, "\"") ||
         parseStartsWith(p, "'") ||
-        parseStartsWith(p, "=")
-        )
-
+        parseStartsWith(p, "="))
     {
         parseWhiteSpaceOrLF(p);
         return true;
     }
+
     return false;
 }
 
@@ -141,13 +149,16 @@ bool parsePreprocessorLine(CppParser& parser, const Char*& p)
     if (!parseStartsWith(p, "#"))
         return false;
 
-    parseWhiteSpaceNoLF(p);
+    parseWhiteSpaceOrLF(p);
+
+    // outside scope for easier debugging
+    SPushStringA<MAX_PATH> path;
 
     if (parseStartsWith(p, "include")) {
-        parseWhiteSpaceNoLF(p);
+        parseWhiteSpaceOrLF(p);
 
         if (parseStartsWith(p, "<")) {
-            parseWhiteSpaceNoLF(p);
+            parseWhiteSpaceOrLF(p);
 
             SPushStringA<MAX_PATH> path = parsePath(p);
 
@@ -159,9 +170,9 @@ bool parsePreprocessorLine(CppParser& parser, const Char*& p)
         }
 
         if (parseStartsWith(p, "\"")) {
-            parseWhiteSpaceNoLF(p);
+            parseWhiteSpaceOrLF(p);
 
-            SPushStringA<MAX_PATH> path = parsePath(p);
+            path = parsePath(p);
 
             if (parseStartsWith(p, "\"")) {
                 parser.sink->onInclude(path.c_str(), true);
@@ -171,5 +182,6 @@ bool parsePreprocessorLine(CppParser& parser, const Char*& p)
         }
     }
 
+    assert(!isWhiteSpaceOrLF(*p)); // call parseWhiteSpace before or last function should have
     return false;
 }
