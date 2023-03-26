@@ -10,7 +10,7 @@ struct ICppParserSink
     // @param path must not be 0 
     virtual void onInclude(const char* path, bool local) = 0;
     // @param line must not be 0 
-    virtual void onCommentLine(const char* line) = 0;
+    virtual void onCommentLine(const Char* line) = 0;
 };
 
 class CppParser {
@@ -22,6 +22,8 @@ public:
 };
 
 
+// @return success
+bool parseFile(CppParser& parser, const Char*& p);
 // @return true if progress was made
 bool parseComment(CppParser& parser, const Char*& p);
 // @return true if progress was made

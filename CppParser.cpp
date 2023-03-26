@@ -27,6 +27,45 @@ bool parseCpp(CppParser& parser, const Char*& p)
 }
 
 
+// @return success
+bool parseFile(CppParser& parser, const Char*& p) {
+    // https://en.wikipedia.org/wiki/Byte_order_mark
+
+    // utf-8
+    if (p[0] == 0xef && p[1] == 0xbb && p[2] == 0xbf) {
+        // we don't support unicode yet
+        return false;
+    }
+    // utf-16
+    if (p[0] == 0xfe && p[1] == 0xff) {
+        // we don't support unicode yet
+        return false;
+    }
+    // utf-16
+    if (p[0] == 0xff && p[1] == 0xfe) {
+        // we don't support unicode yet
+        return false;
+    }
+
+    parseWhiteSpaceOrLF(p);
+
+    while (*p)
+    {
+        assert(!isWhiteSpaceOrLF(*p));
+
+        bool ok = parseCpp(parser, p);
+        // check *p what the parse wasn't able to consume, todo: error message
+        assert(ok);
+
+        assert(!isWhiteSpaceOrLF(*p)); // last function should have called parseWhiteSpace
+
+        parseWhiteSpaceOrLF(p);
+        assert(!isWhiteSpaceOrLF(*p));
+    }
+
+    return true;
+}
+
 bool parseComment(CppParser& parser, const Char*& p)
 {
     assert(!isWhiteSpaceOrLF(*p)); // call parseWhiteSpace before or last function should have
@@ -37,7 +76,7 @@ bool parseComment(CppParser& parser, const Char*& p)
         parseWhiteSpaceNoLF(p);
 
         parseLine(p, parser.temp);
-        parser.sink->onCommentLine(parser.temp.c_str());
+        parser.sink->onCommentLine((const Char*)parser.temp.c_str());
         parseWhiteSpaceOrLF(p);
         return true;
     }
@@ -52,7 +91,7 @@ bool parseComment(CppParser& parser, const Char*& p)
             if(parseLineFeed(p))
             {
                 parser.temp = std::string((const char*)start, lastGood - start);
-                parser.sink->onCommentLine(parser.temp.c_str());
+                parser.sink->onCommentLine((const Char*)parser.temp.c_str());
                 start = lastGood = p;
             }
             else if (parseStartsWith(p, "*/")) 
@@ -65,7 +104,7 @@ bool parseComment(CppParser& parser, const Char*& p)
         if(lastGood != start)
         {
             parser.temp = std::string((const char*)start, lastGood - start);
-            parser.sink->onCommentLine(parser.temp.c_str());
+            parser.sink->onCommentLine((const Char*)parser.temp.c_str());
         }
         parseWhiteSpaceOrLF(p);
         return true;

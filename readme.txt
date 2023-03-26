@@ -20,7 +20,7 @@ literate programming syntax:
 * // #begin <label>
   to start define a part
 * // #end <label>
-  to end define a part
+  to end define a part, label is optional, without lable it will close last begin
 * // #use/here/anchor/label <label>
   to define anchor where parts can be added
 * // #ignore
@@ -47,5 +47,5 @@ done:
 
 C++ / HLSL / file parser / HTML ?
 
-helping me on unreaveling large code base, marking what is known and finding relevant spots again
+helping me on unreaveling large code base, marking what is known and finding relevant spots again, find todo
 64Bit 

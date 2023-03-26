@@ -9,7 +9,7 @@ public:
     // interface ICppParserSink
 
     virtual void onInclude(const char* path, bool local);
-    virtual void onCommentLine(const char* line);
+    virtual void onCommentLine(const Char* line);
 
     //
 

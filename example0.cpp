@@ -1,11 +1,11 @@
 
-// #here main/include
+// #anchor main/include
 
 void main() {
-// #here main/code
+// #anchor main/code
 }
 
-// #here main/functions
+// #anchor main/functions
 
 // ################# "add Hello World"
 

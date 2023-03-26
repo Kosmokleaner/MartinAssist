@@ -16,24 +16,6 @@ struct CppParserSink : public ICppParserSink
     }
 };
 
-void parseFile(CppParser& parser, const Char* &p) {
-    parseWhiteSpaceOrLF(p);
-
-    while (*p)
-    {
-        assert(!isWhiteSpaceOrLF(*p));
-
-        bool ok = parseCpp(parser, p);
-        // check *p what the parse wasn't able to consume, todo: error message
-        assert(ok);
-
-        assert(!isWhiteSpaceOrLF(*p)); // last function should have called parseWhiteSpace
-
-        parseWhiteSpaceOrLF(p);
-        assert(!isWhiteSpaceOrLF(*p));
-    }
-}
-
 struct DirectoryTraverse : public IDirectoryTraverse {
 
     CppParser parser;
@@ -70,27 +52,10 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         const Char* pStart = (Char*)fileHnd.GetDataPtr();
         const Char* p = pStart;
 
-        // https://en.wikipedia.org/wiki/Byte_order_mark
-
-        // utf-8
-        if(fileHnd.GetDataSize() >= 3 && p[0] == 0xef && p[1] == 0xbb && p[2] == 0xbf) {
-            // we don't support unicode yet
-            return;
+        if(parseFile(parser, p)) {
+            size += fileHnd.GetDataSize();
+            ++fileCount;
         }
-        // utf-16
-        if (fileHnd.GetDataSize() >= 2 && p[0] == 0xfe && p[1] == 0xff) {
-            // we don't support unicode yet
-            return;
-        }
-        // utf-16
-        if (fileHnd.GetDataSize() >= 2 && p[0] == 0xff && p[1] == 0xfe) {
-            // we don't support unicode yet
-            return;
-        }
-
-        parseFile(parser, p);
-        size += fileHnd.GetDataSize();
-        ++fileCount;
     }
 };
 
