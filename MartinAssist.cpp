@@ -3,6 +3,7 @@
 #include "CppParser.h"  // this is only include needed to get the cpp parser
 #include "FileSystem.h"
 #include "Timer.h"
+#include "LiterateProcessor.h"
 
 /* C style comments */
 struct CppParserSink : public ICppParserSink
@@ -99,7 +100,12 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 /* fourth line */
 int main()
 {
-    CppParserSink cppSink;
+    LiterateProcessor literateProcessor;
+    // add all components in this file and apply to existing tree
+    literateProcessor.addComponents(L"example0.cpp");
+    literateProcessor.build(L"LiterateOutput.cpp");
+
+/*    CppParserSink cppSink;
 
     DirectoryTraverse traverse;
 
@@ -109,6 +115,7 @@ int main()
     directoryTraverse(traverse, L"C:\\P4Depot");
 //    directoryTraverse(traverse, L"D:"); // 147984 files, 1.4GB, 1035 sec debug with printf, 127sec Release without printf 11.04MB/sec
 //    directoryTraverse(traverse, L""); // test source files of this application
+
     // in seconds
     double time = g_Timer.GetAbsoluteTime() - traverse.startTime;
 
@@ -123,6 +130,7 @@ int main()
     // Debug with printf 3.37MB/s
     // Release with printf 4.32MB/s
     // Release without printf 19.67 MB/s
+*/
 
     // single file: 
 //    CppParser sink;

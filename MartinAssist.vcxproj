@@ -146,6 +146,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="LiterateProcessor.cpp" />
     <ClCompile Include="MartinAssist.cpp" />
     <ClCompile Include="Parse.cpp" />
     <ClCompile Include="Timer.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="CppParser.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="Parse.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="types.h" />

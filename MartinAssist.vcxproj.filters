@@ -14,6 +14,7 @@
       <Filter>Hidden</Filter>
     </ClCompile>
     <ClCompile Include="example0.cpp" />
+    <ClCompile Include="LiterateProcessor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -34,6 +35,7 @@
     <ClInclude Include="Timer.h">
       <Filter>Hidden</Filter>
     </ClInclude>
+    <ClInclude Include="LiterateProcessor.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">
