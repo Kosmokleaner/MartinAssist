@@ -2,6 +2,23 @@ MartinAssist 3/11/2023
 
 recreational programming
 
+literate programming syntax:
+* <label> 0..9 a..z A..Z _ /
+* <component> "any C++ string even multi line but for now now only a..z A..Z 0..9 _ / space"
+
+* // #begin <label>
+  to start define a part
+* // #end <label>
+  to end define a part
+* // #use/here/anchor/label <label>
+  to define anchor where parts can be added
+* // #ignore
+  to ignore the line 
+* // ##### <component>
+  the following characters define a component/patch, it can be applied or not building a tree of variants
+
+
+
 todo:
 * compute line number for parse errors
 * iterate include hierarchy
@@ -9,7 +26,7 @@ todo:
 * parse hlsl files
 * unit tests
 
-done
+done:
 * include hierarchy
 * parse // comments and return with interface
 * parse /**/ comments and return with interface

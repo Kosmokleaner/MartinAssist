@@ -13,6 +13,7 @@
     <ClCompile Include="Timer.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
+    <ClCompile Include="example0.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
