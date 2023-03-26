@@ -1,6 +1,17 @@
+see tweet: https://twitter.com/MittringMartin/status/1635354734981963777
+
 MartinAssist 3/11/2023
 
-recreational programming
+caller can implement this:
+
+struct ICppParserSink
+{
+  virtual void onInclude(const char* path, bool local) = 0;
+  virtual void onCommentLine(const char* line) = 0;
+
+
+
+done for recreational programming
 
 literate programming syntax:
 * <label> 0..9 a..z A..Z _ /
