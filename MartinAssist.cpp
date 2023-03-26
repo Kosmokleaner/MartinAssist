@@ -59,7 +59,8 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
         // could be optimized
         std::wstring ext = local.GetExtension();
-        if(ext != L"cpp" && ext != L"h")
+        // todo: need case insensitive test
+        if(ext != L"cpp" && ext != L"h" && ext != L"hlsl")
             return;
 
         CASCIIFile fileHnd;
