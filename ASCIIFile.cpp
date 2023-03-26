@@ -105,7 +105,8 @@ const CASCIIFile CASCIIFile::operator=( const CASCIIFile &a )
 
 void CASCIIFile::ReleaseData()
 {
-	free(m_Data);m_Data=0;
+	free(m_Data);
+	m_Data=0;
 	m_Size=0;
 }
 
@@ -132,14 +133,14 @@ bool CASCIIFile::IO_SaveASCIIFile( const char *pathname )
 	if(m_Data==0)
 		return false;
 	
-	FILE *datei;
+	FILE *file;
 
-  if((datei=fopen(pathname,"wb"))!=NULL)
-  {
-    fwrite(m_Data,m_Size-1,1,datei);
-    fclose(datei);
+	if((file = fopen(pathname,"wb")) != NULL)
+	{
+		fwrite(m_Data, m_Size - 1, 1, file);
+		fclose(file);
 		return true;
-  }
+	}
 
 	return false;
 }
@@ -156,21 +157,21 @@ bool CASCIIFile::IO_LoadASCIIFile( const char *pathname )		// allociert 1+Filesi
 	ret=(char *)malloc(size+1);
 
 	if(ret==0)
-		return false;	// no Memory
+		return false;	// no memory
 	
-	FILE *datei;
+	FILE *file;
 
-  if((datei=fopen(pathname,"rb"))!=NULL)
-  {
-    fread(ret,size,1,datei);
-    ret[size]=0;				// 0 terminieren
+	if((file = fopen(pathname,"rb")) != NULL)
+	{
+		fread(ret,size, 1, file);
+		ret[size] = 0;				// 0 terminate
 
-		m_Size=size+1;
-		m_Data=ret;
+		m_Size = size + 1;
+		m_Data = ret;
 
-    fclose(datei);
+		fclose(file);
 		return true;
-  }
+	}
 
 	free(ret);
 	return false;
@@ -182,14 +183,15 @@ uint32 CASCIIFile::GetDataSize()
 		else return 0;
 }
 
-char *CASCIIFile::GetDataPtr()						// Speicherposition
+char *CASCIIFile::GetDataPtr()
 {
 	return m_Data;
 }
 
-void CASCIIFile::CoverThisData( char *ptr, const uint32 size )	// altes freigeben, neues übernehmen, keine Kopie machen
+void CASCIIFile::CoverThisData(char *ptr, const uint32 size)
 {
 	ReleaseData();
-	m_Data=ptr;m_Size=size+1;
+	m_Data = ptr;
+	m_Size = size + 1;
 }
 
