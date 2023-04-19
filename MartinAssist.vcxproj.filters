@@ -15,6 +15,7 @@
     </ClCompile>
     <ClCompile Include="example0.cpp" />
     <ClCompile Include="LiterateProcessor.cpp" />
+    <ClCompile Include="CppParserTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -36,6 +37,7 @@
       <Filter>Hidden</Filter>
     </ClInclude>
     <ClInclude Include="LiterateProcessor.h" />
+    <ClInclude Include="CppParserTest.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

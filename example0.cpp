@@ -34,7 +34,7 @@ void main() // #ignore
 {
     waitForReturn();
 }
-// #begin main/code
+// #end main/code
 
 // #begin main/functions
 void waitForReturn()
@@ -42,6 +42,6 @@ void waitForReturn()
     printf("\n\n      <RETURN>");
     while(getchar() != 13);
 }
-// #end main/code
+// #end main/functions
 
 

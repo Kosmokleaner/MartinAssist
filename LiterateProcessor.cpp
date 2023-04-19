@@ -2,6 +2,12 @@
 #include "ASCIIFile.h"
 #include "Parse.h"
 #include "FileSystem.h"
+#include "LiterateProcessor.h"
+
+LiterateProcessor::LiterateProcessor() {
+    // root node
+    nameToNode.insert(std::pair<std::string, LiterateTreeNode>("", LiterateTreeNode()));
+}
 
 void LiterateProcessor::addComponents(const wchar_t* inputFile) {
     assert(inputFile);
@@ -20,6 +26,9 @@ void LiterateProcessor::addComponents(const wchar_t* inputFile) {
     fileHnd.IO_LoadASCIIFile(to_string(inputFile).c_str());
     const Char* pStart = (Char*)fileHnd.GetDataPtr();
     const Char* p = pStart;
+
+    // for debugging
+    printf("inputFile: '%s'\n", to_string(inputFile).c_str());
 
     CppParser parser;
     parser.sink = this;
@@ -53,19 +62,43 @@ void LiterateProcessor::onCommentLine(const Char* line) {
 
     if (parseStartsWith(p, "begin") && isWhiteSpaceOrLF(*p)) {
         parseWhiteSpaceOrLF(p);
-        printf("begin %s\n", p);
+        printf("  begin %s\n", p);
+        // todo: wasteful memory alloc
+        std::string label = (const char*)p;
+        // todo: better error handling
+//        assert(nameToNode.find(label) == nameToNode.end());
+        LiterateTreeNode node;
+        nameToNode.insert(std::pair<std::string, LiterateTreeNode>(label, node));
+        currentLabel = label;
         return;
     }
 
     if (parseStartsWith(p, "end") && isWhiteSpaceOrLF(*p)) {
         parseWhiteSpaceOrLF(p);
-        printf("end %s\n", p);
+        printf("  end %s\n", p);
+        // todo: wasteful memory alloc
+        std::string label = (const char*)p;
+        if(currentLabel != label) {
+            // todo: better error handling
+            printf("  error: #end %s is not matching with last #start %s\n", p, currentLabel.c_str());
+            assert(0);
+            return;
+        }
+        // todo: better error handling
+        assert(nameToNode.find(label) != nameToNode.end());
+        currentLabel.clear();
         return;
     }
 
     if (parseStartsWith(p, "anchor") && isWhiteSpaceOrLF(*p)) {
         parseWhiteSpaceOrLF(p);
-        printf("anchor %s\n", p);
+        printf("  anchor %s\n", p);
+        // todo: wasteful memory alloc
+        std::string label = (const char*)p;
+        // todo: better error handling
+//        assert(nameToNode.find(label) == nameToNode.end());
+//        LiterateTreeNode node;
+//        nameToNode.insert(std::pair<std::string, LiterateTreeNode>(label, node));
         return;
     }
 }
