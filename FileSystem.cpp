@@ -117,7 +117,7 @@ void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const
 				directoryTraverse(sink, pathWithDirectory, pattern);
 			}
 		} else {
-			sink.OnFile(filePath, c_file.name);
+			sink.OnFile(filePath, c_file.name, c_file);
 		}
 	} while (_wfindnext(hFile, &c_file) == 0);
 

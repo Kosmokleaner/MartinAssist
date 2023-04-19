@@ -54,7 +54,7 @@ struct IDirectoryTraverse {
   virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory) = 0;
   // @param path without file
   // @param file with extension
-  virtual void OnFile(const FilePath& path, const wchar_t* file) = 0;
+  virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData) = 0;
   virtual void OnEnd() {}
 };
 

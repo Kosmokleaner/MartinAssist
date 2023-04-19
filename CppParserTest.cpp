@@ -33,7 +33,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         return true;
     }
 
-    virtual void OnFile(const FilePath& path, const wchar_t* file) {
+    virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData) {
         // todo: static to avoid heap allocations, prevents multithreading use
         static FilePath local; local.path.clear();
 
@@ -60,6 +60,10 @@ struct DirectoryTraverse : public IDirectoryTraverse {
     }
 };
 
+/* This is the main function
+   ** just a few parser confusing constructs / *** *  * / \/ *
+   this is the third line */
+   /* fourth line */
 void CppParserTest() 
 {
     LiterateProcessor literateProcessor;
