@@ -16,12 +16,12 @@ public:
 
 	// release old, don't make copy
 	// @param ptr has not be 0 terminated, allocated with malloc
-	// @param size without ohne 0 termination
-	void CoverThisData(char *ptr, const uint32 size);
+	// @param size without 0 termination
+	void CoverThisData(const char *ptr, const size_t size);
 	
-	uint32 GetDataSize();
+	size_t GetDataSize() const;
 
-	char * GetDataPtr();
+	const char * GetDataPtr();
 
 	void ReleaseData();
 
@@ -32,6 +32,6 @@ public:
 
 protected: // ------------------------------------------------------------------------
 
-	char * m_Data; //!< zero terminated text
-	uint32 m_Size; //!< including the zero termination (otherwise 0)
+	const char * m_Data; //!< zero terminated text
+	size_t m_Size; //!< including the zero termination (otherwise 0)
 };

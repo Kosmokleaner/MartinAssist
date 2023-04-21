@@ -65,7 +65,7 @@ CASCIIFile::CASCIIFile()
 // destructor
 CASCIIFile::~CASCIIFile()
 {
-	free(m_Data);
+	ReleaseData();
 }
 
 
@@ -105,7 +105,7 @@ const CASCIIFile CASCIIFile::operator=( const CASCIIFile &a )
 
 void CASCIIFile::ReleaseData()
 {
-	free(m_Data);
+	free((void*)m_Data);
 	m_Data=0;
 	m_Size=0;
 }
@@ -177,18 +177,18 @@ bool CASCIIFile::IO_LoadASCIIFile( const char *pathname )		// allociert 1+Filesi
 	return false;
 }
 
-uint32 CASCIIFile::GetDataSize()
+size_t CASCIIFile::GetDataSize() const
 {
 	if(m_Data)return m_Size-1;
 		else return 0;
 }
 
-char *CASCIIFile::GetDataPtr()
+const char *CASCIIFile::GetDataPtr()
 {
 	return m_Data;
 }
 
-void CASCIIFile::CoverThisData(char *ptr, const uint32 size)
+void CASCIIFile::CoverThisData(const char *ptr, const size_t size)
 {
 	ReleaseData();
 	m_Data = ptr;

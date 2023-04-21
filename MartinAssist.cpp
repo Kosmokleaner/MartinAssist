@@ -53,11 +53,59 @@ struct DirectoryTraverse : public IDirectoryTraverse {
     }
     ~DirectoryTraverse() 
     {
-        for(auto it : files) 
+        save("driveData.csv");
+        print();
+    }
+
+    // @param fileName e.g. "test.csv"
+    void save(const char *fileName)
+    {
+        CASCIIFile file;
+        std::string fileData;
+        // to avoid reallocations
+        fileData.reserve(10 * 1024 * 1024);
+
+        for (auto it : files)
         {
             size_t count = files.count(it.first);
             // show only duplicates
-            if(count == 1)
+            if (count == 1)
+                continue;
+
+            struct tm tm;
+            _localtime64_s(&tm, &it.first.time_write);
+            char dateTimeStr[80];
+            // https://support.echo360.com/hc/en-us/articles/360035034372-Formatting-Dates-for-CSV-Imports#:~:text=Some%20of%20the%20CSV%20imports,program%20like%20Microsoft%C2%AE%20Excel.
+            strftime(dateTimeStr, sizeof(dateTimeStr), "%Y/%m/%d %H:%M:%S", &tm);
+
+            char str[MAX_PATH + 100];
+            sprintf_s(str, sizeof(str), "%s,%d,%s,%s\n",
+                dateTimeStr,
+                it.first.size,
+                to_string(it.first.fileName.c_str()).c_str(),
+                to_string(it.second.path.c_str()).c_str()
+            );
+            fileData += str;
+        }
+//        fileData += "\n";
+//        logState();
+//        fileData += "\n";
+        // does not include 0 termination
+        size_t len = fileData.length();
+        // wasteful
+        const char* cpy = (const char*)malloc(len + 1);
+        memcpy((void*)cpy, fileData.c_str(), len + 1);
+        file.CoverThisData(cpy, len);
+        file.IO_SaveASCIIFile(fileName);
+    }
+
+    void print() 
+    {
+        for (auto it : files)
+        {
+            size_t count = files.count(it.first);
+            // show only duplicates
+            if (count == 1)
                 continue;
 
             struct tm tm;
@@ -66,7 +114,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
             strftime(timeStr, sizeof(timeStr), "%m/%d/%Y %H:%M:%S", &tm);
 
             printf("#%d %s %8d %s | %s\n",
-                (int)count, 
+                (int)count,
                 timeStr,
                 it.first.size,
                 to_string(it.first.fileName.c_str()).c_str(),
