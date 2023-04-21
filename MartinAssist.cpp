@@ -124,16 +124,33 @@ struct DirectoryTraverse : public IDirectoryTraverse {
     }
 };
 
+
+
+struct DriveTraverse : public IDriveTraverse {
+
+    virtual void OnDrive(const FilePath& filePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName) {
+        wprintf(L"filePath: %s\n", filePath.path.c_str());
+        wprintf(L"deviceName: %s\n", deviceName);
+        wprintf(L"internalName: %s\n", internalName);
+        wprintf(L"volumeName: %s\n\n", volumeName);
+
+    }
+};
+
+
+
+
 int main()
 {
-//    CppParserTest();
+    CppParserTest();
 
-    DirectoryTraverse traverse;
+//    DriveTraverse drives;
+//    driveTraverse(drives);
 
+//    DirectoryTraverse traverse;
 //    directoryTraverse(traverse, L"C:\\P4Depot\\QuickGame Wiggle");
-    directoryTraverse(traverse, L"C:\\P4Depot");    // ~3000 files
+//    directoryTraverse(traverse, L"C:\\P4Depot");    // ~3000 files
 //    directoryTraverse(traverse, L"C:");    // 199891 files  100 sec 78 sec time release/debug
-
 
     printf("\n\n\n");
 }

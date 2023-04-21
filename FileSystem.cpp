@@ -2,6 +2,7 @@
 #include "global.h"
 #include "FileSystem.h"
 #include <io.h>	// _A_SUBDIR, _findclose()
+#include <windows.h>    // GetVolumePathNamesForVolumeNameW()
 
 
 FilePath::FilePath(const wchar_t* in) {
@@ -87,6 +88,7 @@ bool FilePath::IsValid() const {
 	
 	return !IsAnySlash(path.back());
 }
+
 // ---------------------------------------------------------------------------
 
 void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
@@ -126,7 +128,156 @@ void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const
 	sink.OnEnd();
 }
 
-void FilePath::Test() {
+// ---------------------------------------------------------------------------
+
+// from https://learn.microsoft.com/en-us/windows/win32/fileio/displaying-volume-paths?redirectedfrom=MSDN
+static std::wstring getVolumePaths(__in PWCHAR InternalName)
+{
+	DWORD  CharCount = MAX_PATH + 1;
+	PWCHAR Names = NULL;
+	PWCHAR NameIdx = NULL;
+	BOOL   Success = FALSE;
+
+	std::wstring ret;
+
+	for (;;)
+	{
+		//
+		//  Allocate a buffer to hold the paths.
+		Names = (PWCHAR) new BYTE[CharCount * sizeof(WCHAR)];
+
+		if (!Names)
+			return ret;
+
+		//
+		//  Obtain all of the paths
+		//  for this volume.
+		Success = GetVolumePathNamesForVolumeNameW(
+			InternalName, Names, CharCount, &CharCount
+		);
+
+		if (Success)
+			break;
+
+		if (GetLastError() != ERROR_MORE_DATA)
+			break;
+
+		//
+		//  Try again with the
+		//  new suggested size.
+		delete[] Names;
+		Names = NULL;
+	}
+
+	if (Success)
+	{
+		ret = Names;
+	}
+
+	if (Names)
+	{
+		delete[] Names;
+		Names = NULL;
+	}
+
+	return ret;
+}
+
+
+void driveTraverse(IDriveTraverse& sink) 
+{
+	DWORD  CharCount = 0;
+	WCHAR  deviceName[MAX_PATH] = L"";
+	DWORD  Error = ERROR_SUCCESS;
+	HANDLE FindHandle = INVALID_HANDLE_VALUE;
+	BOOL   Found = FALSE;
+	size_t Index = 0;
+	BOOL   Success = FALSE;
+	WCHAR  internalName[MAX_PATH] = L"";
+
+	FindHandle = FindFirstVolumeW(internalName, ARRAYSIZE(internalName));
+
+	if (FindHandle == INVALID_HANDLE_VALUE)
+	{
+//		Error = GetLastError();
+		return;
+	}
+
+	sink.OnStart();
+
+	for (;;)
+	{
+		//
+		//  Skip the \\?\ prefix and remove the trailing backslash.
+		Index = wcslen(internalName) - 1;
+
+		if (internalName[0] != L'\\' ||
+			internalName[1] != L'\\' ||
+			internalName[2] != L'?' ||
+			internalName[3] != L'\\' ||
+			internalName[Index] != L'\\')
+		{
+			Error = ERROR_BAD_PATHNAME;
+//			wprintf(L"FindFirstVolumeW/FindNextVolumeW returned a bad path: %s\n", internalName);
+			break;
+		}
+
+		//  QueryDosDeviceW does not allow a trailing backslash,
+		//  so temporarily remove it.
+		internalName[Index] = L'\0';
+
+		CharCount = QueryDosDeviceW(&internalName[4], deviceName, ARRAYSIZE(deviceName));
+
+		internalName[Index] = L'\\';
+
+		if (CharCount == 0)
+		{
+//			Error = GetLastError();
+			break;
+		}
+
+		if (internalName[0]) {
+			std::wstring path = getVolumePaths(internalName);
+			if (!path.empty())
+			{
+				WCHAR volumeName[MAX_PATH];//MAX_PATH is the size of the char array.
+				if (GetVolumeInformation(path.c_str(), volumeName, sizeof(volumeName),
+					NULL,
+					NULL,
+					NULL,
+					NULL,
+					0))
+				{
+					sink.OnDrive(path, deviceName, internalName, volumeName);
+				}
+			}
+		}
+
+		Success = FindNextVolumeW(FindHandle, internalName, ARRAYSIZE(internalName));
+
+		if (!Success)
+		{
+			Error = GetLastError();
+
+			if (Error != ERROR_NO_MORE_FILES)
+			{
+//				wprintf(L"FindNextVolumeW failed with error code %d\n", Error);
+				break;
+			}
+
+			Error = ERROR_SUCCESS;
+			break;
+		}
+	}
+
+	FindVolumeClose(FindHandle);
+	FindHandle = INVALID_HANDLE_VALUE;
+
+	sink.OnEnd();
+}
+
+void FilePath::Test() 
+{
 	// GetExtension()
 
 	{

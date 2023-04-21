@@ -46,6 +46,18 @@ public:
   static void Test();
 };
 
+// implement for DriveTraverse()
+struct IDriveTraverse {
+    virtual void OnStart() {}
+    // @param path e.g. L"C:\"
+    // @param deviceName e.g. L"\Device\HarddiskVolume4"
+    // @param internalName e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
+    // @param volumeName e.g. L"First Drive"
+    virtual void OnDrive(const FilePath& filePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName) = 0;
+    virtual void OnEnd() {}
+};
+
+
 // implement for DirectoryTraverse()
 struct IDirectoryTraverse {
   virtual void OnStart() {}
@@ -62,6 +74,8 @@ struct IDirectoryTraverse {
 // @param pattern e.g. L"*.cpp" L"*.*", must not be 0
 void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern = L"*.*");
 
+// in error case sink might not even get OnStart() call
+void driveTraverse(IDriveTraverse& sink);
 
 std::string to_string(std::wstring wstr);
 
