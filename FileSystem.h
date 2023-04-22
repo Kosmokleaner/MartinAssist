@@ -49,7 +49,7 @@ public:
 // implement for DriveTraverse()
 struct IDriveTraverse {
     virtual void OnStart() {}
-    // @param path e.g. L"C:\"
+    // @param filePath e.g. L"C:\"
     // @param deviceName e.g. L"\Device\HarddiskVolume4"
     // @param internalName e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
     // @param volumeName e.g. L"First Drive"

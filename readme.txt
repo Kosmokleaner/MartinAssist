@@ -30,6 +30,13 @@ literate programming syntax:
 
 
 
+Everyhere app:
+* Store a list of all files with creation date/size/path, possibly hash to find redundancy level, browse and to ensure you have at least n backups
+* database can be in one spot e.g. dropbox
+* 
+
+
+
 todo:
 * compute line number for parse errors
 * iterate include hierarchy

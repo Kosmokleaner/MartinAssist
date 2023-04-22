@@ -126,7 +126,22 @@ bool CASCIIFile::IO_GetAvailability( const char *pathname )
 
 
 
+bool CASCIIFile::IO_SaveASCIIFile(const wchar_t* pathname)
+{
+	if (m_Data == 0)
+		return false;
 
+	FILE* file;
+
+	if ((file = _wfopen(pathname, L"wb")) != NULL)
+	{
+		fwrite(m_Data, m_Size - 1, 1, file);
+		fclose(file);
+		return true;
+	}
+
+	return false;
+}
 
 bool CASCIIFile::IO_SaveASCIIFile( const char *pathname )	 
 {

@@ -28,6 +28,7 @@ public:
 	static bool IO_GetAvailability( const char *pathname );
 
 	bool IO_SaveASCIIFile( const char *pathname );	
+	bool IO_SaveASCIIFile( const wchar_t* pathname);
 	bool IO_LoadASCIIFile( const char *pathname );
 
 protected: // ------------------------------------------------------------------------

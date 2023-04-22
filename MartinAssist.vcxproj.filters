@@ -16,6 +16,7 @@
     <ClCompile Include="example0.cpp" />
     <ClCompile Include="LiterateProcessor.cpp" />
     <ClCompile Include="CppParserTest.cpp" />
+    <ClCompile Include="EveryHere.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -38,6 +39,7 @@
     </ClInclude>
     <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="CppParserTest.h" />
+    <ClInclude Include="EveryHere.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

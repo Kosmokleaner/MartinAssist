@@ -91,9 +91,8 @@ bool FilePath::IsValid() const {
 
 // ---------------------------------------------------------------------------
 
-void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
+static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
 	assert(pattern);
-	sink.OnStart();
 
 	// https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/findfirst-functions?view=vs-2019
 	struct _wfinddata_t c_file;
@@ -116,14 +115,22 @@ void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const
 
 			if (sink.OnDirectory(pathWithDirectory, c_file.name)) {
 				// recursion
-				directoryTraverse(sink, pathWithDirectory, pattern);
+				_directoryTraverse(sink, pathWithDirectory, pattern);
 			}
-		} else {
+		}
+		else {
 			sink.OnFile(filePath, c_file.name, c_file);
 		}
 	} while (_wfindnext(hFile, &c_file) == 0);
 
 	_findclose(hFile);
+}
+
+void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
+	assert(pattern);
+	sink.OnStart();
+
+	_directoryTraverse(sink, filePath, pattern);
 
 	sink.OnEnd();
 }
