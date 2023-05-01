@@ -21,6 +21,14 @@ public:
   // @param in must not be 0
   FilePath(const wchar_t* in);
 
+  // e.g. L"c:\temp\test/filename.ext"
+  // @return L"filename.ext"
+  const wchar_t* getFileName() const;
+
+  // e.g. L"c:\temp\test/filename"
+  // @return L"c:\temp\test"
+  std::wstring extractPath() const;
+
   // constructor e.g. FilePath(pathString)
   FilePath(std::wstring& in) : path(in) { }
 
@@ -49,11 +57,11 @@ public:
 // implement for DriveTraverse()
 struct IDriveTraverse {
     virtual void OnStart() {}
-    // @param filePath e.g. L"C:\"
+    // @param inDrivePath e.g. L"C:\"
     // @param deviceName e.g. L"\Device\HarddiskVolume4"
     // @param internalName e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
     // @param volumeName e.g. L"First Drive"
-    virtual void OnDrive(const FilePath& filePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName) = 0;
+    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName) = 0;
     virtual void OnEnd() {}
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <string>
+#include "FileSystem.h"
 
 
 struct FileKey
@@ -8,23 +9,33 @@ struct FileKey
     // without path (:, / and \)
     std::wstring fileName;
     bool operator<(const FileKey& b) const {
+        // firt by size to find large ones first
+        if (size > b.size)
+            return true;
+        if (size < b.size)
+            return false;
+
+        // then by file name
+        int c = wcscmp(fileName.c_str(), b.fileName.c_str());
+        if(c < 0)
+            return true;
+        else if (c > 0)
+            return false;
+
+        // then by write time to find same files, not as good as hash but
+        // if not written on same second or copied with a bad tool it should be ok
         if (time_write < b.time_write)
             return true;
         if (time_write > b.time_write)
             return false;
 
-        if (size < b.size)
-            return true;
-        if (size > b.size)
-            return false;
-
-        return fileName < b.fileName;
+        return false;
     }
 
     // properties making this file unique
     __time64_t time_write = -1;  // modified
     // file size in bytes
-    _fsize_t size = 0;
+    size_t size = 0;
 };
 
 struct FileValue
@@ -38,8 +49,15 @@ struct FileValue
 struct DeviceData {
     std::multimap<FileKey, FileValue> files;
 
+    // @param deviceName e.g. L"\Device\HarddiskVolume4"
+    // @param internalName e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
+
+
     // @param fileName e.g. L"test.csv"
-    void save(const wchar_t* fileName);
+    // @param drivePath may be 0, e.g. L"C:\"
+    // @param volumeName may be 0
+    // @param cleanName may be 0, e.g. L"First Drive"
+    void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0, const wchar_t* cleanName = 0);
 
     void printUniques();
 };
@@ -47,8 +65,10 @@ struct DeviceData {
 
 struct EveryHere
 {
-    // [deviceName] = 
+    // [cleanName] = 
     std::map<std::wstring, DeviceData> devices;
 //public:
-    void GatherData();
+    void gatherData();
+    // @param internalName must not be null, e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
+    void loadCSV(const wchar_t* internalName);
 };

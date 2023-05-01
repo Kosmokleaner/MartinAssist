@@ -13,7 +13,35 @@ FilePath::FilePath(const wchar_t* in) {
 }
 
 static bool IsAnySlash(const wchar_t c) {
-	return c == '\\' || c== '/';
+	return c == '\\' || c == '/';
+}
+
+const wchar_t* FilePath::getFileName() const
+{
+	const wchar_t* start = path.c_str();
+	const wchar_t* ret = start;
+	const wchar_t* p = start;
+
+	for(const wchar_t* p = start; *p; ++p) {
+		if(IsAnySlash(*p) || *p == ':')
+			ret = p + 1;
+	}
+
+	return ret;
+}
+
+std::wstring FilePath::extractPath() const
+{
+	const wchar_t* fileName = getFileName();
+
+	const wchar_t* last = fileName;
+
+	if(path.c_str() != last && IsAnySlash(last[-1]))
+		--last;
+
+	std::wstring ret(path.c_str(), last - path.c_str());
+
+	return ret;
 }
 
 const wchar_t* FilePath::GetExtension() const {

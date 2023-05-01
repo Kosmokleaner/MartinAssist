@@ -30,10 +30,10 @@ literate programming syntax:
 
 
 
-Everyhere app:
+EveryHere app:
 * Store a list of all files with creation date/size/path, possibly hash to find redundancy level, browse and to ensure you have at least n backups
 * database can be in one spot e.g. dropbox
-* 
+* todo: filename beginning with "#" or even "# ", "," in name ?
 
 
 

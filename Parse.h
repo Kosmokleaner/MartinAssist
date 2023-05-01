@@ -23,12 +23,21 @@ bool parseStartsWith(const Char* &p, const char* Token);
 // @return true if a return was found
 bool parseToEndOfLine(const Char* &p);
 
-void parseLine(const Char* &p, std::string &Out);
+// @param endOnCommaAsWell if true the ',' is parsed over
+void parseLine(const Char* &p, std::string &Out, bool endOnCommaAsWell = false);
 
 // uses C++ (variable) name definition
 // @return success
 bool parseName(const Char* &p, std::string &Out);
 
+// outValue is not changed if return is false
+bool parseInt64(const Char*& p, int64 &outValue);
+// outValue is not changed if return is false
+bool parseInt(const Char*& p, int& outValue);
+
+// parse date in format %m/%d/%Y %H:%M:%S
+// @return success
+//bool parseDate(const Char*& p, tm &out);
 
 template <int TSize>
 struct SPushStringA

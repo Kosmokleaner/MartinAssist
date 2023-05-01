@@ -7,6 +7,7 @@
 #include <io.h>																// filesize
 #include <string.h>														// strlen
 #include <assert.h>													  // assert
+#include <windows.h>	// GetFileSize()
 
 #include "ASCIIFile.h"
 
@@ -37,7 +38,7 @@
 
 
 
-uint32 IO_GetFileSize( const char *Name )		// test1
+uint32 IO_GetFileSize( const char *Name )
 {
 	assert(Name);
 	int handle,size;	// test2
@@ -54,6 +55,31 @@ uint32 IO_GetFileSize( const char *Name )		// test1
 	return size;
 }
 
+// @param must not be 0
+size_t IO_GetFileSize(const wchar_t* filePath)
+{
+	assert(filePath);
+
+	HANDLE handle = CreateFile(filePath,
+		GENERIC_READ,
+		0 /* exclusive access */,
+		NULL,
+		OPEN_EXISTING,
+		0,
+		NULL);
+
+	if (handle == INVALID_HANDLE_VALUE)
+		return 0;
+
+	DWORD lowFileSize = 0;
+	DWORD highFileSize = 0;
+
+	lowFileSize = GetFileSize(handle, &highFileSize);
+
+	CloseHandle(handle);
+
+	return (((size_t)highFileSize)<<32) | (size_t)lowFileSize;
+}
 
 
 CASCIIFile::CASCIIFile()
@@ -161,7 +187,7 @@ bool CASCIIFile::IO_SaveASCIIFile( const char *pathname )
 }
 
 
-bool CASCIIFile::IO_LoadASCIIFile( const char *pathname )		// allociert 1+Filesize, liest Daten und 0 terminiert, free nicht vergessen !!
+bool CASCIIFile::IO_LoadASCIIFile( const char *pathname )
 {
 	if(*pathname==0)
 		return false;
@@ -179,6 +205,37 @@ bool CASCIIFile::IO_LoadASCIIFile( const char *pathname )		// allociert 1+Filesi
 	if((file = fopen(pathname,"rb")) != NULL)
 	{
 		fread(ret,size, 1, file);
+		ret[size] = 0;				// 0 terminate
+
+		m_Size = size + 1;
+		m_Data = ret;
+
+		fclose(file);
+		return true;
+	}
+
+	free(ret);
+	return false;
+}
+
+bool CASCIIFile::IO_LoadASCIIFile(const wchar_t* pathname)
+{
+	if (*pathname == 0)
+		return false;
+
+	size_t size = IO_GetFileSize(pathname);
+	char* ret = 0;
+
+	ret = (char*)malloc(size + 1);
+
+	if (ret == 0)
+		return false;	// no memory
+
+	FILE* file;
+
+	if ((file = _wfopen(pathname, L"rb")) != NULL)
+	{
+		fread(ret, size, 1, file);
 		ret[size] = 0;				// 0 terminate
 
 		m_Size = size + 1;

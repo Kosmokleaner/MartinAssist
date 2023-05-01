@@ -94,13 +94,19 @@ bool parseLineFeed(const Char*& p)
 	return false;
 }
 
-void parseLine(const Char* &p, std::string &Out)
+void parseLine(const Char* &p, std::string &Out, bool endOnCommaAsWell)
 {
 	Out.clear();
 
 	// can be optimized, does a lot of resize
 	while(*p)
 	{
+		if(endOnCommaAsWell && *p == ',') 
+		{
+			++p;
+			break;
+		}
+
 		if(*p == 13)		// CR
 		{
 			++p;
@@ -131,6 +137,49 @@ bool isDigitCharacter(const Char Value)
 	return Value >= '0' && Value <= '9';
 }
 
+bool parseInt(const Char*& p, int& outValue) 
+{
+	int64 value64;
+	bool ok = parseInt64(p, value64);
+	if(ok)
+		outValue = (int)value64;
+	return ok;
+}
+
+bool parseInt64(const Char*& p, int64 &outValue) 
+{
+	const Char* Backup = p;
+	bool bNegate = false;
+
+	if (*p == '-')
+	{
+		bNegate = true;
+		++p;
+	}
+
+	if (*p < '0' || *p > '9')
+	{
+		p = Backup;
+		return false;
+	}
+
+	outValue = 0;
+
+	while (*p >= '0' && *p <= '9')
+	{
+		outValue = outValue * 10 + (*p - '0');
+
+		++p;
+	}
+
+	if (bNegate)
+	{
+		outValue = -outValue;
+	}
+
+	return true;
+}
+
 bool parseName(const Char* &p, std::string &Out)
 {
 	bool Ret = false;
@@ -152,6 +201,45 @@ bool parseName(const Char* &p, std::string &Out)
 
 	return Ret;
 }
+
+/*
+bool parseDate(const Char*& p, tm& out) 
+{
+	const Char* backup = p;
+
+	int mo, d, y, h, mi, s;
+
+	// %m/%d/%Y %H:%M:%S
+	parseWhiteSpaceNoLF(p);
+	if(	!parseInt(p, mo) || 
+		!parseStartsWith(p, "/") ||
+		!parseInt(p, d) ||
+		!parseStartsWith(p, "/") ||
+		!parseInt(p, y) ||
+		!parseStartsWith(p, " ") ||
+		!parseInt(p, h) ||
+		!parseStartsWith(p, ":") ||
+		!parseInt(p, mi) ||
+		!parseStartsWith(p, ":") ||
+		!parseInt(p, s)
+		)
+	{
+		p = backup;
+		return false;
+	}
+	
+	out = { 0 };
+
+	out.tm_year = y - 1900;
+	out.tm_mon = mo - 1;
+	out.tm_mday = d;
+	out.tm_hour = h - 1;
+	out.tm_min = mi;
+	out.tm_sec = s;
+
+	return true;
+}
+*/
 
 SPushStringA<MAX_PATH> parsePath(const Char* &p)
 {
