@@ -138,7 +138,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
 
-        deviceData.files.push_back(entry);
+        deviceData.entries.push_back(entry);
         ++fileEntryCount;
 
         return true;
@@ -164,7 +164,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
 
-        deviceData.files.push_back(entry);
+        deviceData.entries.push_back(entry);
         ++fileEntryCount;
 
         double nowTime = g_Timer.GetAbsoluteTime();
@@ -253,12 +253,12 @@ struct DriveTraverse : public IDriveTraverse {
 DeviceData::DeviceData() 
 {
     // to avoid some reallocations
-    files.reserve(1024 * 1024);
+    entries.reserve(1024 * 1024);
 }
 
 void DeviceData::sort()
 {
-    size_t size = files.size();
+    size_t size = entries.size();
 
     // 0 based
     std::vector<size_t> sortedToIndex;
@@ -274,7 +274,7 @@ void DeviceData::sort()
         bool operator()(size_t a, size_t b) const { return r[a].key < r[b].key; }
     };
 
-    CustomLess customLess = {files};
+    CustomLess customLess = {entries};
 
     std::sort(sortedToIndex.begin(), sortedToIndex.end(), customLess);
 
@@ -290,13 +290,13 @@ void DeviceData::sort()
     for (size_t i = 0; i < size; ++i) 
     {
         FileEntry& dst = newFiles[i];
-        dst = files[sortedToIndex[i]];
+        dst = entries[sortedToIndex[i]];
         // remap parentFileEntryIndex
         if(dst.value.parent1BasedIndex)
             dst.value.parent1BasedIndex = indexToSorted[dst.value.parent1BasedIndex - 1];
     }
 
-    std::swap(newFiles, files);
+    std::swap(newFiles, entries);
 }
 
 void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const wchar_t* volumeName, const wchar_t* cleanName)
@@ -332,7 +332,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     // start marker
     fileData += "#\n";
 
-    for (auto it : files)
+    for (auto it : entries)
     {
         char str[MAX_PATH + 100];
         sprintf_s(str, sizeof(str), "%lld,%s,%llu,#%llu,%llu,%llu\n",
@@ -418,8 +418,6 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
         FileEntry entry;
 
-        entry.key.fileName = to_wstring(sFileName);
-
         if (!parseInt64(p, entry.key.sizeOrFolder) ||
             !parseStartsWith(p, ","))
         {
@@ -428,6 +426,7 @@ void EveryHere::loadCSV(const wchar_t* internalName)
         }
 
         parseLine(p, sFileName, true);
+        entry.key.fileName = to_wstring(sFileName);
 
         if (!parseInt64(p, entry.key.time_write) ||
             !parseStartsWith(p, ","))
@@ -449,7 +448,7 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
         parseLineFeed(p);
 
-        deviceData.files.push_back(entry);
+        deviceData.entries.push_back(entry);
     }
 
     deviceData.save(std::wstring(L"test.csv").c_str());

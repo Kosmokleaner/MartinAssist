@@ -79,8 +79,7 @@ int Gui::test()
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsClassic();
     {
-        ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
-        ImVec4* colors = style->Colors;
+        ImVec4* colors = ImGui::GetStyle().Colors;
         // no transparent windows
         colors[ImGuiCol_WindowBg].w = 1.0f;
     }
@@ -152,28 +151,47 @@ int Gui::test()
 //                const int lineHeight = (int)ImGui::GetFontSize();
 //                int height = (int)data.files.size() * lineHeight;
 
-                ImGui::BeginChild("scrolling", ImVec2(-1, -1), false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
-
-                ImGuiListClipper clipper;
-                clipper.Begin((int)data.files.size());
-                std::string line;
-                while (clipper.Step())
+                ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                if (ImGui::BeginTable("table_scrolly", 3, flags))
                 {
-                    for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
+//                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
+//                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
+//                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
+                    ImGui::TableHeadersRow();
+
+                    ImGuiListClipper clipper;
+                    clipper.Begin((int)data.entries.size());
+                    std::string line;
+                    while (clipper.Step())
                     {
-                        if(line_no >= data.files.size())
-                            break;
+                        for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+                        {
+                            if(line_no >= data.entries.size())
+                                break;
 
-                        FileEntry& entry = data.files[line_no];
+                            FileEntry& entry = data.entries[line_no];
 
-                        line = to_string(entry.key.fileName);
+                            line = to_string(entry.key.fileName);
 
-                        ImGui::TextUnformatted(line.c_str());
+                            ImGui::TableNextRow();
+
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::TextUnformatted(line.c_str());
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::TextUnformatted("path");
+                            ImGui::TableSetColumnIndex(2);
+                            ImGui::Text("%lld", entry.key.sizeOrFolder);
+//                            ImGui::TextUnformatted("2");
+                        }
                     }
-                }
-                clipper.End();
+                    clipper.End();
 
-                ImGui::EndChild();
+                    ImGui::EndTable();
+                }
             }
 
             ImGui::End();

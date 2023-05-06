@@ -55,7 +55,7 @@ struct FileEntry
 };
 
 struct DeviceData {
-    std::vector<FileEntry> files;
+    std::vector<FileEntry> entries;
 
     DeviceData();
 
