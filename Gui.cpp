@@ -31,6 +31,65 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+class SelectionRange
+{
+private:
+    // index
+    int64 first = -1;
+    // index
+    int64 second = -1;
+    // indices
+    std::vector<int64> exceptions;
+
+public:
+    void reset() 
+    {
+        first = -1;
+        second = -1;
+        exceptions.clear();
+    }
+
+    void onClick(int64 x, bool shift, bool ctrl) 
+    {
+        if(ctrl)
+            toggle(x);
+        else 
+        {
+            exceptions.clear();
+
+            if (shift)
+                second = x;
+            else
+                first = second = x;
+        }
+    }
+
+    bool isSelected(int64 x) const 
+    {
+        bool ret = false;
+
+        // range selection
+        if (first == x)
+            ret = true;
+        if (second != -1)
+            ret = std::min(first, second) <= x && x <= std::max(first, second);
+
+        ret ^= std::find(exceptions.begin(), exceptions.end(), x) != exceptions.end();
+
+        return ret;
+    }
+
+    void toggle(int64 x)
+    {
+        auto it = std::find(exceptions.begin(), exceptions.end(), x);
+
+        if(it == exceptions.end())
+            exceptions.push_back(x);
+        else
+            exceptions.erase(it);
+    }
+};
+
 int Gui::test()
 {
     // Setup window
@@ -144,14 +203,15 @@ int Gui::test()
                 assert(!everyHere.devices.empty());
             }
 
-            if(!everyHere.devices.empty())
             {
-                DeviceData& data = everyHere.devices.begin()->second;
+                DeviceData dummyData;
+                DeviceData& data = everyHere.devices.empty() ? dummyData : everyHere.devices.begin()->second;
 
 //                const int lineHeight = (int)ImGui::GetFontSize();
 //                int height = (int)data.files.size() * lineHeight;
 
-                ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                static SelectionRange selectionRange;
                 if (ImGui::BeginTable("table_scrolly", 3, flags))
                 {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
@@ -166,6 +226,9 @@ int Gui::test()
                     ImGuiListClipper clipper;
                     clipper.Begin((int)data.entries.size());
                     std::string line;
+                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.99f, 0.99f, 0.99f, 0.60f));
                     while (clipper.Step())
                     {
                         for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
@@ -180,7 +243,16 @@ int Gui::test()
                             ImGui::TableNextRow();
 
                             ImGui::TableSetColumnIndex(0);
-                            ImGui::TextUnformatted(line.c_str());
+                            ImGui::PushID(line_no);
+                            ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                            bool selected = selectionRange.isSelected(line_no);
+                            ImGui::Selectable(line.c_str(), &selected, selectable_flags); 
+                            if (ImGui::IsItemClicked(0))
+                            {
+                                selectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+                            }
+                            ImGui::PopID();
+                            //                            ImGui::TextUnformatted(line.c_str());
                             ImGui::TableSetColumnIndex(1);
                             ImGui::TextUnformatted("path");
                             ImGui::TableSetColumnIndex(2);
@@ -189,6 +261,7 @@ int Gui::test()
                         }
                     }
                     clipper.End();
+                    ImGui::PopStyleColor(3);
 
                     ImGui::EndTable();
                 }
