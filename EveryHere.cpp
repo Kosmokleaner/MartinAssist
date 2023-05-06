@@ -69,7 +69,7 @@ private:
         auto it = children.find(name);
         if(it != children.end())
         {
-            assert(it->second->fileEntryIndex != (int64)-1);
+            assert(it->second->fileEntry1BasedIndex);
             return it->second;
         }
         return nullptr;
@@ -131,7 +131,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
         FileEntry entry;
         entry.key.fileName = directory;
-        // -1 for folder 
+        // <0 for folder 
         entry.key.sizeOrFolder = -1;
         entry.key.time_write = findData.time_write;
         entry.value.parent1BasedIndex = whereToInsert.fileEntry1BasedIndex;
@@ -328,7 +328,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     }
     // 2: order: size, fileName, write, path, creat, access
     fileData += "# version=2\n";
-    fileData += "# size_t size (-1 for folder), fileName, __time64_t write, # parentEntryId(1 based, 0:root), __time64_t create, __time64_t access\n";
+    fileData += "# size_t size (<0 for folder), fileName, __time64_t write, # parentEntryId(1 based, 0:root), __time64_t create, __time64_t access\n";
     // start marker
     fileData += "#\n";
 
@@ -396,7 +396,6 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
     std::string line;
 
-
     devices.insert(std::pair<std::wstring, DeviceData>(internalName, DeviceData()));
     DeviceData& deviceData = devices[internalName];
 
@@ -437,12 +436,8 @@ void EveryHere::loadCSV(const wchar_t* internalName)
             break;
         }
 
-        parseLine(p, sPath, true);
-
         if (!parseStartsWith(p, "#") ||
             !parseInt64(p, (int64&)entry.value.parent1BasedIndex) ||
-            !parseStartsWith(p, ",") ||
-            !parseInt64(p, entry.key.time_write) ||
             !parseStartsWith(p, ",") ||
             !parseInt64(p, entry.value.time_create) ||
             !parseStartsWith(p, ",") ||

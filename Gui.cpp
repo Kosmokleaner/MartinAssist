@@ -62,7 +62,7 @@ int Gui::test()
 #endif
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "MartinAssist UI", NULL, NULL);
     if (window == NULL)
         return 1;
     glfwMakeContextCurrent(window);
@@ -72,12 +72,18 @@ int Gui::test()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsClassic();
+    {
+        ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
+        ImVec4* colors = style->Colors;
+        // no transparent windows
+        colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -98,9 +104,7 @@ int Gui::test()
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
-    // Our state
     bool show_demo_window = true;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop
@@ -118,40 +122,60 @@ int Gui::test()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
-            static float f = 0.0f;
-            static int counter = 0;
+            ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
+            ImGui::Begin("EveryHere");
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            if (ImGui::Button("build"))
+            {
+                everyHere.gatherData();
+            }
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
             ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
-        }
+            if(ImGui::Button("load"))
+            {
+                // load input .csv and write into test.csv to verfiy load/save works
+//                everyHere.loadCSV(L"Volume{720f86b8-373a-4fe4-ae1b-ef58cb9dd578}.csv");
+                everyHere.loadCSV(L"Volume{ca72ef4c-0000-0000-0000-100000000000}.csv");
+                assert(!everyHere.devices.empty());
+            }
 
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
+            if(!everyHere.devices.empty())
+            {
+                DeviceData& data = everyHere.devices.begin()->second;
+
+//                const int lineHeight = (int)ImGui::GetFontSize();
+//                int height = (int)data.files.size() * lineHeight;
+
+                ImGui::BeginChild("scrolling", ImVec2(-1, -1), false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+                ImGuiListClipper clipper;
+                clipper.Begin((int)data.files.size());
+                std::string line;
+                while (clipper.Step())
+                {
+                    for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+                    {
+                        if(line_no >= data.files.size())
+                            break;
+
+                        FileEntry& entry = data.files[line_no];
+
+                        line = to_string(entry.key.fileName);
+
+                        ImGui::TextUnformatted(line.c_str());
+                    }
+                }
+                clipper.End();
+
+                ImGui::EndChild();
+            }
+
             ImGui::End();
         }
 
