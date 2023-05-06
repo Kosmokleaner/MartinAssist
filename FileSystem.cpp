@@ -96,6 +96,24 @@ void FilePath::Normalize() {
 	}
 }
 
+
+const wchar_t* FilePath::getPathWithoutDrive() const
+{
+	const wchar_t* ret = path.c_str();
+	const wchar_t* p = ret;
+	while (*p != 0 && *p != ':' && *p != '/' && *p != '\\')
+		++p;
+	if (*p == ':') 
+	{
+		++p;
+		if (*p == '/' || *p == '\\')
+			++p;
+
+		ret = p;
+	}
+	return ret;
+}
+
 void FilePath::Append(const wchar_t* rhs) {
 	assert(rhs);
 	assert(IsValid());
@@ -138,10 +156,10 @@ static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePat
 			continue;
 
 		if (c_file.attrib & _A_SUBDIR) {
-			FilePath pathWithDirectory = filePath;
-			pathWithDirectory.Append(c_file.name);
 
-			if (sink.OnDirectory(pathWithDirectory, c_file.name)) {
+			if (sink.OnDirectory(filePath, c_file.name, c_file)) {
+				FilePath pathWithDirectory = filePath;
+				pathWithDirectory.Append(c_file.name);
 				// recursion
 				_directoryTraverse(sink, pathWithDirectory, pattern);
 			}

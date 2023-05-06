@@ -1,5 +1,7 @@
 #include "EveryHere.h"
 #include <time.h>   // _localtime64_s()
+#include <vector>
+#include <algorithm>
 #include "Timer.h"
 #include "ASCIIFile.h"
 #include "FileSystem.h"
@@ -14,19 +16,80 @@ void dateToCString(__time64_t t, char outTimeStr[80])
     strftime(outTimeStr, 80, "%m/%d/%Y %H:%M:%S", &tm);
 }
 
+struct FolderTree
+{
+    // 1 based as 0 is used for root 
+    uint64 fileEntry1BasedIndex = (uint64)0;
+
+    // [folderName] = child pointer
+    std::map<std::wstring, FolderTree*> children;
+
+    ~FolderTree() {
+        for (auto it : children)
+            delete it.second;
+    }
+
+    // @param must not be 0, e.g. L"temp/folder/sub", no drives e.g. "D:\temp", cannot start with '/' or '\\'
+    // @return this object or a child
+    FolderTree& findRecursive(const wchar_t* path)
+    {
+        assert(path);
+        const wchar_t* p = path; 
+
+        FolderTree* ret = this;
+
+        while(*p) 
+        {
+            while(*p && *p != '/' && *p != '\\')
+            {
+                assert(*p != ':');
+                ++p;
+            }
+            // can be optimized
+            ret = ret->findLocal(std::wstring(path, p - path));
+            assert(ret);
+
+            if(*p == '/' || *p == '\\')
+                ++p;
+            path = p;
+        }
+        return *ret;
+    }
+
+    FolderTree& makeChild(const wchar_t* folderName) 
+    {
+        FolderTree* ret = new FolderTree;
+
+        children.insert(std::pair<std::wstring, FolderTree*>(folderName, ret));
+        return *ret;
+    }
+
+private:
+    FolderTree* findLocal(const std::wstring& name) {
+        auto it = children.find(name);
+        if(it != children.end())
+        {
+            assert(it->second->fileEntryIndex != (int64)-1);
+            return it->second;
+        }
+        return nullptr;
+    }
+};
+
 
 struct DirectoryTraverse : public IDirectoryTraverse {
 
     // e.g. L"C:"
-    const wchar_t* path;
+    const wchar_t* path = nullptr;
     DeviceData& deviceData;
+    FolderTree folderRoot;
 
     uint64 size = 0;
     // from CTimer
     double startTime = 0.0f;
     double nextPrintTime = 0.0f;
-    uint64 fileCount = 0;
-    uint64 uniqueCount = 0;
+    // ever increasing during traversal
+    int64 fileEntryCount = 0;
 
     DirectoryTraverse(DeviceData& inDeviceData, const wchar_t* inPath)
         : deviceData(inDeviceData), path(inPath)
@@ -48,82 +111,61 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
     void logState()
     {
-        wprintf(L"%s %lld files %lld dups  %.0f sec           \r",
+        // a few spaces in the end to overwrite the line that was there before
+        wprintf(L"%s %lld files  %.0f sec           \r",
             path,
-            fileCount,
-            fileCount - uniqueCount,
+            fileEntryCount,
             g_Timer.GetAbsoluteTime() - startTime);
     }
 
-    virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory) {
-        std::string s = to_string(filePath.path);
-        const Char*p = (const Char *)s.c_str();
-
-        if (*p >='A' && *p <= 'Z')
+    virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) {
+        // we don't care what is in the recycling bin, seen this fully uppercase and with upper and lower case
+        if (_wcsicmp(directory, L"$RECYCLE.BIN") == 0)
         {
-            ++p;
-            if (parseStartsWith(p, ":/$RECYCLE.BIN"))
-            {
-                if(*p == 0)
-                    return false;
-            }
-            if (parseStartsWith(p, ":/$Recycle.Bin"))
-            {
-                if (*p == 0)
-                    return false;
-            }
+            return false;
         }
+
+        FolderTree& whereToInsert = folderRoot.findRecursive(filePath.getPathWithoutDrive());
+        FolderTree& newFolder = whereToInsert.makeChild(directory);
+        newFolder.fileEntry1BasedIndex = fileEntryCount + 1;
+
+        FileEntry entry;
+        entry.key.fileName = directory;
+        // -1 for folder 
+        entry.key.sizeOrFolder = -1;
+        entry.key.time_write = findData.time_write;
+        entry.value.parent1BasedIndex = whereToInsert.fileEntry1BasedIndex;
+        entry.value.time_access = findData.time_access;
+        entry.value.time_create = findData.time_create;
+
+        deviceData.files.push_back(entry);
+        ++fileEntryCount;
 
         return true;
     }
 
-    virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData) {
+    virtual void OnFile(const FilePath& filePath, const wchar_t* file, const _wfinddata_t& findData) {
         // todo: static to avoid heap allocations, prevents multithreading use
         static FilePath local; local.path.clear();
 
-        local = path;
+        local = filePath;
         local.Normalize();
         local.Append(file);
 
-        FileKey el;
-        el.fileName = file;
-        el.size = findData.size;
-        el.time_write = findData.time_write;
-        FileValue val;
-        val.path = path.path;
-        val.time_access = findData.time_access;
-        val.time_create = findData.time_create;
+        FileEntry entry;
 
-/*
-        // test0
-        {
-            struct tm tm;
-            errno_t err = _localtime64_s(&tm, &el.time_write);
-            assert(!err);
-            __time64_t c = _mktime64(&tm);     //todo this changes t
-            assert(c == el.time_write);
-        }
+//        FileKey el;
+        entry.key.fileName = file;
+        entry.key.sizeOrFolder = findData.size;
+        assert(entry.key.sizeOrFolder >= 0);
+        entry.key.time_write = findData.time_write;
+//        FileValue val;
+        entry.value.parent1BasedIndex = folderRoot.findRecursive(filePath.getPathWithoutDrive()).fileEntry1BasedIndex;
+        entry.value.time_access = findData.time_access;
+        entry.value.time_create = findData.time_create;
 
-        // test1
-        {
-            char str[80];
-            dateToCString(el.time_write, str);
-            const Char* p = (const Char*)str;
-            tm t0;
-            parseDate(p, t0);
-            tm t1 = t0;
-            // The time function returns the number of seconds elapsed since midnight (00:00:00), January 1, 1970,
-            __time64_t c = _mktime64(&t1);     //todo this changes t
-            char str2[80];
-            dateToCString(c, str2);
-            assert(findData.time_write == c);
-        }
-*/
-        if (deviceData.files.find(el) == deviceData.files.end())
-            ++uniqueCount;
-
-        deviceData.files.insert(std::pair<FileKey, FileValue>(el, val));
-        ++fileCount;
+        deviceData.files.push_back(entry);
+        ++fileEntryCount;
 
         double nowTime = g_Timer.GetAbsoluteTime();
         if(nowTime > nextPrintTime) 
@@ -182,6 +224,10 @@ struct DriveTraverse : public IDriveTraverse {
         replace_all(cleanName, L"/", L"");
         replace_all(cleanName, L"?", L"");
 
+        // hack
+//        if(drivePath[0] != 'E')
+//            return;
+
         // filePath e.g. L"C:\"
         wprintf(L"\ndrivePath: %s\n", drivePath.c_str());
         // deviceName e.g. L"\Device\HarddiskVolume4"
@@ -198,15 +244,65 @@ struct DriveTraverse : public IDriveTraverse {
 
         directoryTraverse(traverse, drivePath.c_str());
 
-        if(traverse.fileCount)
+        if(traverse.fileEntryCount)
             deviceData.save((cleanName + std::wstring(L".csv")).c_str(), drivePath.c_str(), volumeName, cleanName.c_str());
     }
 };
 
 
+DeviceData::DeviceData() 
+{
+    // to avoid some reallocations
+    files.reserve(1024 * 1024);
+}
+
+void DeviceData::sort()
+{
+    size_t size = files.size();
+
+    // 0 based
+    std::vector<size_t> sortedToIndex;
+    sortedToIndex.resize(size);
+
+    for(size_t i = 0; i < size; ++i) 
+        sortedToIndex[i] = i;
+
+    struct CustomLess
+    {
+        std::vector<FileEntry> &r;
+
+        bool operator()(size_t a, size_t b) const { return r[a].key < r[b].key; }
+    };
+
+    CustomLess customLess = {files};
+
+    std::sort(sortedToIndex.begin(), sortedToIndex.end(), customLess);
+
+    // 0 based
+    std::vector<size_t> indexToSorted;
+    indexToSorted.resize(size);
+    for (size_t i = 0; i < size; ++i)
+        indexToSorted[sortedToIndex[i]] = i;
+
+    std::vector<FileEntry> newFiles;
+    newFiles.resize(size);
+
+    for (size_t i = 0; i < size; ++i) 
+    {
+        FileEntry& dst = newFiles[i];
+        dst = files[sortedToIndex[i]];
+        // remap parentFileEntryIndex
+        if(dst.value.parent1BasedIndex)
+            dst.value.parent1BasedIndex = indexToSorted[dst.value.parent1BasedIndex - 1];
+    }
+
+    std::swap(newFiles, files);
+}
 
 void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const wchar_t* volumeName, const wchar_t* cleanName)
 {
+    sort();
+
     CASCIIFile file;
     std::string fileData;
     // to avoid reallocations
@@ -232,28 +328,25 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     }
     // 2: order: size, fileName, write, path, creat, access
     fileData += "# version=2\n";
-    fileData += "# size_t size, fileName, __time64_t write, path, __time64_t create, __time64_t access\n";
+    fileData += "# size_t size (-1 for folder), fileName, __time64_t write, # parentEntryId(1 based, 0:root), __time64_t create, __time64_t access\n";
     // start marker
     fileData += "#\n";
 
     for (auto it : files)
     {
         char str[MAX_PATH + 100];
-        sprintf_s(str, sizeof(str), "%llu,%s,%llu,%s,%llu,%llu\n",
+        sprintf_s(str, sizeof(str), "%lld,%s,%llu,#%llu,%llu,%llu\n",
             // key
-            it.first.size,
-            to_string(it.first.fileName.c_str()).c_str(),
-            it.first.time_write,
+            it.key.sizeOrFolder,
+            to_string(it.key.fileName.c_str()).c_str(),
+            it.key.time_write,
             // value
-            to_string(it.second.path.c_str()).c_str(),
-            it.second.time_create,
-            it.second.time_access);
+            it.value.parent1BasedIndex,
+            it.value.time_create,
+            it.value.time_access);
         fileData += str;
     }
-    //        fileData += "\n";
-    //        logState();
-    //        fileData += "\n";
-            // does not include 0 termination
+    // does not include 0 termination
     size_t len = fileData.length();
     // wasteful
     const char* cpy = (const char*)malloc(len + 1);
@@ -262,6 +355,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     file.IO_SaveASCIIFile(fileName);
 }
 
+/*
 void DeviceData::printUniques()
 {
     for (auto it : files)
@@ -283,7 +377,7 @@ void DeviceData::printUniques()
     }
     printf("\n");
 }
-
+*/
 void EveryHere::gatherData() 
 {
     DriveTraverse drives(*this);
@@ -322,13 +416,12 @@ void EveryHere::loadCSV(const wchar_t* internalName)
             parseToEndOfLine(p);
             continue;
         }
- 
-        int64 size = 0;
 
-        FileKey el;
-        el.fileName = to_wstring(sFileName);
+        FileEntry entry;
 
-        if (!parseInt64(p, size) ||
+        entry.key.fileName = to_wstring(sFileName);
+
+        if (!parseInt64(p, entry.key.sizeOrFolder) ||
             !parseStartsWith(p, ","))
         {
             error = true;
@@ -337,7 +430,7 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
         parseLine(p, sFileName, true);
 
-        if (!parseInt64(p, el.time_write) ||
+        if (!parseInt64(p, entry.key.time_write) ||
             !parseStartsWith(p, ","))
         {
             error = true;
@@ -346,29 +439,22 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
         parseLine(p, sPath, true);
 
-        FileValue val;
-        val.path = to_wstring(sPath);
-
-        if (!parseInt64(p, size) ||
+        if (!parseStartsWith(p, "#") ||
+            !parseInt64(p, (int64&)entry.value.parent1BasedIndex) ||
             !parseStartsWith(p, ",") ||
-            !parseInt64(p, el.time_write) ||
+            !parseInt64(p, entry.key.time_write) ||
             !parseStartsWith(p, ",") ||
-            !parseInt64(p, val.time_create) ||
+            !parseInt64(p, entry.value.time_create) ||
             !parseStartsWith(p, ",") ||
-            !parseInt64(p, val.time_access))
+            !parseInt64(p, entry.value.time_access))
         {
             error = true;
             break;
         }
 
-        el.size = size;
-
         parseLineFeed(p);
 
-//        if (deviceData.files.find(el) == deviceData.files.end())
-//            ++uniqueCount;
-
-        deviceData.files.insert(std::pair<FileKey, FileValue>(el, val));
+        deviceData.files.push_back(entry);
     }
 
     deviceData.save(std::wstring(L"test.csv").c_str());

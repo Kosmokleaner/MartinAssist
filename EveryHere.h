@@ -1,5 +1,7 @@
 #pragma once
+#include "global.h"
 #include <map>
+#include <vector>
 #include <string>
 #include "FileSystem.h"
 
@@ -10,9 +12,9 @@ struct FileKey
     std::wstring fileName;
     bool operator<(const FileKey& b) const {
         // firt by size to find large ones first
-        if (size > b.size)
+        if (sizeOrFolder > b.sizeOrFolder)
             return true;
-        if (size < b.size)
+        if (sizeOrFolder < b.sizeOrFolder)
             return false;
 
         // then by file name
@@ -34,24 +36,30 @@ struct FileKey
 
     // properties making this file unique
     __time64_t time_write = -1;  // modified
-    // file size in bytes
-    size_t size = 0;
+    // file size in bytes, -1 for folder
+    int64 sizeOrFolder = 0;
 };
 
 struct FileValue
 {
-    //todo    device id;
-    std::wstring path;
+    // 1 based as 0 is used for root
+    uint64 parent1BasedIndex = (uint64)0;
     __time64_t time_create = -1;    // -1 for FAT file systems
     __time64_t time_access = -1;    // -1 for FAT file systems
 };
 
+struct FileEntry
+{
+    FileKey key;
+    FileValue value;
+};
+
 struct DeviceData {
-    std::multimap<FileKey, FileValue> files;
+    std::vector<FileEntry> files;
 
-    // @param deviceName e.g. L"\Device\HarddiskVolume4"
-    // @param internalName e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
+    DeviceData();
 
+    void sort();
 
     // @param fileName e.g. L"test.csv"
     // @param drivePath may be 0, e.g. L"C:\"
@@ -59,7 +67,7 @@ struct DeviceData {
     // @param cleanName may be 0, e.g. L"First Drive"
     void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0, const wchar_t* cleanName = 0);
 
-    void printUniques();
+//    void printUniques();
 };
 
 

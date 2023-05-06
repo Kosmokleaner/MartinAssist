@@ -17,9 +17,40 @@
     <ClCompile Include="LiterateProcessor.cpp" />
     <ClCompile Include="CppParserTest.cpp" />
     <ClCompile Include="EveryHere.cpp" />
+    <ClCompile Include="ImGui\imgui.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_demo.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_draw.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_impl_opengl3.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_widgets.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\implot.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\implot_demo.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="ImGui\imgui_impl_glfw.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_tables.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
+    <Text Include="ImGui\LICENSE.txt">
+      <Filter>ImGui</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASCIIFile.h">
@@ -40,10 +71,57 @@
     <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="CppParserTest.h" />
     <ClInclude Include="EveryHere.h" />
+    <ClInclude Include="ImGui\imconfig.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_opengl3.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_internal.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\implot.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imstb_rectpack.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imstb_textedit.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imstb_truetype.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Gui.h" />
+    <ClInclude Include="ImGui\imgui_impl_glfw.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_impl_opengl3_loader.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">
       <UniqueIdentifier>{40707ef5-9baa-4e74-9cdf-bcb6f5521754}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImGui">
+      <UniqueIdentifier>{0180d86a-b814-4971-b2b6-f8b1772bb6bd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="ImGui\GLFW\glfw3.lib">
+      <Filter>ImGui</Filter>
+    </Library>
+    <Library Include="ImGui\GLFW\glfw3dll.lib">
+      <Filter>ImGui</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ImGui\GLFW\glfw3.dll">
+      <Filter>ImGui</Filter>
+    </None>
   </ItemGroup>
 </Project>

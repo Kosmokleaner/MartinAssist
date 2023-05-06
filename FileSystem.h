@@ -9,49 +9,51 @@
 
 // FilePath supports "/" and "\\" slashes, relative and absolute path, should not end with a slash
 class FilePath {
-  static const wchar_t extensionChar = '.';
+    static const wchar_t extensionChar = '.';
 public:
-  // public so you can access easily
-  std::wstring path;
+    // public so you can access easily
+    std::wstring path;
 
-  // default constructor 
-  FilePath() {}
+    // default constructor 
+    FilePath() {}
 
-  // constructor e.g. FilePath(L"c:\\temp\\a.ext")
-  // @param in must not be 0
-  FilePath(const wchar_t* in);
+    // constructor e.g. FilePath(L"c:\\temp\\a.ext")
+    // @param in must not be 0
+    FilePath(const wchar_t* in);
 
-  // e.g. L"c:\temp\test/filename.ext"
-  // @return L"filename.ext"
-  const wchar_t* getFileName() const;
+    // e.g. L"c:\temp\test/filename.ext"
+    // @return L"filename.ext"
+    const wchar_t* getFileName() const;
 
-  // e.g. L"c:\temp\test/filename"
-  // @return L"c:\temp\test"
-  std::wstring extractPath() const;
+    // e.g. L"c:\temp\test/filename"
+    // @return L"c:\temp\test"
+    std::wstring extractPath() const;
 
-  // constructor e.g. FilePath(pathString)
-  FilePath(std::wstring& in) : path(in) { }
+    const wchar_t* getPathWithoutDrive() const;
 
-  // inserts forward slash if needed and appends
-  // @param rhs filename, can be with relative path or extension, must not be 0
-  void Append(const wchar_t* rhs);
+    // constructor e.g. FilePath(pathString)
+    FilePath(std::wstring& in) : path(in) { }
 
-  // assumes wstring is null terminated
-  // @return points to 0 terminated extension (after last .) or end of name if no extension was found, never 0, do not access after path changes
-  const wchar_t* GetExtension() const;
+    // inserts forward slash if needed and appends
+    // @param rhs filename, can be with relative path or extension, must not be 0
+    void Append(const wchar_t* rhs);
 
-  // removed extension including '.'
-  // @return true if something changed, can be use like this: while(path.RemoveExtension());
-  bool RemoveExtension();
+    // assumes wstring is null terminated
+    // @return points to 0 terminated extension (after last .) or end of name if no extension was found, never 0, do not access after path changes
+    const wchar_t* GetExtension() const;
+
+    // removed extension including '.'
+    // @return true if something changed, can be use like this: while(path.RemoveExtension());
+    bool RemoveExtension();
   
-  // chaneg all \ to /
-  void Normalize();
+    // chaneg all \ to /
+    void Normalize();
 
-  // valid if doesn't end with slash
-  // todo: should c:\ be valid? currently it's not
-  bool IsValid() const;
+    // valid if doesn't end with slash
+    // todo: should c:\ be valid? currently it's not
+    bool IsValid() const;
 
-  static void Test();
+    static void Test();
 };
 
 // implement for DriveTraverse()
@@ -69,9 +71,10 @@ struct IDriveTraverse {
 // implement for DirectoryTraverse()
 struct IDirectoryTraverse {
   virtual void OnStart() {}
-  // @param path without directoy
+  // @param filePath without directory e.g. L"D:\temp"
+  // @param directory name e.g. L"sub"
   // @return true to recurse into the folder
-  virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory) = 0;
+  virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) = 0;
   // @param path without file
   // @param file with extension
   virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData) = 0;

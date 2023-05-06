@@ -78,9 +78,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.;ImGui</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.;ImGui</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -148,12 +150,23 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="ImGui\imgui.cpp" />
+    <ClCompile Include="ImGui\imgui_demo.cpp" />
+    <ClCompile Include="ImGui\imgui_draw.cpp" />
+    <ClCompile Include="ImGui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="ImGui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="ImGui\imgui_tables.cpp" />
+    <ClCompile Include="ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="ImGui\implot.cpp" />
+    <ClCompile Include="ImGui\implot_demo.cpp" />
     <ClCompile Include="LiterateProcessor.cpp" />
     <ClCompile Include="MartinAssist.cpp" />
     <ClCompile Include="Parse.cpp" />
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="ImGui\LICENSE.txt" />
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -163,10 +176,28 @@
     <ClInclude Include="EveryHere.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="Gui.h" />
+    <ClInclude Include="ImGui\imconfig.h" />
+    <ClInclude Include="ImGui\imgui.h" />
+    <ClInclude Include="ImGui\imgui_impl_glfw.h" />
+    <ClInclude Include="ImGui\imgui_impl_opengl3.h" />
+    <ClInclude Include="ImGui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="ImGui\imgui_internal.h" />
+    <ClInclude Include="ImGui\implot.h" />
+    <ClInclude Include="ImGui\imstb_rectpack.h" />
+    <ClInclude Include="ImGui\imstb_textedit.h" />
+    <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="Parse.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ImGui\GLFW\glfw3.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="ImGui\GLFW\glfw3.lib" />
+    <Library Include="ImGui\GLFW\glfw3dll.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

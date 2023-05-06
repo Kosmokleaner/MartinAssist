@@ -20,7 +20,7 @@ struct CppParserSink : public ICppParserSink
 struct DirectoryTraverse : public IDirectoryTraverse {
 
     CppParser parser;
-    uint32 fileCount = 0;
+    uint32 fileEntryCount = 0;
     uint64 size = 0;
     // from CTimer
     double startTime = 0.0f;
@@ -29,7 +29,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         startTime = g_Timer.GetAbsoluteTime();
     }
 
-    virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory) {
+    virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) {
         return true;
     }
 
@@ -55,7 +55,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
         if (parseFile(parser, p)) {
             size += fileHnd.GetDataSize();
-            ++fileCount;
+            ++fileEntryCount;
         }
     }
 };
