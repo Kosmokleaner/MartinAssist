@@ -447,7 +447,8 @@ void EveryHere::loadCSV(const wchar_t* internalName)
         parseLine(p, sFileName, '\"');
         entry.key.fileName = to_wstring(sFileName);
 
-        if (!parseInt64(p, entry.key.time_write) ||
+        if (!parseStartsWith(p, ",") ||
+            !parseInt64(p, entry.key.time_write) ||
             !parseStartsWith(p, ","))
         {
             error = true;
