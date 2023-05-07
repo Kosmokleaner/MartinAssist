@@ -75,7 +75,7 @@ bool parseComment(CppParser& parser, const Char*& p)
     {
         parseWhiteSpaceNoLF(p);
 
-        parseLine(p, parser.temp);
+        parseLine(p, parser.temp, ',');
         parser.sink->onCommentLine((const Char*)parser.temp.c_str());
         parseWhiteSpaceOrLF(p);
         return true;

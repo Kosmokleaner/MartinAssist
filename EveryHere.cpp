@@ -134,6 +134,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
         FileEntry entry;
         entry.key.fileName = directory;
+//        assert(entry.key.fileName.find(L',') == -1);
         // <0 for folder 
         entry.key.sizeOrFolder = -1;
         entry.key.time_write = findData.time_write;
@@ -159,6 +160,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         FileEntry entry;
 
         entry.key.fileName = file;
+//        assert(entry.key.fileName.find(L',') == -1);
         entry.key.sizeOrFolder = findData.size;
         assert(entry.key.sizeOrFolder >= 0);
         entry.key.time_write = findData.time_write;
@@ -347,7 +349,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     for (auto it : entries)
     {
         char str[MAX_PATH + 100];
-        sprintf_s(str, sizeof(str), "%lld,%s,%llu,#%llu,%llu,%llu\n",
+        sprintf_s(str, sizeof(str), "%lld,\"%s\",%llu,#%llu,%llu,%llu\n",
             // key
             it.key.sizeOrFolder,
             to_string(it.key.fileName.c_str()).c_str(),
@@ -386,6 +388,11 @@ void EveryHere::buildView()
             ViewEntry entry;
             entry.deviceId = itD.deviceId;
             entry.fileEntryId = id++;
+
+            // exclude folders
+            if(itD.entries[entry.fileEntryId].key.sizeOrFolder < 0)
+                continue;
+
             view.push_back(entry);
         }
     }
@@ -429,19 +436,22 @@ void EveryHere::loadCSV(const wchar_t* internalName)
         FileEntry entry;
 
         if (!parseInt64(p, entry.key.sizeOrFolder) ||
-            !parseStartsWith(p, ","))
+            !parseStartsWith(p, ",") ||
+            !parseStartsWith(p, "\""))
         {
             error = true;
+            assert(0);
             break;
         }
 
-        parseLine(p, sFileName, true);
+        parseLine(p, sFileName, '\"');
         entry.key.fileName = to_wstring(sFileName);
 
         if (!parseInt64(p, entry.key.time_write) ||
             !parseStartsWith(p, ","))
         {
             error = true;
+            assert(0);
             break;
         }
 
@@ -453,6 +463,7 @@ void EveryHere::loadCSV(const wchar_t* internalName)
             !parseInt64(p, entry.value.time_access))
         {
             error = true;
+            assert(0);
             break;
         }
 
@@ -464,14 +475,14 @@ void EveryHere::loadCSV(const wchar_t* internalName)
     }
 
     data.verify();
-
-//    data.save(std::wstring(L"test.csv").c_str());
 }
 
 void DeviceData::verify() 
 {
     for (auto it : entries)
     {
+//        assert(it.key.fileName.find(',') == -1);
+        assert(it.key.fileName.find('\"') == -1);
         if (it.value.parent1BasedIndex)
         {
             assert(it.value.parent1BasedIndex < entries.size() + 1);

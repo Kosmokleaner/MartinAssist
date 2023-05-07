@@ -94,14 +94,14 @@ bool parseLineFeed(const Char*& p)
 	return false;
 }
 
-void parseLine(const Char* &p, std::string &Out, bool endOnCommaAsWell)
+void parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 {
 	Out.clear();
 
 	// can be optimized, does a lot of resize
 	while(*p)
 	{
-		if(endOnCommaAsWell && *p == ',') 
+		if(*p == extraEndCharacter)
 		{
 			++p;
 			break;

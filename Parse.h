@@ -24,7 +24,7 @@ bool parseStartsWith(const Char* &p, const char* Token);
 bool parseToEndOfLine(const Char* &p);
 
 // @param endOnCommaAsWell if true the ',' is parsed over
-void parseLine(const Char* &p, std::string &Out, bool endOnCommaAsWell = false);
+void parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter);
 
 // uses C++ (variable) name definition
 // @return success
