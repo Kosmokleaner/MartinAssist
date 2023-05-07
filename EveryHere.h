@@ -46,6 +46,7 @@ struct FileValue
     uint64 parent1BasedIndex = (uint64)0;
     __time64_t time_create = -1;    // -1 for FAT file systems
     __time64_t time_access = -1;    // -1 for FAT file systems
+    int deviceId = -1;
 };
 
 struct FileEntry
@@ -66,16 +67,15 @@ struct DeviceData {
     // @param volumeName may be 0
     // @param cleanName may be 0, e.g. L"First Drive"
     void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0, const wchar_t* cleanName = 0);
-
-//    void printUniques();
 };
 
 
 struct EveryHere
 {
-    // [cleanName] = 
-    std::map<std::wstring, DeviceData> devices;
-//public:
+    // [cleanName] = deviceId
+    std::map<std::wstring, int> devices;
+    DeviceData data;
+
     void gatherData();
     // @param internalName must not be null, e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
     void loadCSV(const wchar_t* internalName);

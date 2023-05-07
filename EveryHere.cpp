@@ -90,9 +90,10 @@ struct DirectoryTraverse : public IDirectoryTraverse {
     double nextPrintTime = 0.0f;
     // ever increasing during traversal
     int64 fileEntryCount = 0;
+    int deviceId = -1;
 
-    DirectoryTraverse(DeviceData& inDeviceData, const wchar_t* inPath)
-        : deviceData(inDeviceData), path(inPath)
+    DirectoryTraverse(DeviceData& inDeviceData, int inDeviceId, const wchar_t* inPath)
+        : deviceData(inDeviceData), path(inPath), deviceId(inDeviceId)
     {
         assert(inPath);
     }
@@ -137,6 +138,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         entry.value.parent1BasedIndex = whereToInsert.fileEntry1BasedIndex;
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
+        entry.value.deviceId = deviceId;
 
         deviceData.entries.push_back(entry);
         ++fileEntryCount;
@@ -154,15 +156,14 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
         FileEntry entry;
 
-//        FileKey el;
         entry.key.fileName = file;
         entry.key.sizeOrFolder = findData.size;
         assert(entry.key.sizeOrFolder >= 0);
         entry.key.time_write = findData.time_write;
-//        FileValue val;
         entry.value.parent1BasedIndex = folderRoot.findRecursive(filePath.getPathWithoutDrive()).fileEntry1BasedIndex;
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
+        entry.value.deviceId = deviceId;
 
         deviceData.entries.push_back(entry);
         ++fileEntryCount;
@@ -237,15 +238,15 @@ struct DriveTraverse : public IDriveTraverse {
         // e.g. L"First Drive"
         wprintf(L"volumeName: %s\n\n", volumeName);
 
-        everyHere.devices.insert(std::pair<std::wstring, DeviceData>(cleanName, DeviceData()));
-        DeviceData & deviceData = everyHere.devices[cleanName];
+        int deviceId = (int)everyHere.devices.size();
+        everyHere.devices.insert(std::pair<std::wstring, int>(cleanName, deviceId));
 
-        DirectoryTraverse traverse(deviceData, drivePath.c_str());
+        DirectoryTraverse traverse(everyHere.data, deviceId, drivePath.c_str());
 
         directoryTraverse(traverse, drivePath.c_str());
 
         if(traverse.fileEntryCount)
-            deviceData.save((cleanName + std::wstring(L".csv")).c_str(), drivePath.c_str(), volumeName, cleanName.c_str());
+            everyHere.data.save((cleanName + std::wstring(L".csv")).c_str(), drivePath.c_str(), volumeName, cleanName.c_str());
     }
 };
 
@@ -355,29 +356,6 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     file.IO_SaveASCIIFile(fileName);
 }
 
-/*
-void DeviceData::printUniques()
-{
-    for (auto it : files)
-    {
-        size_t count = files.count(it.first);
-        // show only uniques
-        if (count == 1)
-            continue;
-
-        char timeStr[80];
-        dateToCString(it.first.time_write, timeStr);
-
-        printf("#%d %s %8llu %s/%s\n",
-            (int)count,
-            timeStr,
-            it.first.size,
-            to_string(it.second.path.c_str()).c_str(),
-            to_string(it.first.fileName.c_str()).c_str());
-    }
-    printf("\n");
-}
-*/
 void EveryHere::gatherData() 
 {
     DriveTraverse drives(*this);
@@ -396,8 +374,9 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
     std::string line;
 
-    devices.insert(std::pair<std::wstring, DeviceData>(internalName, DeviceData()));
-    DeviceData& deviceData = devices[internalName];
+    int deviceId = (int)devices.size();
+    devices.insert(std::pair<std::wstring, int>(internalName, deviceId));
+    DeviceData& deviceData = data;
 
     bool error = false;
 
@@ -445,6 +424,8 @@ void EveryHere::loadCSV(const wchar_t* internalName)
             error = true;
             break;
         }
+
+        entry.value.deviceId = deviceId;
 
         parseLineFeed(p);
 

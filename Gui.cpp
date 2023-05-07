@@ -183,10 +183,10 @@ int Gui::test()
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+        // Devices
         {
             ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
-            ImGui::Begin("EveryHere");
+            ImGui::Begin("EveryHere Devices");
 
             if (ImGui::Button("build"))
             {
@@ -195,7 +195,7 @@ int Gui::test()
 
             ImGui::SameLine();
 
-            if(ImGui::Button("load"))
+            if (ImGui::Button("load"))
             {
                 // load input .csv and write into test.csv to verfiy load/save works
 //                everyHere.loadCSV(L"Volume{720f86b8-373a-4fe4-ae1b-ef58cb9dd578}.csv");
@@ -204,21 +204,84 @@ int Gui::test()
             }
 
             {
-                DeviceData dummyData;
-                DeviceData& data = everyHere.devices.empty() ? dummyData : everyHere.devices.begin()->second;
+                ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                static SelectionRange selectionRange;
+                // number of columns: 4
+                if (ImGui::BeginTable("table_scrolly", 4, flags))
+                {
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
+                    ImGui::TableHeadersRow();
+
+                    std::string line;
+                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.99f, 0.99f, 0.99f, 0.60f));
+
+                    int line_no = 0;
+                    for (auto it = everyHere.devices.begin(); it != everyHere.devices.end(); ++it, ++line_no)
+                    {
+                        line = to_string(it->first.c_str());
+
+                        ImGui::TableNextRow();
+
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::PushID(line_no);
+                        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                        bool selected = selectionRange.isSelected(line_no);
+                        ImGui::Selectable(line.c_str(), &selected, selectable_flags);
+                        if (ImGui::IsItemClicked(0))
+                        {
+                            selectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+                        }
+                        ImGui::PopID();
+                        //                            ImGui::TextUnformatted(line.c_str());
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::TextUnformatted("path");
+//                        ImGui::TableSetColumnIndex(2);
+//                        ImGui::Text("%lld", entry.key.sizeOrFolder);
+//                        ImGui::TableSetColumnIndex(3);
+                        ImGui::Text("%d", it->second);
+                        //                            ImGui::TextUnformatted("2");
+                    }
+                    ImGui::PopStyleColor(3);
+
+                    ImGui::EndTable();
+                }
+            }
+
+            ImGui::End();
+        }
+
+        // FileEntries
+        {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
+            ImGui::Begin("EveryHere Files");
+
+            ImGui::SameLine();
+
+            // todo: filter button
+
+            {
+                DeviceData& data = everyHere.data;
 
 //                const int lineHeight = (int)ImGui::GetFontSize();
 //                int height = (int)data.files.size() * lineHeight;
 
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
                 static SelectionRange selectionRange;
-                if (ImGui::BeginTable("table_scrolly", 3, flags))
+                // number of columns: 4
+                if (ImGui::BeginTable("table_scrolly", 4, flags))
                 {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
-//                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
+                    //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
                     ImGui::TableHeadersRow();
@@ -257,7 +320,9 @@ int Gui::test()
                             ImGui::TextUnformatted("path");
                             ImGui::TableSetColumnIndex(2);
                             ImGui::Text("%lld", entry.key.sizeOrFolder);
-//                            ImGui::TextUnformatted("2");
+                            ImGui::TableSetColumnIndex(3);
+                            ImGui::Text("%d", entry.value.deviceId);
+                            //                            ImGui::TextUnformatted("2");
                         }
                     }
                     clipper.End();
