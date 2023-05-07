@@ -6,7 +6,10 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
+#include "FileSystem.h"
+
 #include "ImGui/imgui.h"
+#include "ImGui/imgui_stdlib.h"
 #include "ImGui/imgui_impl_glfw.h"
 #include "ImGui/imgui_impl_opengl3.h"
 #include <stdio.h>
@@ -89,6 +92,34 @@ public:
             exceptions.erase(it);
     }
 };
+
+class LoadCVSFiles : public IDirectoryTraverse
+{
+    EveryHere& everyHere;
+public:
+    LoadCVSFiles(EveryHere& inEveryHere)
+        : everyHere(inEveryHere)
+    {
+    }
+
+    void OnEnd()
+    {
+        everyHere.buildView();
+    }
+
+    bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData)
+    {
+        return false;
+    }
+    void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData)
+    {
+        FilePath combined = path;
+        combined.Append(file);
+
+        everyHere.loadCSV(combined.path.c_str());
+    }
+};
+
 
 int Gui::test()
 {
@@ -197,10 +228,8 @@ int Gui::test()
 
             if (ImGui::Button("load"))
             {
-                // load input .csv and write into test.csv to verfiy load/save works
-//                everyHere.loadCSV(L"Volume{720f86b8-373a-4fe4-ae1b-ef58cb9dd578}.csv");
-                everyHere.loadCSV(L"Volume{ca72ef4c-0000-0000-0000-100000000000}.csv");
-                assert(!everyHere.devices.empty());
+                LoadCVSFiles loadCVSFiles(everyHere);
+                directoryTraverse(loadCVSFiles, FilePath(), L"*.csv");
             }
 
             {
@@ -209,42 +238,44 @@ int Gui::test()
                 // number of columns: 4
                 if (ImGui::BeginTable("table_scrolly", 4, flags))
                 {
-                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
-                    ImGui::TableHeadersRow();
-
                     std::string line;
                     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
                     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
                     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.99f, 0.99f, 0.99f, 0.60f));
 
-                    int line_no = 0;
-                    for (auto it = everyHere.devices.begin(); it != everyHere.devices.end(); ++it, ++line_no)
-                    {
-                        line = to_string(it->first.c_str());
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+                    ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
+//                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
+                    ImGui::TableHeadersRow();
 
+                    int line_no = 0;
+                    for (auto it = everyHere.deviceData.begin(); it != everyHere.deviceData.end(); ++it, ++line_no)
+                    {
                         ImGui::TableNextRow();
 
-                        ImGui::TableSetColumnIndex(0);
                         ImGui::PushID(line_no);
+
+                        ImGui::TableSetColumnIndex(0);
                         ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
                         bool selected = selectionRange.isSelected(line_no);
-                        ImGui::Selectable(line.c_str(), &selected, selectable_flags);
+                        ImGui::Selectable(to_string(it->volumeName).c_str(), &selected, selectable_flags);
                         if (ImGui::IsItemClicked(0))
-                        {
                             selectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
-                        }
-                        ImGui::PopID();
-                        //                            ImGui::TextUnformatted(line.c_str());
+
                         ImGui::TableSetColumnIndex(1);
-                        ImGui::TextUnformatted("path");
-//                        ImGui::TableSetColumnIndex(2);
-//                        ImGui::Text("%lld", entry.key.sizeOrFolder);
-//                        ImGui::TableSetColumnIndex(3);
-                        ImGui::Text("%d", it->second);
+                        line = to_string(it->cleanName);
+                        ImGui::TextUnformatted(line.c_str());
+
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(to_string(it->drivePath).c_str());
+
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::Text("%d", it->deviceId);
+
+                        ImGui::PopID();
                         //                            ImGui::TextUnformatted("2");
                     }
                     ImGui::PopStyleColor(3);
@@ -264,9 +295,12 @@ int Gui::test()
             ImGui::SameLine();
 
             // todo: filter button
+            static std::string filter;
+            ImGui::InputText("filter", &filter);
 
             {
-                DeviceData& data = everyHere.data;
+                // todo: 0
+//                DeviceData& data = everyHere.deviceData[0];
 
 //                const int lineHeight = (int)ImGui::GetFontSize();
 //                int height = (int)data.files.size() * lineHeight;
@@ -287,7 +321,7 @@ int Gui::test()
                     ImGui::TableHeadersRow();
 
                     ImGuiListClipper clipper;
-                    clipper.Begin((int)data.entries.size());
+                    clipper.Begin((int)everyHere.view.size());
                     std::string line;
                     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
                     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
@@ -296,10 +330,11 @@ int Gui::test()
                     {
                         for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
                         {
-                            if(line_no >= data.entries.size())
+                            if(line_no >= everyHere.view.size())
                                 break;
 
-                            FileEntry& entry = data.entries[line_no];
+                            ViewEntry& viewEntry = everyHere.view[line_no];
+                            FileEntry& entry = everyHere.deviceData[viewEntry.deviceId].entries[viewEntry.fileEntryId];
 
                             line = to_string(entry.key.fileName);
 

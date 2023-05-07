@@ -108,6 +108,8 @@ struct DirectoryTraverse : public IDirectoryTraverse {
     {
         logState();
         wprintf(L"\n");
+
+        deviceData.verify();
     }
 
     void logState()
@@ -238,15 +240,20 @@ struct DriveTraverse : public IDriveTraverse {
         // e.g. L"First Drive"
         wprintf(L"volumeName: %s\n\n", volumeName);
 
-        int deviceId = (int)everyHere.devices.size();
-        everyHere.devices.insert(std::pair<std::wstring, int>(cleanName, deviceId));
+        int deviceId = (int)everyHere.deviceData.size();
+        everyHere.deviceData.push_back(DeviceData());
+        DeviceData& deviceData = everyHere.deviceData.back();
+        deviceData.cleanName = cleanName;
+        deviceData.deviceId = deviceId;
+        deviceData.volumeName = volumeName;
+        deviceData.drivePath = drivePath;
 
-        DirectoryTraverse traverse(everyHere.data, deviceId, drivePath.c_str());
+        DirectoryTraverse traverse(deviceData, deviceId, drivePath.c_str());
 
         directoryTraverse(traverse, drivePath.c_str());
 
         if(traverse.fileEntryCount)
-            everyHere.data.save((cleanName + std::wstring(L".csv")).c_str(), drivePath.c_str(), volumeName, cleanName.c_str());
+            deviceData.save((cleanName + std::wstring(L".csv")).c_str(), drivePath.c_str(), volumeName);
     }
 };
 
@@ -259,6 +266,8 @@ DeviceData::DeviceData()
 
 void DeviceData::sort()
 {
+    verify();
+
     size_t size = entries.size();
 
     // 0 based
@@ -294,13 +303,15 @@ void DeviceData::sort()
         dst = entries[sortedToIndex[i]];
         // remap parentFileEntryIndex
         if(dst.value.parent1BasedIndex)
-            dst.value.parent1BasedIndex = indexToSorted[dst.value.parent1BasedIndex - 1];
+            dst.value.parent1BasedIndex = indexToSorted[dst.value.parent1BasedIndex - 1] + 1;
     }
-
+ 
     std::swap(newFiles, entries);
+
+    verify();
 }
 
-void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const wchar_t* volumeName, const wchar_t* cleanName)
+void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const wchar_t* volumeName)
 {
     sort();
 
@@ -321,7 +332,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
         fileData += to_string(volumeName);
         fileData += "\n";
     }
-    if(cleanName)
+    if(!cleanName.empty())
     {
         fileData += "# cleanName=";
         fileData += to_string(cleanName);
@@ -360,6 +371,24 @@ void EveryHere::gatherData()
 {
     DriveTraverse drives(*this);
     driveTraverse(drives);
+    buildView();
+}
+
+void EveryHere::buildView()
+{
+    view.clear();
+
+    for(auto itD : deviceData)
+    {
+        uint64 id = 0;
+        for (auto itE : itD.entries)
+        {
+            ViewEntry entry;
+            entry.deviceId = itD.deviceId;
+            entry.fileEntryId = id++;
+            view.push_back(entry);
+        }
+    }
 }
 
 void EveryHere::loadCSV(const wchar_t* internalName)
@@ -374,9 +403,11 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
     std::string line;
 
-    int deviceId = (int)devices.size();
-    devices.insert(std::pair<std::wstring, int>(internalName, deviceId));
-    DeviceData& deviceData = data;
+    int deviceId = (int)deviceData.size();
+    deviceData.push_back(DeviceData());
+    DeviceData& data = deviceData.back();
+    data.cleanName = internalName;
+    data.deviceId = deviceId;
 
     bool error = false;
 
@@ -429,10 +460,23 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
         parseLineFeed(p);
 
-        deviceData.entries.push_back(entry);
+        data.entries.push_back(entry);
     }
 
-    deviceData.save(std::wstring(L"test.csv").c_str());
+    data.verify();
+
+//    data.save(std::wstring(L"test.csv").c_str());
+}
+
+void DeviceData::verify() 
+{
+    for (auto it : entries)
+    {
+        if (it.value.parent1BasedIndex)
+        {
+            assert(it.value.parent1BasedIndex < entries.size() + 1);
+        }
+    }
 }
 
 

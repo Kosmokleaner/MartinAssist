@@ -57,6 +57,15 @@ struct FileEntry
 
 struct DeviceData {
     std::vector<FileEntry> entries;
+    // index in EveryHere.deviceData
+    int deviceId = -1;
+    // e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
+    std::wstring cleanName;
+    // e.g. L"First Drive"
+    std::wstring volumeName;
+    // e.g. L"C:\"
+    std::wstring drivePath;
+
 
     DeviceData();
 
@@ -66,17 +75,31 @@ struct DeviceData {
     // @param drivePath may be 0, e.g. L"C:\"
     // @param volumeName may be 0
     // @param cleanName may be 0, e.g. L"First Drive"
-    void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0, const wchar_t* cleanName = 0);
+    void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0);
+
+    void verify();
+};
+
+struct ViewEntry
+{
+    int32 deviceId;
+    int64 fileEntryId;
 };
 
 
 struct EveryHere
 {
-    // [cleanName] = deviceId
-    std::map<std::wstring, int> devices;
-    DeviceData data;
+    // [cleanName] = DeviceId
+//    std::map<std::wstring, int> devices;
+    // [deviceId] = DeviceData
+    std::vector<DeviceData> deviceData;
+
+    // built by buildView();
+    std::vector<ViewEntry> view;
 
     void gatherData();
     // @param internalName must not be null, e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
     void loadCSV(const wchar_t* internalName);
+
+    void buildView();
 };

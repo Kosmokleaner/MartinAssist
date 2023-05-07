@@ -68,7 +68,7 @@ struct IDriveTraverse {
 };
 
 
-// implement for DirectoryTraverse()
+// implement for directoryTraverse()
 struct IDirectoryTraverse {
   virtual void OnStart() {}
   // @param filePath without directory e.g. L"D:\temp"
@@ -81,7 +81,7 @@ struct IDirectoryTraverse {
   virtual void OnEnd() {}
 };
 
-// @param filePath e.g. L"c:\\temp" L"relative/Path" L"", must not be 0
+// @param filePath e.g. L"c:\\temp" L"relative/Path" L""
 // @param pattern e.g. L"*.cpp" L"*.*", must not be 0
 void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern = L"*.*");
 

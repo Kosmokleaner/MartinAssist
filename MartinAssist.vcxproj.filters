@@ -45,6 +45,9 @@
     <ClCompile Include="ImGui\imgui_tables.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="ImGui\imgui_stdlib.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -100,6 +103,9 @@
       <Filter>ImGui</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imgui_impl_opengl3_loader.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_stdlib.h">
       <Filter>ImGui</Filter>
     </ClInclude>
   </ItemGroup>
