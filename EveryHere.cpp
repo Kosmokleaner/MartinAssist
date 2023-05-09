@@ -440,6 +440,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
             parseWhiteSpaceOrLF(p);
             if(parseName(p, keyName))
             {
+                parseWhiteSpaceOrLF(p);
                 if (parseStartsWith(p, "="))
                 {
                     parseWhiteSpaceOrLF(p);

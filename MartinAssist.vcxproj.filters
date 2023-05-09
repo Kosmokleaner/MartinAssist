@@ -108,6 +108,7 @@
     <ClInclude Include="ImGui\imgui_stdlib.h">
       <Filter>ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">
@@ -129,5 +130,11 @@
     <None Include="ImGui\GLFW\glfw3.dll">
       <Filter>ImGui</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MartinAssist.rc" />
   </ItemGroup>
 </Project>

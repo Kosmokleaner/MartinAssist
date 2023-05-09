@@ -191,6 +191,7 @@
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="Parse.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
@@ -200,6 +201,12 @@
   <ItemGroup>
     <Library Include="ImGui\GLFW\glfw3.lib" />
     <Library Include="ImGui\GLFW\glfw3dll.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MartinAssist.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
