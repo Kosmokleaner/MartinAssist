@@ -305,7 +305,7 @@ int Gui::test()
                     ImGui::TableHeadersRow();
 
                     int line_no = 0;
-                    for (auto it = everyHere.deviceData.begin(); it != everyHere.deviceData.end(); ++it, ++line_no)
+                    for (auto it = everyHere.deviceData.begin(), end = everyHere.deviceData.end(); it != end; ++it, ++line_no)
                     {
                         ImGui::TableNextRow();
 
@@ -407,7 +407,15 @@ int Gui::test()
                             ImGui::TableSetColumnIndex(1);
                             ImGui::TextUnformatted("path");
                             ImGui::TableSetColumnIndex(2);
-                            ImGui::Text("%lld", entry.key.sizeOrFolder);
+                            if(entry.key.sizeOrFolder >= 1024 * 1024 * 1024)
+                                ImGui::Text("%.3f GB", entry.key.sizeOrFolder / (1024.0f * 1024.0f * 1024.0f));
+                            else if (entry.key.sizeOrFolder >= 1024 * 1024)
+                                ImGui::Text("%.3f MB", entry.key.sizeOrFolder / (1024.0f * 1024.0f));
+                            else if (entry.key.sizeOrFolder >= 1024)
+                                ImGui::Text("%.3f KB", entry.key.sizeOrFolder / 1024.0f);
+                            else
+                                ImGui::Text("%lld B", entry.key.sizeOrFolder);
+
                             ImGui::TableSetColumnIndex(3);
                             ImGui::Text("%d", entry.value.deviceId);
                             //                            ImGui::TextUnformatted("2");

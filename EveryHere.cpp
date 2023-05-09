@@ -25,7 +25,7 @@ struct FolderTree
     std::map<std::wstring, FolderTree*> children;
 
     ~FolderTree() {
-        for (auto it : children)
+        for (auto& it : children)
             delete it.second;
     }
 
@@ -346,7 +346,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     // start marker
     fileData += "#\n";
 
-    for (auto it : entries)
+    for (const auto& it : entries)
     {
         char str[MAX_PATH + 100];
         sprintf_s(str, sizeof(str), "%lld,\"%s\",%llu,#%llu,%llu,%llu\n",
@@ -380,10 +380,10 @@ void EveryHere::buildView()
 {
     view.clear();
 
-    for(auto itD : deviceData)
+    for(const auto& itD : deviceData)
     {
         uint64 id = 0;
-        for (auto itE : itD.entries)
+        for (const auto& itE : itD.entries)
         {
             ViewEntry entry;
             entry.deviceId = itD.deviceId;
@@ -535,7 +535,7 @@ void EveryHere::freeData()
 
 void DeviceData::verify() 
 {
-    for (auto it : entries)
+    for (const auto& it : entries)
     {
 //        assert(it.key.fileName.find(',') == -1);
         assert(it.key.fileName.find('\"') == -1);
