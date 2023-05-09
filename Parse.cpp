@@ -94,8 +94,9 @@ bool parseLineFeed(const Char*& p)
 	return false;
 }
 
-void parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
+bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 {
+	bool ret = false;
 	Out.clear();
 
 	// can be optimized, does a lot of resize
@@ -123,7 +124,9 @@ void parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 		}
 
 		Out += *p++;
+		ret = true;
 	}
+	return ret;
 }
 
 // without digits

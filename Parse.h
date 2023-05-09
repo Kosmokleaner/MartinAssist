@@ -23,11 +23,12 @@ bool parseStartsWith(const Char* &p, const char* Token);
 // @return true if a return was found
 bool parseToEndOfLine(const Char* &p);
 
-// @param endOnCommaAsWell if true the ',' is parsed over
-void parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter);
+// @param extraEndCharacter e.g. ','
+// @return true if Out has content
+bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter = 0);
 
 // uses C++ (variable) name definition
-// @return success
+// @return true if Out has content
 bool parseName(const Char* &p, std::string &Out);
 
 // outValue is not changed if return is false

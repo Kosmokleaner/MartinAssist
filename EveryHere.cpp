@@ -398,13 +398,13 @@ void EveryHere::buildView()
     }
 }
 
-void EveryHere::loadCSV(const wchar_t* internalName)
+bool EveryHere::loadCSV(const wchar_t* internalName)
 {
     assert(internalName);
 
     CASCIIFile file;
     if(!file.IO_LoadASCIIFile(internalName))
-        return;
+        return false;
 
     const Char* p = (const Char *)file.GetDataPtr();
 
@@ -420,6 +420,8 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
     std::string sFileName;
     std::string sPath;
+    std::string keyName;
+    std::string valueName;
 
     while(*p)
     {
@@ -429,6 +431,35 @@ void EveryHere::loadCSV(const wchar_t* internalName)
 
         if (parseStartsWith(p, "#"))
         {
+            const Char *backup = p;
+            // e.g.
+            // # drivePath = E:
+            // # volumeName = RyzenE
+            // # cleanName = Volume{ ca72ef4c - 0000 - 0000 - 0000 - 100000000000 }
+            // # version = 2
+            parseWhiteSpaceOrLF(p);
+            if(parseName(p, keyName))
+            {
+                if (parseStartsWith(p, "="))
+                {
+                    parseWhiteSpaceOrLF(p);
+                    if (parseLine(p, valueName))
+                    {
+                        if (keyName == "drivePath")
+                            data.drivePath = to_wstring(valueName);
+                        if (keyName == "volumeName")
+                            data.volumeName = to_wstring(valueName);
+                        if (keyName == "cleanName")
+                            data.cleanName = to_wstring(valueName);
+                        if (keyName == "version" && valueName != "2")
+                        {
+                            error = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            p = backup;
             parseToEndOfLine(p);
             continue;
         }
@@ -476,6 +507,7 @@ void EveryHere::loadCSV(const wchar_t* internalName)
     }
 
     data.verify();
+    return !error;
 }
 
 void DeviceData::verify() 
