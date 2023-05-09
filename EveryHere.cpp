@@ -133,7 +133,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         newFolder.fileEntry1BasedIndex = fileEntryCount + 1;
 
         FileEntry entry;
-        entry.key.fileName = directory;
+        entry.key.fileName = to_string(directory);
 //        assert(entry.key.fileName.find(L',') == -1);
         // <0 for folder 
         entry.key.sizeOrFolder = -1;
@@ -159,7 +159,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
         FileEntry entry;
 
-        entry.key.fileName = file;
+        entry.key.fileName = to_string(file);
 //        assert(entry.key.fileName.find(L',') == -1);
         entry.key.sizeOrFolder = findData.size;
         assert(entry.key.sizeOrFolder >= 0);
@@ -352,7 +352,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
         sprintf_s(str, sizeof(str), "%lld,\"%s\",%llu,#%llu,%llu,%llu\n",
             // key
             it.key.sizeOrFolder,
-            to_string(it.key.fileName.c_str()).c_str(),
+            it.key.fileName.c_str(),
             it.key.time_write,
             // value
             it.value.parent1BasedIndex,
@@ -396,6 +396,22 @@ void EveryHere::buildView()
             view.push_back(entry);
         }
     }
+
+    struct CustomLess
+    {
+        std::vector<DeviceData> & deviceData;
+
+        bool operator()(const ViewEntry& a, const ViewEntry& b) const 
+        {
+            FileEntry& A = deviceData[a.deviceId].entries[a.fileEntryId];
+            FileEntry& B = deviceData[b.deviceId].entries[b.fileEntryId];
+            return A.key < B.key;
+        }
+    };
+
+    CustomLess customLess = { deviceData };
+
+    std::sort(view.begin(), view.end(), customLess);
 }
 
 bool EveryHere::loadCSV(const wchar_t* internalName)
@@ -477,7 +493,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
         }
 
         parseLine(p, sFileName, '\"');
-        entry.key.fileName = to_wstring(sFileName);
+        entry.key.fileName = sFileName;
 
         if (!parseStartsWith(p, ",") ||
             !parseInt64(p, entry.key.time_write) ||
@@ -509,6 +525,12 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
     data.verify();
     return !error;
+}
+
+void EveryHere::freeData() 
+{
+    view.clear();
+    deviceData.clear();
 }
 
 void DeviceData::verify() 

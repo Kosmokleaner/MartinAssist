@@ -101,6 +101,7 @@ public:
     LoadCVSFiles(EveryHere& inEveryHere)
         : everyHere(inEveryHere)
     {
+        everyHere.freeData();
     }
 
     void OnEnd()
@@ -388,7 +389,7 @@ int Gui::test()
                             ViewEntry& viewEntry = everyHere.view[line_no];
                             FileEntry& entry = everyHere.deviceData[viewEntry.deviceId].entries[viewEntry.fileEntryId];
 
-                            line = to_string(entry.key.fileName);
+                            line = entry.key.fileName;
 
                             ImGui::TableNextRow();
 

@@ -9,16 +9,19 @@
 struct FileKey
 {
     // without path (:, / and \)
-    std::wstring fileName;
+    // UTF8 as IMGUI can print it faster, less conversions during loading and less memory
+    std::string fileName;
+
     bool operator<(const FileKey& b) const {
-        // firt by size to find large ones first
+        // first by size to find large ones first
         if (sizeOrFolder > b.sizeOrFolder)
             return true;
         if (sizeOrFolder < b.sizeOrFolder)
             return false;
 
         // then by file name
-        int c = wcscmp(fileName.c_str(), b.fileName.c_str());
+//        int c = wcscmp(fileName.c_str(), b.fileName.c_str());
+        int c = strcmp(fileName.c_str(), b.fileName.c_str());
         if(c < 0)
             return true;
         else if (c > 0)
@@ -82,15 +85,15 @@ struct DeviceData {
 
 struct ViewEntry
 {
-    int32 deviceId;
-    int64 fileEntryId;
+    // index in deviceData[]
+    int32 deviceId = -1;
+    // index in deviceData[deviceId].entries
+    int64 fileEntryId = -1;
 };
 
 
 struct EveryHere
 {
-    // [cleanName] = DeviceId
-//    std::map<std::wstring, int> devices;
     // [deviceId] = DeviceData
     std::vector<DeviceData> deviceData;
 
@@ -103,4 +106,6 @@ struct EveryHere
     bool loadCSV(const wchar_t* internalName);
 
     void buildView();
+
+    void freeData();
 };
