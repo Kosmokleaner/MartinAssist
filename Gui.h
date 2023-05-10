@@ -9,5 +9,9 @@ public:
     std::string filter;
 
     EveryHere everyHere;
+
+    void setViewDirty();
+private:
+    double whenToRebuildView = -1;
 };
 

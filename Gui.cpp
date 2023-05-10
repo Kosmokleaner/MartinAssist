@@ -8,6 +8,7 @@
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
 #include "FileSystem.h"
+#include "Timer.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_stdlib.h"
@@ -28,9 +29,6 @@
 
 #pragma comment(lib, "ImGui/GLFW/glfw3.lib")        // 64bit
 #pragma comment(lib, "OpenGL32.lib")                // 64bit
-
-// https://learn.microsoft.com/en-us/windows/win32/api/shlwapi/nf-shlwapi-strstria?redirectedfrom=MSDN
-#pragma comment(lib, "Shlwapi.lib") 
 
 
 static void glfw_error_callback(int error, const char* description)
@@ -123,6 +121,12 @@ public:
 
 unsigned int RGBSwizzle(unsigned int c) {
     return (c >> 16) | (c & 0xff00) | ((c & 0xff) << 16);
+}
+
+void Gui::setViewDirty() 
+{
+    // costant is in seconds
+    whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.25f;
 }
 
 int Gui::test()
@@ -273,7 +277,7 @@ int Gui::test()
             if (ImGui::Button("build"))
             {
                 everyHere.gatherData();
-                everyHere.buildView(filter.c_str());
+                setViewDirty();
             }
 
             ImGui::SameLine();
@@ -282,7 +286,7 @@ int Gui::test()
             {
                 LoadCVSFiles loadCVSFiles(everyHere);
                 directoryTraverse(loadCVSFiles, FilePath(), L"*.csv");
-                everyHere.buildView(filter.c_str());
+                setViewDirty();
             }
 
             {
@@ -350,8 +354,12 @@ int Gui::test()
             // todo: filter button
             if(ImGui::InputText("filter", &filter))
             {
-                everyHere.buildView(filter.c_str());
+                setViewDirty();
             }
+
+            if(whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
+                everyHere.buildView(filter.c_str());
+
 
             {
                 // todo: 0
