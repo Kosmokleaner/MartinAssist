@@ -358,7 +358,10 @@ int Gui::test()
             }
 
             if(whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
+            {
                 everyHere.buildView(filter.c_str());
+                whenToRebuildView = -1;
+            }
 
 
             {
