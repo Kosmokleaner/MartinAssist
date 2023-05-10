@@ -99,17 +99,22 @@ bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 	bool ret = false;
 	Out.clear();
 
+	const Char* start = p;
+	const Char* end = p;
+
 	// can be optimized, does a lot of resize
 	while(*p)
 	{
 		if(*p == extraEndCharacter)
 		{
+			end = p;
 			++p;
 			break;
 		}
 
 		if(*p == 13)		// CR
 		{
+			end = p;
 			++p;
 
 			if (*p == 10)	// CR+LF
@@ -119,14 +124,16 @@ bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 		}
 		if(*p == 10)		// LF
 		{
+			end = p;
 			++p;
 			break;
 		}
 
-		Out += *p++;
-		ret = true;
+		p++;
 	}
-	return ret;
+	Out = std::string((const char*)start, end - start);
+
+	return !Out.empty();
 }
 
 // without digits

@@ -263,7 +263,7 @@ struct DriveTraverse : public IDriveTraverse {
 DeviceData::DeviceData() 
 {
     // to avoid some reallocations
-    entries.reserve(1024 * 1024);
+    entries.reserve(10 * 1024 * 1024);
 }
 
 void DeviceData::sort()
@@ -299,13 +299,15 @@ void DeviceData::sort()
     std::vector<FileEntry> newFiles;
     newFiles.resize(size);
 
-    for (size_t i = 0; i < size; ++i) 
+    // for faster array acces especially in debug
+    const size_t* indexToSortedPtr = indexToSorted.data();
+    for (size_t i = 0; i < size; ++i)
     {
         FileEntry& dst = newFiles[i];
-        dst = entries[sortedToIndex[i]];
+        std::swap(dst, entries[sortedToIndex[i]]);
         // remap parentFileEntryIndex
         if(dst.value.parent1BasedIndex)
-            dst.value.parent1BasedIndex = indexToSorted[dst.value.parent1BasedIndex - 1] + 1;
+            dst.value.parent1BasedIndex = indexToSortedPtr[dst.value.parent1BasedIndex - 1] + 1;
     }
  
     std::swap(newFiles, entries);
@@ -434,7 +436,6 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
     bool error = false;
 
-    std::string sFileName;
     std::string sPath;
     std::string keyName;
     std::string valueName;
@@ -481,7 +482,8 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
             continue;
         }
 
-        FileEntry entry;
+        data.entries.push_back(FileEntry());
+        FileEntry& entry = data.entries.back();
 
         if (!parseInt64(p, entry.key.sizeOrFolder) ||
             !parseStartsWith(p, ",") ||
@@ -492,8 +494,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
             break;
         }
 
-        parseLine(p, sFileName, '\"');
-        entry.key.fileName = sFileName;
+        parseLine(p, entry.key.fileName, '\"');
 
         if (!parseStartsWith(p, ",") ||
             !parseInt64(p, entry.key.time_write) ||
@@ -519,8 +520,6 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
         entry.value.deviceId = deviceId;
 
         parseLineFeed(p);
-
-        data.entries.push_back(entry);
     }
 
     data.verify();
