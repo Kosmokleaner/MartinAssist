@@ -29,6 +29,9 @@
 #pragma comment(lib, "ImGui/GLFW/glfw3.lib")        // 64bit
 #pragma comment(lib, "OpenGL32.lib")                // 64bit
 
+// https://learn.microsoft.com/en-us/windows/win32/api/shlwapi/nf-shlwapi-strstria?redirectedfrom=MSDN
+#pragma comment(lib, "Shlwapi.lib") 
+
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -102,11 +105,6 @@ public:
         : everyHere(inEveryHere)
     {
         everyHere.freeData();
-    }
-
-    void OnEnd()
-    {
-        everyHere.buildView();
     }
 
     bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData)
@@ -275,6 +273,7 @@ int Gui::test()
             if (ImGui::Button("build"))
             {
                 everyHere.gatherData();
+                everyHere.buildView(filter.c_str());
             }
 
             ImGui::SameLine();
@@ -283,6 +282,7 @@ int Gui::test()
             {
                 LoadCVSFiles loadCVSFiles(everyHere);
                 directoryTraverse(loadCVSFiles, FilePath(), L"*.csv");
+                everyHere.buildView(filter.c_str());
             }
 
             {
@@ -348,8 +348,10 @@ int Gui::test()
             ImGui::SameLine();
 
             // todo: filter button
-            static std::string filter;
-            ImGui::InputText("filter", &filter);
+            if(ImGui::InputText("filter", &filter))
+            {
+                everyHere.buildView(filter.c_str());
+            }
 
             {
                 // todo: 0

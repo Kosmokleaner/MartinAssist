@@ -36,6 +36,12 @@ bool parseInt64(const Char*& p, int64 &outValue);
 // outValue is not changed if return is false
 bool parseInt(const Char*& p, int& outValue);
 
+// using Using KMP Algorithm (Efficient), case sensitive
+const char* strstrOptimized(const char* X, const char* Y, int m, int n);
+// using Using KMP Algorithm (Efficient), case insensitive
+const char* stristrOptimized(const char* X, const char* Y, int m, int n);
+
+
 // parse date in format %m/%d/%Y %H:%M:%S
 // @return success
 //bool parseDate(const Char*& p, tm &out);

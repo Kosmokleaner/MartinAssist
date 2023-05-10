@@ -375,12 +375,14 @@ void EveryHere::gatherData()
 {
     DriveTraverse drives(*this);
     driveTraverse(drives);
-    buildView();
 }
 
-void EveryHere::buildView()
+void EveryHere::buildView(const char* filter)
 {
+    assert(filter);
+
     view.clear();
+    int filterLen = (int)strlen(filter);
 
     for(const auto& itD : deviceData)
     {
@@ -391,8 +393,14 @@ void EveryHere::buildView()
             entry.deviceId = itD.deviceId;
             entry.fileEntryId = id++;
 
+            const FileEntry& fileEntry = itD.entries[entry.fileEntryId];
+
+            // todo: optimize
+            if(stristrOptimized(fileEntry.key.fileName.c_str(), filter, (int)fileEntry.key.fileName.size(), filterLen) == 0)
+                continue;
+
             // exclude folders
-            if(itD.entries[entry.fileEntryId].key.sizeOrFolder < 0)
+            if(fileEntry.key.sizeOrFolder < 0)
                 continue;
 
             view.push_back(entry);
@@ -405,6 +413,7 @@ void EveryHere::buildView()
 
         bool operator()(const ViewEntry& a, const ViewEntry& b) const 
         {
+            // todo: optimize vector [] in debug
             FileEntry& A = deviceData[a.deviceId].entries[a.fileEntryId];
             FileEntry& B = deviceData[b.deviceId].entries[b.fileEntryId];
             return A.key < B.key;

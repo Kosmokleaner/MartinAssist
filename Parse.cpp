@@ -280,3 +280,125 @@ SPushStringA<MAX_PATH> parsePath(const Char* &p)
 
 	return Ret;
 }
+
+
+// https://www.techiedelight.com/implement-strstr-function-c-iterative-recursive/
+// Function to implement `strstr()` function using KMP algorithm
+// modified to stristr() with table to avoid costly localization functions
+const char* strstrOptimized(const char* X, const char* Y, int m, int n)
+{
+	// base case 1: `Y` is NULL or empty
+	if (*Y == '\0' || n == 0) {
+		return X;
+	}
+
+	// base case 2: `X` is NULL, or X's length is less than Y's
+	if (*X == '\0' || n > m) {
+		return NULL;
+	}
+
+	// `next[i]` stores the index of the next best partial match
+//	int next[n + 1];
+	assert(n < 1024);
+	if(n >= 1024)
+		return 0;
+	int next[1024];
+
+	for (int i = 0; i < n + 1; i++) {
+		next[i] = 0;
+	}
+
+	for (int i = 1; i < n; i++)
+	{
+		int j = next[i + 1];
+
+		while (j > 0 && Y[j] != Y[i]) {
+			j = next[j];
+		}
+
+		if (j > 0 || Y[j] == Y[i]) {
+			next[i + 1] = j + 1;
+		}
+	}
+
+	for (int i = 0, j = 0; i < m; i++)
+	{
+		if (*(X + i) == *(Y + j))
+		{
+			if (++j == n) {
+				return (X + i - j + 1);
+			}
+		}
+		else if (j > 0)
+		{
+			j = next[j];
+			i--;    // since `i` will be incremented in the next iteration
+		}
+	}
+
+	return NULL;
+}
+
+const char* stristrOptimized(const char* X, const char* Y, int m, int n)
+{
+	static char tab[256];
+	if (!tab[1])
+	{
+		// build table to avoid costly localization functions
+		for (int i = 1; i < 256; ++i)
+			tab[i] = toupper(i);
+	}
+
+	// base case 1: `Y` is NULL or empty
+	if (*Y == '\0' || n == 0) {
+		return X;
+	}
+
+	// base case 2: `X` is NULL, or X's length is less than Y's
+	if (*X == '\0' || n > m) {
+		return NULL;
+	}
+
+	// `next[i]` stores the index of the next best partial match
+//	int next[n + 1];
+	assert(n < 1024);
+	if (n >= 1024)
+		return 0;
+	int next[1024];
+
+	for (int i = 0; i < n + 1; i++) {
+		next[i] = 0;
+	}
+
+	for (int i = 1; i < n; i++)
+	{
+		int j = next[i + 1];
+
+		while (j > 0 && tab[Y[j]] != tab[Y[i]]) {
+			j = next[j];
+		}
+
+		if (j > 0 || tab[Y[j]] == tab[Y[i]]) {
+			next[i + 1] = j + 1;
+		}
+	}
+
+	for (int i = 0, j = 0; i < m; i++)
+	{
+		if (tab[*(X + i)] == tab[*(Y + j)])
+		{
+			if (++j == n) {
+				return (X + i - j + 1);
+			}
+		}
+		else if (j > 0)
+		{
+			j = next[j];
+			i--;    // since `i` will be incremented in the next iteration
+		}
+	}
+
+	return NULL;
+}
+
+

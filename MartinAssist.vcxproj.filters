@@ -5,7 +5,6 @@
     <ClCompile Include="ASCIIFile.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
-    <ClCompile Include="CppParser.cpp" />
     <ClCompile Include="Parse.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
@@ -15,7 +14,6 @@
     </ClCompile>
     <ClCompile Include="example0.cpp" />
     <ClCompile Include="LiterateProcessor.cpp" />
-    <ClCompile Include="CppParserTest.cpp" />
     <ClCompile Include="EveryHere.cpp" />
     <ClCompile Include="ImGui\imgui.cpp">
       <Filter>ImGui</Filter>
@@ -48,6 +46,12 @@
     <ClCompile Include="ImGui\imgui_stdlib.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="CppParser.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
+    <ClCompile Include="CppParserTest.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -62,8 +66,6 @@
     <ClInclude Include="types.h">
       <Filter>Hidden</Filter>
     </ClInclude>
-    <ClInclude Include="global.h" />
-    <ClInclude Include="CppParser.h" />
     <ClInclude Include="Parse.h">
       <Filter>Hidden</Filter>
     </ClInclude>
@@ -72,7 +74,6 @@
       <Filter>Hidden</Filter>
     </ClInclude>
     <ClInclude Include="LiterateProcessor.h" />
-    <ClInclude Include="CppParserTest.h" />
     <ClInclude Include="EveryHere.h" />
     <ClInclude Include="ImGui\imconfig.h">
       <Filter>ImGui</Filter>
@@ -108,7 +109,18 @@
     <ClInclude Include="ImGui\imgui_stdlib.h">
       <Filter>ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="global.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
+    <ClInclude Include="CppParser.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
+    <ClInclude Include="CppParserTest.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">
@@ -132,9 +144,13 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Icon.ico" />
+    <ResourceCompile Include="MartinAssist.rc">
+      <Filter>Hidden</Filter>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MartinAssist.rc" />
+    <Image Include="Icon.ico">
+      <Filter>Hidden</Filter>
+    </Image>
   </ItemGroup>
 </Project>
