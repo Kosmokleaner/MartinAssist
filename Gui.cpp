@@ -12,6 +12,7 @@
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_stdlib.h"
+#include "ImGui/imgui_internal.h"
 #include "ImGui/imgui_impl_glfw.h"
 #include "ImGui/imgui_impl_opengl3.h"
 #include <stdio.h>
@@ -349,17 +350,25 @@ int Gui::test()
             ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
             ImGui::Begin("EveryHere Files");
 
-            ImGui::SameLine();
-
             // todo: filter button
             if(ImGui::InputText("filter", &filter))
             {
                 setViewDirty();
             }
 
+            {
+                int step=1;
+                const char *fmt[] = {"", "1 KB", "1 MB", "10 MB", "100 MB", "1 GB"};
+                minLogSize = ImClamp(minLogSize, 0, 5);
+                ImGui::SetNextItemWidth(150);
+                if(ImGui::InputScalar(" minimum Size", ImGuiDataType_S32, &minLogSize, &step, &step, fmt[ImClamp(minLogSize, 0, 5)]))
+                    setViewDirty();
+            }
+
             if(whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
             {
-                everyHere.buildView(filter.c_str());
+                int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
+                everyHere.buildView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)]);
                 whenToRebuildView = -1;
             }
 

@@ -6,12 +6,16 @@ class Gui
 public:
     int test();
     
-    std::string filter;
-
     EveryHere everyHere;
 
     void setViewDirty();
+
 private:
+    //
+    std::string filter;
+    //
     double whenToRebuildView = -1;
+    //
+    int32 minLogSize = 0;
 };
 

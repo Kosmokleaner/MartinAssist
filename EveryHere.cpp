@@ -377,7 +377,7 @@ void EveryHere::gatherData()
     driveTraverse(drives);
 }
 
-void EveryHere::buildView(const char* filter)
+void EveryHere::buildView(const char* filter, int64 minSize)
 {
     assert(filter);
 
@@ -394,6 +394,9 @@ void EveryHere::buildView(const char* filter)
             entry.fileEntryId = id++;
 
             const FileEntry& fileEntry = itD.entries[entry.fileEntryId];
+
+            if(fileEntry.key.sizeOrFolder < minSize)
+                continue;
 
             // todo: optimize
             if(stristrOptimized(fileEntry.key.fileName.c_str(), filter, (int)fileEntry.key.fileName.size(), filterLen) == 0)

@@ -105,7 +105,7 @@ struct EveryHere
     // @return success
     bool loadCSV(const wchar_t* internalName);
 
-    void buildView(const char* filter);
+    void buildView(const char* filter, int64 minSize);
 
     void freeData();
 };
