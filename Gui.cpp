@@ -48,6 +48,13 @@ private:
     std::vector<int64> exceptions;
 
 public:
+    bool empty() const {
+        if(first == second && exceptions.empty())
+            return false;
+
+        return true;
+    }
+
     void reset() 
     {
         first = -1;
@@ -347,7 +354,7 @@ int Gui::test()
 
         // FileEntries
         {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
+            ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
             ImGui::Begin("EveryHere Files");
 
             // todo: filter button
@@ -382,8 +389,11 @@ int Gui::test()
 
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
                 static SelectionRange selectionRange;
+
+                // safe space for info line
+                ImVec2 outerSize = ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() - ImGui::GetStyle().ItemSpacing.y);
                 // number of columns: 4
-                if (ImGui::BeginTable("table_scrolly", 4, flags))
+                if (ImGui::BeginTable("table_scrolly", 4, flags, outerSize))
                 {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
@@ -432,9 +442,9 @@ int Gui::test()
                             if(entry.key.sizeOrFolder >= 1024 * 1024 * 1024)
                                 ImGui::Text("%.3f GB", entry.key.sizeOrFolder / (1024.0f * 1024.0f * 1024.0f));
                             else if (entry.key.sizeOrFolder >= 1024 * 1024)
-                                ImGui::Text("%.3f MB", entry.key.sizeOrFolder / (1024.0f * 1024.0f));
+                                ImGui::Text("%.0f MB", entry.key.sizeOrFolder / (1024.0f * 1024.0f));
                             else if (entry.key.sizeOrFolder >= 1024)
-                                ImGui::Text("%.3f KB", entry.key.sizeOrFolder / 1024.0f);
+                                ImGui::Text("%.0f KB", entry.key.sizeOrFolder / 1024.0f);
                             else
                                 ImGui::Text("%lld B", entry.key.sizeOrFolder);
 
@@ -448,6 +458,16 @@ int Gui::test()
 
                     ImGui::EndTable();
                 }
+                ImGui::Text("Files: %lld", (int64)everyHere.view.size());
+                ImGui::SameLine();        
+                if (everyHere.viewSumSize > 1024 * 1024 * 1024)
+                    ImGui::Text("Size: %lld GB", everyHere.viewSumSize / (1024 * 1024 * 1024));
+                else if (everyHere.viewSumSize > 1024 * 1024)
+                    ImGui::Text("Size: %lld MB", everyHere.viewSumSize / (1024 * 1024));
+                else if (everyHere.viewSumSize >= 1024)
+                    ImGui::Text("Size: %lld KB", everyHere.viewSumSize / 1024);
+                else
+                    ImGui::Text("Size: %lld Bytes", everyHere.viewSumSize);
             }
 
             ImGui::End();

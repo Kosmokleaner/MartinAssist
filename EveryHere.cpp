@@ -382,6 +382,7 @@ void EveryHere::buildView(const char* filter, int64 minSize)
     assert(filter);
 
     view.clear();
+    viewSumSize = 0;
     int filterLen = (int)strlen(filter);
 
     for(const auto& itD : deviceData)
@@ -407,6 +408,7 @@ void EveryHere::buildView(const char* filter, int64 minSize)
                 continue;
 
             view.push_back(entry);
+            viewSumSize += fileEntry.key.sizeOrFolder;
         }
     }
 
