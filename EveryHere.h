@@ -72,7 +72,10 @@ struct DeviceData {
     std::wstring volumeName;
     // e.g. L"C:\"
     std::wstring drivePath;
-
+    // call computeStats() to update
+    uint64 statsSize = 0;
+    // call computeStats() to update, number of directories
+    uint64 statsDirs = 0;
 
     DeviceData();
 
@@ -83,6 +86,9 @@ struct DeviceData {
     // @param volumeName may be 0
     // @param cleanName may be 0, e.g. L"First Drive"
     void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0);
+
+    // update statsSize, statsDirs
+    void computeStats();
 
     void verify();
 };

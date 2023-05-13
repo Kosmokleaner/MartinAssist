@@ -315,6 +315,20 @@ void DeviceData::sort()
     verify();
 }
 
+void DeviceData::computeStats() 
+{
+    statsSize = 0;
+    statsDirs = 0;
+
+    for (const auto& el : entries)
+    {
+        if(el.key.sizeOrFolder >= 0)
+            statsSize += el.key.sizeOrFolder;
+        else
+            ++statsDirs;
+    }
+}
+
 void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const wchar_t* volumeName)
 {
     sort();
@@ -375,6 +389,9 @@ void EveryHere::gatherData()
 {
     DriveTraverse drives(*this);
     driveTraverse(drives);
+
+    for (auto& itD : deviceData)
+        itD.computeStats();
 }
 
 void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange)
@@ -539,6 +556,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
         parseLineFeed(p);
     }
+    data.computeStats();
 
     data.verify();
     return !error;

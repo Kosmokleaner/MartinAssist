@@ -71,6 +71,30 @@ void Gui::setViewDirty()
     whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.25f;
 }
 
+// @return printUnit e.g. "GB" or "MB" 
+const char* computeReadableSize(uint64 inputSize, uint64 &outPrintSize) 
+{
+    outPrintSize = inputSize;
+
+    if (inputSize >= 1024 * 1024 * 1024)
+    {
+        outPrintSize /= (1024 * 1024 * 1024);
+        return "GB";
+    }
+    else if (inputSize >= 1024 * 1024)
+    {
+        outPrintSize /= (1024 * 1024);
+        return "MB";
+    }
+    else if (inputSize >= 1024)
+    {
+        outPrintSize /= 1024;
+        return "KB";
+    }
+
+    return "B";
+}
+
 int Gui::test()
 {
     // Setup window
@@ -106,6 +130,7 @@ int Gui::test()
     if (window == NULL)
         return 1;
 
+    glfwMaximizeWindow(window);
 
     // https://stackoverflow.com/questions/7375003/how-to-convert-hicon-to-hbitmap-in-vc
 #if _WIN32
@@ -233,8 +258,8 @@ int Gui::test()
 
             {
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                // number of columns: 4
-                if (ImGui::BeginTable("table_scrolly", 4, flags))
+                // number of columns: 67
+                if (ImGui::BeginTable("table_scrolly", 7, flags))
                 {
                     std::string line;
                     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
@@ -247,6 +272,9 @@ int Gui::test()
                     ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_None);
                     ImGui::TableHeadersRow();
 
                     int line_no = 0;
@@ -276,8 +304,18 @@ int Gui::test()
                         ImGui::TableSetColumnIndex(3);
                         ImGui::Text("%d", it->deviceId);
 
+                        ImGui::TableSetColumnIndex(4);
+                        uint64 printSize = 0;
+                        const char* printUnit = computeReadableSize(it->statsSize, printSize);
+                        ImGui::Text("%llu %s", printSize, printUnit);
+
+                        ImGui::TableSetColumnIndex(5);
+                        ImGui::Text("%llu", (uint64)it->entries.size());
+
+                        ImGui::TableSetColumnIndex(6);
+                        ImGui::Text("%llu", it->statsDirs);
+
                         ImGui::PopID();
-                        //                            ImGui::TextUnformatted("2");
                     }
                     ImGui::PopStyleColor(3);
 
@@ -378,26 +416,36 @@ int Gui::test()
                             {
                                 int64 index = entry.value.parent;
                                 int i = 0;
+                                static std::vector<const char*> reverser;
+                                reverser.clear();
                                 while(index >= 0) 
                                 { 
-                                    ++i; if(i>15)break;
+                                    ++i;
                                     const FileEntry& here = deviceData.entries[index];
                                     assert(here.key.sizeOrFolder == -1);
-                                    ImGui::Text("/%s", here.key.fileName.c_str());
                                     index = here.value.parent;
-                                    if(index >= 0)
+                                    reverser.push_back(here.key.fileName.c_str());
+                                }
+                                for(auto it = reverser.rbegin(); it != reverser.rend();)
+                                {
+                                    const char *str = *it++;
+
+                                    if(it != reverser.rend())
+                                    {
+                                        ImGui::Text("%s/", str);
                                         ImGui::SameLine(0, 0);
+                                    }
+                                    else 
+                                    {
+                                        ImGui::Text("%s", str);
+                                    }
                                 }
                             }
                             ImGui::TableSetColumnIndex(2);
-                            if(entry.key.sizeOrFolder >= 1024 * 1024 * 1024)
-                                ImGui::Text("%.3f GB", entry.key.sizeOrFolder / (1024.0f * 1024.0f * 1024.0f));
-                            else if (entry.key.sizeOrFolder >= 1024 * 1024)
-                                ImGui::Text("%.0f MB", entry.key.sizeOrFolder / (1024.0f * 1024.0f));
-                            else if (entry.key.sizeOrFolder >= 1024)
-                                ImGui::Text("%.0f KB", entry.key.sizeOrFolder / 1024.0f);
-                            else
-                                ImGui::Text("%lld B", entry.key.sizeOrFolder);
+
+                            uint64 printSize = 0;
+                            const char* printUnit = computeReadableSize(entry.key.sizeOrFolder, printSize);
+                            ImGui::Text("%llu %s", printSize, printUnit);
 
                             ImGui::TableSetColumnIndex(3);
                             ImGui::Text("%d", entry.value.deviceId);
@@ -411,14 +459,10 @@ int Gui::test()
                 }
                 ImGui::Text("Files: %lld", (int64)everyHere.view.size());
                 ImGui::SameLine();        
-                if (everyHere.viewSumSize > 1024 * 1024 * 1024)
-                    ImGui::Text("Size: %lld GB", everyHere.viewSumSize / (1024 * 1024 * 1024));
-                else if (everyHere.viewSumSize > 1024 * 1024)
-                    ImGui::Text("Size: %lld MB", everyHere.viewSumSize / (1024 * 1024));
-                else if (everyHere.viewSumSize >= 1024)
-                    ImGui::Text("Size: %lld KB", everyHere.viewSumSize / 1024);
-                else
-                    ImGui::Text("Size: %lld Bytes", everyHere.viewSumSize);
+
+                uint64 printSize = 0;
+                const char* printUnit = computeReadableSize(everyHere.viewSumSize, printSize);
+                ImGui::Text("Size: %llu %s", printSize, printUnit);
             }
 
             ImGui::End();
