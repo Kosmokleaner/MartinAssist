@@ -20,5 +20,7 @@ private:
     int32 minLogSize = 0;
     //
     SelectionRange deviceSelectionRange;
+    //
+    bool triggerLoadOnStartup = true; 
 };
 

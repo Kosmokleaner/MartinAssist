@@ -249,8 +249,9 @@ int Gui::test()
 
             ImGui::SameLine();
 
-            if (ImGui::Button("load"))
+            if (ImGui::Button("load") || triggerLoadOnStartup)
             {
+                triggerLoadOnStartup = false;
                 LoadCVSFiles loadCVSFiles(everyHere);
                 directoryTraverse(loadCVSFiles, FilePath(), L"*.csv");
                 setViewDirty();
@@ -409,8 +410,15 @@ int Gui::test()
                             {
                                 selectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                             }
+                            if (ImGui::BeginPopupContextItem())
+                            {
+                                // todo
+                                if (ImGui::MenuItem("Open path")) {}
+                                if (ImGui::MenuItem("Copy as path")) {}
+                                ImGui::EndPopup();
+                            }
+
                             ImGui::PopID();
-                            //                            ImGui::TextUnformatted(line.c_str());
                             ImGui::TableSetColumnIndex(1);
 
                             {
