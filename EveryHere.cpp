@@ -377,7 +377,7 @@ void EveryHere::gatherData()
     driveTraverse(drives);
 }
 
-void EveryHere::buildView(const char* filter, int64 minSize)
+void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange)
 {
     assert(filter);
 
@@ -395,6 +395,9 @@ void EveryHere::buildView(const char* filter, int64 minSize)
             entry.fileEntryId = id++;
 
             const FileEntry& fileEntry = itD.entries[entry.fileEntryId];
+
+            if(!deviceSelectionRange.isSelected(fileEntry.value.deviceId))
+                continue;
 
             if(fileEntry.key.sizeOrFolder < minSize)
                 continue;

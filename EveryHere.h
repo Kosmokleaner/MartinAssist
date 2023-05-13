@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include "FileSystem.h"
+#include "SelectionRange.h"
+
 
 // ever increasing integer in quotes, it's actually a string
 #define SERIALIZE_VERSION "3"
@@ -108,7 +110,7 @@ struct EveryHere
     // @return success
     bool loadCSV(const wchar_t* internalName);
 
-    void buildView(const char* filter, int64 minSize);
+    void buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange);
 
     void freeData();
 };

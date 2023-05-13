@@ -37,72 +37,6 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-class SelectionRange
-{
-private:
-    // index
-    int64 first = -1;
-    // index
-    int64 second = -1;
-    // indices
-    std::vector<int64> exceptions;
-
-public:
-    bool empty() const {
-        if(first == second && exceptions.empty())
-            return false;
-
-        return true;
-    }
-
-    void reset() 
-    {
-        first = -1;
-        second = -1;
-        exceptions.clear();
-    }
-
-    void onClick(int64 x, bool shift, bool ctrl) 
-    {
-        if(ctrl)
-            toggle(x);
-        else 
-        {
-            exceptions.clear();
-
-            if (shift)
-                second = x;
-            else
-                first = second = x;
-        }
-    }
-
-    bool isSelected(int64 x) const 
-    {
-        bool ret = false;
-
-        // range selection
-        if (first == x)
-            ret = true;
-        if (second != -1)
-            ret = min(first, second) <= x && x <= max(first, second);
-
-        ret ^= std::find(exceptions.begin(), exceptions.end(), x) != exceptions.end();
-
-        return ret;
-    }
-
-    void toggle(int64 x)
-    {
-        auto it = std::find(exceptions.begin(), exceptions.end(), x);
-
-        if(it == exceptions.end())
-            exceptions.push_back(x);
-        else
-            exceptions.erase(it);
-    }
-};
-
 class LoadCVSFiles : public IDirectoryTraverse
 {
     EveryHere& everyHere;
@@ -299,7 +233,6 @@ int Gui::test()
 
             {
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                static SelectionRange selectionRange;
                 // number of columns: 4
                 if (ImGui::BeginTable("table_scrolly", 4, flags))
                 {
@@ -325,10 +258,13 @@ int Gui::test()
 
                         ImGui::TableSetColumnIndex(0);
                         ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                        bool selected = selectionRange.isSelected(line_no);
+                        bool selected = deviceSelectionRange.isSelected(line_no);
                         ImGui::Selectable(to_string(it->volumeName).c_str(), &selected, selectable_flags);
                         if (ImGui::IsItemClicked(0))
-                            selectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+                        {
+                            deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+                            setViewDirty();
+                        }
 
                         ImGui::TableSetColumnIndex(1);
                         line = to_string(it->cleanName);
@@ -375,7 +311,7 @@ int Gui::test()
             if(whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
             {
                 int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                everyHere.buildView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)]);
+                everyHere.buildView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], deviceSelectionRange);
                 whenToRebuildView = -1;
             }
 

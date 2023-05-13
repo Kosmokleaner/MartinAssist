@@ -1,5 +1,6 @@
 #pragma once
 #include "EveryHere.h"
+#include "SelectionRange.h"
 
 class Gui
 {
@@ -17,5 +18,7 @@ private:
     double whenToRebuildView = -1;
     //
     int32 minLogSize = 0;
+    //
+    SelectionRange deviceSelectionRange;
 };
 
