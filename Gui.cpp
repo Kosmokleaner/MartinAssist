@@ -419,7 +419,8 @@ int Gui::test()
                                 break;
 
                             ViewEntry& viewEntry = everyHere.view[line_no];
-                            FileEntry& entry = everyHere.deviceData[viewEntry.deviceId].entries[viewEntry.fileEntryId];
+                            const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
+                            const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
 
                             line = entry.key.fileName;
 
@@ -437,7 +438,21 @@ int Gui::test()
                             ImGui::PopID();
                             //                            ImGui::TextUnformatted(line.c_str());
                             ImGui::TableSetColumnIndex(1);
-                            ImGui::TextUnformatted("path");
+
+                            {
+                                int64 index = entry.value.parent;
+                                int i = 0;
+                                while(index >= 0) 
+                                { 
+                                    ++i; if(i>15)break;
+                                    const FileEntry& here = deviceData.entries[index];
+                                    assert(here.key.sizeOrFolder == -1);
+                                    ImGui::Text("/%s", here.key.fileName.c_str());
+                                    index = here.value.parent;
+                                    if(index >= 0)
+                                        ImGui::SameLine(0, 0);
+                                }
+                            }
                             ImGui::TableSetColumnIndex(2);
                             if(entry.key.sizeOrFolder >= 1024 * 1024 * 1024)
                                 ImGui::Text("%.3f GB", entry.key.sizeOrFolder / (1024.0f * 1024.0f * 1024.0f));

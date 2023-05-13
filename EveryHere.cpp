@@ -18,8 +18,8 @@ void dateToCString(__time64_t t, char outTimeStr[80])
 
 struct FolderTree
 {
-    // 1 based as 0 is used for root 
-    uint64 fileEntry1BasedIndex = (uint64)0;
+    // -1 is used for root 
+    int64 fileEntry = -1;
 
     // [folderName] = child pointer
     std::map<std::wstring, FolderTree*> children;
@@ -69,7 +69,7 @@ private:
         auto it = children.find(name);
         if(it != children.end())
         {
-            assert(it->second->fileEntry1BasedIndex);
+            assert(it->second->fileEntry >= 0);
             return it->second;
         }
         return nullptr;
@@ -130,7 +130,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
 
         FolderTree& whereToInsert = folderRoot.findRecursive(filePath.getPathWithoutDrive());
         FolderTree& newFolder = whereToInsert.makeChild(directory);
-        newFolder.fileEntry1BasedIndex = fileEntryCount + 1;
+        newFolder.fileEntry = fileEntryCount;
 
         FileEntry entry;
         entry.key.fileName = to_string(directory);
@@ -138,7 +138,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         // <0 for folder 
         entry.key.sizeOrFolder = -1;
         entry.key.time_write = findData.time_write;
-        entry.value.parent1BasedIndex = whereToInsert.fileEntry1BasedIndex;
+        entry.value.parent = whereToInsert.fileEntry;
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
         entry.value.deviceId = deviceId;
@@ -164,7 +164,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
         entry.key.sizeOrFolder = findData.size;
         assert(entry.key.sizeOrFolder >= 0);
         entry.key.time_write = findData.time_write;
-        entry.value.parent1BasedIndex = folderRoot.findRecursive(filePath.getPathWithoutDrive()).fileEntry1BasedIndex;
+        entry.value.parent = folderRoot.findRecursive(filePath.getPathWithoutDrive()).fileEntry;
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
         entry.value.deviceId = deviceId;
@@ -306,8 +306,8 @@ void DeviceData::sort()
         FileEntry& dst = newFiles[i];
         std::swap(dst, entries[sortedToIndex[i]]);
         // remap parentFileEntryIndex
-        if(dst.value.parent1BasedIndex)
-            dst.value.parent1BasedIndex = indexToSortedPtr[dst.value.parent1BasedIndex - 1] + 1;
+        if(dst.value.parent != -1)
+            dst.value.parent = indexToSortedPtr[dst.value.parent];
     }
  
     std::swap(newFiles, entries);
@@ -343,21 +343,21 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
         fileData += "\n";
     }
     // 2: order: size, fileName, write, path, creat, access
-    fileData += "# version=2\n";
-    fileData += "# size_t size (<0 for folder), fileName, __time64_t write, # parentEntryId(1 based, 0:root), __time64_t create, __time64_t access\n";
+    fileData += "# version=" SERIALIZE_VERSION "\n";
+    fileData += "# size_t size (<0 for folder), fileName, __time64_t write, # parentEntryId(-1:root), __time64_t create, __time64_t access\n";
     // start marker
     fileData += "#\n";
 
     for (const auto& it : entries)
     {
         char str[MAX_PATH + 100];
-        sprintf_s(str, sizeof(str), "%lld,\"%s\",%llu,#%llu,%llu,%llu\n",
+        sprintf_s(str, sizeof(str), "%lld,\"%s\",%llu,#%lld,%llu,%llu\n",
             // key
             it.key.sizeOrFolder,
             it.key.fileName.c_str(),
             it.key.time_write,
             // value
-            it.value.parent1BasedIndex,
+            it.value.parent,
             it.value.time_create,
             it.value.time_access);
         fileData += str;
@@ -457,7 +457,8 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
     while(*p)
     {
         // example line:
-        // D:/oldCode/Work/Playfield_MipMapper/TGA.h,902,145635462,145635462,145635462
+        // 8192,"BOOTSECT.BAK",1612980750,#-1,1558230967,1612980750
+
         parseWhiteSpaceOrLF(p);
 
         if (parseStartsWith(p, "#"))
@@ -466,7 +467,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
             // e.g.
             // # drivePath = E:
             // # volumeName = RyzenE
-            // # cleanName = Volume{ ca72ef4c - 0000 - 0000 - 0000 - 100000000000 }
+            // # cleanName = Volume{ca72ef4c-0000-0000-0000-100000000000}
             // # version = 2
             parseWhiteSpaceOrLF(p);
             if(parseName(p, keyName))
@@ -483,7 +484,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                             data.volumeName = to_wstring(valueName);
                         if (keyName == "cleanName")
                             data.cleanName = to_wstring(valueName);
-                        if (keyName == "version" && valueName != "2")
+                        if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;
                             break;
@@ -520,7 +521,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
         }
 
         if (!parseStartsWith(p, "#") ||
-            !parseInt64(p, (int64&)entry.value.parent1BasedIndex) ||
+            !parseInt64(p, entry.value.parent) ||
             !parseStartsWith(p, ",") ||
             !parseInt64(p, entry.value.time_create) ||
             !parseStartsWith(p, ",") ||
@@ -552,9 +553,9 @@ void DeviceData::verify()
     {
 //        assert(it.key.fileName.find(',') == -1);
         assert(it.key.fileName.find('\"') == -1);
-        if (it.value.parent1BasedIndex)
+        if (it.value.parent >= 0)
         {
-            assert(it.value.parent1BasedIndex < entries.size() + 1);
+            assert(it.value.parent < (int64)entries.size());
         }
     }
 }

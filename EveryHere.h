@@ -5,6 +5,8 @@
 #include <string>
 #include "FileSystem.h"
 
+// ever increasing integer in quotes, it's actually a string
+#define SERIALIZE_VERSION "3"
 
 struct FileKey
 {
@@ -45,8 +47,8 @@ struct FileKey
 
 struct FileValue
 {
-    // 1 based as 0 is used for root
-    uint64 parent1BasedIndex = (uint64)0;
+    // -1 is used for root
+    int64 parent = -1;
     __time64_t time_create = -1;    // -1 for FAT file systems
     __time64_t time_access = -1;    // -1 for FAT file systems
     int deviceId = -1;
