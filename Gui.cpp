@@ -436,11 +436,19 @@ int Gui::test()
                             }
                             if (ImGui::BeginPopupContextItem())
                             {
-                                // todo
-                                if (ImGui::MenuItem("Open path")) 
+                                if (ImGui::MenuItem("Open (with default program)"))
                                 {
+                                    const char* path = generatePath(entry.value.parent, deviceData.entries);
+                                    std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName;
+                                    ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
                                 }
-                                if (ImGui::MenuItem("Copy as path")) 
+                                if (ImGui::MenuItem("Open path (in Explorer)"))
+                                {
+                                    const char* path = generatePath(entry.value.parent, deviceData.entries);
+                                    std::string fullPath = deviceData.drivePath + "/" + path;
+                                    ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
+                                }
+                                if (ImGui::MenuItem("Copy as path (to clipboard)")) 
                                 {
                                     ImGui::LogToClipboard();
                                     const char* path = generatePath(entry.value.parent, deviceData.entries);
