@@ -71,7 +71,7 @@ struct DeviceData {
     // e.g. L"First Drive"
     std::wstring volumeName;
     // e.g. L"C:\"
-    std::wstring drivePath;
+    std::string drivePath;
     // call computeStats() to update
     uint64 statsSize = 0;
     // call computeStats() to update, number of directories

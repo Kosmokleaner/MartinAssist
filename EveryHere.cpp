@@ -248,7 +248,7 @@ struct DriveTraverse : public IDriveTraverse {
         deviceData.cleanName = cleanName;
         deviceData.deviceId = deviceId;
         deviceData.volumeName = volumeName;
-        deviceData.drivePath = drivePath;
+        deviceData.drivePath = to_string(drivePath);
 
         DirectoryTraverse traverse(deviceData, deviceId, drivePath.c_str());
 
@@ -499,7 +499,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                     if (parseLine(p, valueName))
                     {
                         if (keyName == "drivePath")
-                            data.drivePath = to_wstring(valueName);
+                            data.drivePath = valueName;
                         if (keyName == "volumeName")
                             data.volumeName = to_wstring(valueName);
                         if (keyName == "cleanName")

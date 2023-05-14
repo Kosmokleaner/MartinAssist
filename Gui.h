@@ -20,7 +20,7 @@ private:
     int32 minLogSize = 0;
     //
     SelectionRange deviceSelectionRange;
-    //
-    bool triggerLoadOnStartup = true; 
+    // number of frame until it triggers
+    int triggerLoadOnStartup = 2; 
 };
 

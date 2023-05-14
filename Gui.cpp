@@ -95,6 +95,28 @@ const char* computeReadableSize(uint64 inputSize, uint64 &outPrintSize)
     return "B";
 }
 
+// not reentrant, don't use with multithreading
+// https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+const char* generatePath(int64 fileEntryIndex, const std::vector<FileEntry>& entries)
+{
+    static char pathBuffer[32 * 1024];
+
+    char* writer = pathBuffer + sizeof(pathBuffer) - 1;
+    *writer = 0;
+    while (fileEntryIndex >= 0)
+    {
+        const FileEntry& here = entries[fileEntryIndex];
+        assert(here.key.sizeOrFolder == -1);
+        fileEntryIndex = here.value.parent;
+        size_t len = here.key.fileName.size();
+        if (*writer) *--writer = '/';
+        writer -= len;
+        memcpy(writer, here.key.fileName.c_str(), len);
+    }
+    return writer;
+}
+
+
 int Gui::test()
 {
     // Setup window
@@ -249,9 +271,11 @@ int Gui::test()
 
             ImGui::SameLine();
 
-            if (ImGui::Button("load") || triggerLoadOnStartup)
+            --triggerLoadOnStartup;
+            if (triggerLoadOnStartup < -1)
+                triggerLoadOnStartup = -1;
+            if (ImGui::Button("load") || triggerLoadOnStartup == 0)
             {
-                triggerLoadOnStartup = false;
                 LoadCVSFiles loadCVSFiles(everyHere);
                 directoryTraverse(loadCVSFiles, FilePath(), L"*.csv");
                 setViewDirty();
@@ -300,7 +324,7 @@ int Gui::test()
                         ImGui::TextUnformatted(line.c_str());
 
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::TextUnformatted(to_string(it->drivePath).c_str());
+                        ImGui::TextUnformatted(it->drivePath.c_str());
 
                         ImGui::TableSetColumnIndex(3);
                         ImGui::Text("%d", it->deviceId);
@@ -413,8 +437,16 @@ int Gui::test()
                             if (ImGui::BeginPopupContextItem())
                             {
                                 // todo
-                                if (ImGui::MenuItem("Open path")) {}
-                                if (ImGui::MenuItem("Copy as path")) {}
+                                if (ImGui::MenuItem("Open path")) 
+                                {
+                                }
+                                if (ImGui::MenuItem("Copy as path")) 
+                                {
+                                    ImGui::LogToClipboard();
+                                    const char* path = generatePath(entry.value.parent, deviceData.entries);
+                                    ImGui::LogText("%s/%s/%s", deviceData.drivePath.c_str(), path, entry.key.fileName.c_str());
+                                    ImGui::LogFinish();
+                                }
                                 ImGui::EndPopup();
                             }
 
@@ -422,32 +454,8 @@ int Gui::test()
                             ImGui::TableSetColumnIndex(1);
 
                             {
-                                int64 index = entry.value.parent;
-                                int i = 0;
-                                static std::vector<const char*> reverser;
-                                reverser.clear();
-                                while(index >= 0) 
-                                { 
-                                    ++i;
-                                    const FileEntry& here = deviceData.entries[index];
-                                    assert(here.key.sizeOrFolder == -1);
-                                    index = here.value.parent;
-                                    reverser.push_back(here.key.fileName.c_str());
-                                }
-                                for(auto it = reverser.rbegin(); it != reverser.rend();)
-                                {
-                                    const char *str = *it++;
-
-                                    if(it != reverser.rend())
-                                    {
-                                        ImGui::Text("%s/", str);
-                                        ImGui::SameLine(0, 0);
-                                    }
-                                    else 
-                                    {
-                                        ImGui::Text("%s", str);
-                                    }
-                                }
+                                const char* path = generatePath(entry.value.parent, deviceData.entries);
+                                ImGui::TextUnformatted(path);
                             }
                             ImGui::TableSetColumnIndex(2);
 
