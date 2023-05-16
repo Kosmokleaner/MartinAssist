@@ -125,6 +125,7 @@ void pushTableStyle3()
 }
 
 
+
 int Gui::test()
 {
     // Setup window
@@ -284,6 +285,48 @@ int Gui::test()
             --triggerLoadOnStartup;
             if (triggerLoadOnStartup < -1)
                 triggerLoadOnStartup = -1;
+
+#ifdef _DEBUG
+            if(triggerLoadOnStartup == 0) 
+            {
+                everyHere.freeData();
+                char str[80];
+                for(int i = 0; i < 5; ++i)
+                {
+                    str[0] = 'a' + (rand() % 26);
+                    str[1] = 'a' + (rand() % 26);
+                    str[2] = 0;
+                    everyHere.deviceData.push_back(DeviceData());
+                    DeviceData &d = everyHere.deviceData.back();
+                    d.cleanName = str;
+                    d.volumeName = str;
+                    str[0] = 'A' + (rand() % 26);
+                    str[1] = ':';
+                    str[2] = 0;
+                    d.drivePath = str;
+                    d.deviceId = i;
+                }
+
+                for(int i = 0; i < 200; ++i)
+                {
+                    int deviceId = rand() % 5;
+                    DeviceData& r = everyHere.deviceData[deviceId];
+                    r.entries.push_back(FileEntry());
+                    FileEntry &e = r.entries.back();
+                    str[0] = 'a' + (rand() % 26);
+                    str[1] = 'a' + (rand() % 26);
+                    str[2] = 0;
+                    e.key.fileName = str;
+                    e.key.sizeOrFolder = rand() * 1000;
+                    e.key.time_write = rand();
+                    e.value.parent = -1;
+                    e.value.deviceId = deviceId;
+                }
+                setViewDirty();
+                triggerLoadOnStartup = -1;
+            }
+#endif
+
             if (ImGui::Button("load") || triggerLoadOnStartup == 0)
             {
                 LoadCVSFiles loadCVSFiles(everyHere);
@@ -320,7 +363,7 @@ int Gui::test()
                         ImGui::TableSetColumnIndex(0);
                         ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
                         bool selected = deviceSelectionRange.isSelected(line_no);
-                        ImGui::Selectable(to_string(it->volumeName).c_str(), &selected, selectable_flags);
+                        ImGui::Selectable(it->volumeName.c_str(), &selected, selectable_flags);
                         if (ImGui::IsItemClicked(0))
                         {
                             deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
@@ -328,7 +371,7 @@ int Gui::test()
                         }
 
                         ImGui::TableSetColumnIndex(1);
-                        line = to_string(it->cleanName);
+                        line = it->cleanName;
                         ImGui::TextUnformatted(line.c_str());
 
                         ImGui::TableSetColumnIndex(2);
@@ -381,15 +424,6 @@ int Gui::test()
 
             static SelectionRange selectionRange;
 
-            if(whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
-            {
-                int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                everyHere.buildView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], deviceSelectionRange);
-                selectionRange.reset();
-                whenToRebuildView = -1;
-            }
-
-
             {
                 // todo: 0
 //                DeviceData& data = everyHere.deviceData[0];
@@ -397,7 +431,15 @@ int Gui::test()
 //                const int lineHeight = (int)ImGui::GetFontSize();
 //                int height = (int)data.files.size() * lineHeight;
 
-                ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                ImGuiTableFlags flags = ImGuiTableFlags_Borders |
+                    ImGuiTableFlags_ScrollY |
+                    ImGuiTableFlags_BordersOuter | 
+                    ImGuiTableFlags_BordersV | 
+                    ImGuiTableFlags_Resizable | 
+                    ImGuiTableFlags_Reorderable | 
+                    ImGuiTableFlags_Hideable | 
+                    ImGuiTableFlags_Sortable | 
+                    ImGuiTableFlags_SortMulti;
 
                 // safe space for info line
                 ImVec2 outerSize = ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() - ImGui::GetStyle().ItemSpacing.y);
@@ -405,14 +447,32 @@ int Gui::test()
                 if (ImGui::BeginTable("table_scrolly", 4, flags, outerSize))
                 {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
-                    //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 0.0f, FCID_Name);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 0.0f, FCID_Path);
+                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None, 0.0f, FCID_Size);
+                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, FCID_DeviceId);
+//                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
                     ImGui::TableHeadersRow();
+
+                    if(ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
+                        if(sorts_specs->SpecsDirty) 
+                        {
+                            whenToRebuildView = 0;
+                            sorts_specs->SpecsDirty = false;
+                        }
+
+                    if (whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
+                    {
+                        fileSortCriteria = ImGui::TableGetSortSpecs();
+                        int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
+                        everyHere.buildView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], deviceSelectionRange, fileSortCriteria);
+                        selectionRange.reset();
+                        whenToRebuildView = -1;
+                        fileSortCriteria = {};
+                    }
 
                     ImGuiListClipper clipper;
                     clipper.Begin((int)everyHere.view.size());

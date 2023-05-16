@@ -22,5 +22,7 @@ private:
     SelectionRange deviceSelectionRange;
     // number of frame until it triggers
     int triggerLoadOnStartup = 2; 
+
+    ImGuiTableSortSpecs* fileSortCriteria = {};
 };
 

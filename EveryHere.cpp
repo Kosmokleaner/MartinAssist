@@ -1,6 +1,7 @@
 #include "EveryHere.h"
 #include <time.h>   // _localtime64_s()
 #include <vector>
+#include "imgui.h"
 #include <algorithm>
 #include "Timer.h"
 #include "ASCIIFile.h"
@@ -245,9 +246,9 @@ struct DriveTraverse : public IDriveTraverse {
         int deviceId = (int)everyHere.deviceData.size();
         everyHere.deviceData.push_back(DeviceData());
         DeviceData& deviceData = everyHere.deviceData.back();
-        deviceData.cleanName = cleanName;
+        deviceData.cleanName = to_string(cleanName);
         deviceData.deviceId = deviceId;
-        deviceData.volumeName = volumeName;
+        deviceData.volumeName = to_string(volumeName);
         deviceData.drivePath = to_string(drivePath);
 
         DirectoryTraverse traverse(deviceData, deviceId, drivePath.c_str());
@@ -353,7 +354,7 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     if(!cleanName.empty())
     {
         fileData += "# cleanName=";
-        fileData += to_string(cleanName);
+        fileData += cleanName;
         fileData += "\n";
     }
     // 2: order: size, fileName, write, path, creat, access
@@ -394,7 +395,7 @@ void EveryHere::gatherData()
         itD.computeStats();
 }
 
-void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange)
+void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs)
 {
     assert(filter);
 
@@ -427,6 +428,9 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
             if(fileEntry.key.sizeOrFolder < 0)
                 continue;
 
+#ifdef DEBUG
+            static int lessInDebug = 0; ++lessInDebug; if(lessInDebug>10)lessInDebug = 0; else continue;
+#endif
             view.push_back(entry);
             viewSumSize += fileEntry.key.sizeOrFolder;
         }
@@ -435,19 +439,54 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
     struct CustomLess
     {
         std::vector<DeviceData> & deviceData;
+        ImGuiTableSortSpecs* sorts_specs = {};
 
         bool operator()(const ViewEntry& a, const ViewEntry& b) const 
         {
             // todo: optimize vector [] in debug
             FileEntry& A = deviceData[a.deviceId].entries[a.fileEntryId];
             FileEntry& B = deviceData[b.deviceId].entries[b.fileEntryId];
-            return A.key < B.key;
+
+            if(sorts_specs)
+            for (int n = 0; n < sorts_specs->SpecsCount; n++)
+            {
+                // Here we identify columns using the ColumnUserID value that we ourselves passed to TableSetupColumn()
+                // We could also choose to identify columns based on their index (sort_spec->ColumnIndex), which is simpler!
+                const ImGuiTableColumnSortSpecs* sort_spec = &sorts_specs->Specs[n];
+                int delta = 0;
+                switch (sort_spec->ColumnUserID)
+                {
+                    case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
+                    case FCID_Path:        delta = (int)(A.value.parent - B.value.parent); break;
+                    case FCID_Size:        delta = (int)(A.key.sizeOrFolder - B.key.sizeOrFolder); break;
+                    case FCID_DeviceId:    delta = a.deviceId - b.deviceId; break;
+                    default: IM_ASSERT(0); break;
+                }
+                if (delta > 0)
+                    return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true : false;
+                if (delta < 0)
+                    return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? false : true;
+            }
+
+//            if(sorts_specs->SpecsCount == FCID_Name)
+//                return A.key.fileName < B.key.fileName;
+//            if (sort == FCID_Path)
+//                return A.key < B.key;
+//            if (sort == FCID_DeviceId)
+//                return a.deviceId < b.deviceId;
+//            if (sort == FCID_Size)
+//            return A.key < B.key;
+
+            // qsort() is instable so always return a way to differenciate items.
+            // Your own compare function may want to avoid fallback on implicit sort specs e.g. a Name compare if it wasn't already part of the sort specs.
+            return &a < &b;
         }
     };
 
-    CustomLess customLess = { deviceData };
+    CustomLess customLess = { deviceData, sorts_specs };
 
     std::sort(view.begin(), view.end(), customLess);
+//    qsort(view.data(), view.size(), sizeof(view[0]), customLess);
 }
 
 bool EveryHere::loadCSV(const wchar_t* internalName)
@@ -465,7 +504,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
     int deviceId = (int)deviceData.size();
     deviceData.push_back(DeviceData());
     DeviceData& data = deviceData.back();
-    data.cleanName = internalName;
+    data.cleanName = to_string(internalName);
     data.deviceId = deviceId;
 
     bool error = false;
@@ -501,9 +540,9 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                         if (keyName == "drivePath")
                             data.drivePath = valueName;
                         if (keyName == "volumeName")
-                            data.volumeName = to_wstring(valueName);
+                            data.volumeName = valueName;
                         if (keyName == "cleanName")
-                            data.cleanName = to_wstring(valueName);
+                            data.cleanName = valueName;
                         if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;

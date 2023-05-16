@@ -67,9 +67,9 @@ struct DeviceData {
     // index in EveryHere.deviceData
     int deviceId = -1;
     // e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
-    std::wstring cleanName;
+    std::string cleanName;
     // e.g. L"First Drive"
-    std::wstring volumeName;
+    std::string volumeName;
     // e.g. L"C:\"
     std::string drivePath;
     // call computeStats() to update
@@ -101,13 +101,22 @@ struct ViewEntry
     int64 fileEntryId = -1;
 };
 
+enum FilesColumnID
+{
+    FCID_Name,
+    FCID_Path,
+    FCID_Size,
+    FCID_DeviceId
+};
+
+struct ImGuiTableSortSpecs;
 
 struct EveryHere
 {
     // [deviceId] = DeviceData
     std::vector<DeviceData> deviceData;
 
-    // built by buildView();
+    // built by buildView()
     std::vector<ViewEntry> view;
     int64 viewSumSize = 0;
 
@@ -116,7 +125,7 @@ struct EveryHere
     // @return success
     bool loadCSV(const wchar_t* internalName);
 
-    void buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange);
+    void buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs);
 
     void freeData();
 };
