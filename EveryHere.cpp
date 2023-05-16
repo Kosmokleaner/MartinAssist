@@ -463,9 +463,9 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
                     default: IM_ASSERT(0); break;
                 }
                 if (delta > 0)
-                    return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true : false;
-                if (delta < 0)
                     return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? false : true;
+                if (delta < 0)
+                    return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true : false;
             }
 
 //            if(sorts_specs->SpecsCount == FCID_Name)
