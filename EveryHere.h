@@ -53,6 +53,7 @@ struct FileValue
     int64 parent = -1;
     __time64_t time_create = -1;    // -1 for FAT file systems
     __time64_t time_access = -1;    // -1 for FAT file systems
+    std::string path;
     int deviceId = -1;
 };
 
@@ -86,6 +87,10 @@ struct DeviceData {
     // @param volumeName may be 0
     // @param cleanName may be 0, e.g. L"First Drive"
     void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0);
+
+    // not reentrant, don't use with multithreading
+    // https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+    const char* generatePath(int64 fileEntryIndex) const;
 
     // update statsSize, statsDirs
     void computeStats();

@@ -403,19 +403,26 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
     viewSumSize = 0;
     int filterLen = (int)strlen(filter);
 
-    for(const auto& itD : deviceData)
+    for(auto& itD : deviceData)
     {
         uint64 id = 0;
+
+        if (!deviceSelectionRange.isSelected(itD.deviceId))
+            continue;
+
+        view.reserve(itD.entries.size());
+
         for (const auto& itE : itD.entries)
         {
             ViewEntry entry;
             entry.deviceId = itD.deviceId;
             entry.fileEntryId = id++;
 
-            const FileEntry& fileEntry = itD.entries[entry.fileEntryId];
+            FileEntry& fileEntry = itD.entries[entry.fileEntryId];
 
-            if(!deviceSelectionRange.isSelected(fileEntry.value.deviceId))
-                continue;
+            // should happen only in the beginnng
+            if(fileEntry.value.parent >= 0 && fileEntry.value.path.empty())
+                fileEntry.value.path = itD.generatePath(entry.fileEntryId);
 
             if(fileEntry.key.sizeOrFolder < minSize)
                 continue;
@@ -428,9 +435,6 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
             if(fileEntry.key.sizeOrFolder < 0)
                 continue;
 
-#ifdef DEBUG
-            static int lessInDebug = 0; ++lessInDebug; if(lessInDebug>10)lessInDebug = 0; else continue;
-#endif
             view.push_back(entry);
             viewSumSize += fileEntry.key.sizeOrFolder;
         }
@@ -457,7 +461,7 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
                 switch (sort_spec->ColumnUserID)
                 {
                     case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
-                    case FCID_Path:        delta = (int)(A.value.parent - B.value.parent); break;
+                    case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                     case FCID_Size:        delta = (int)(A.key.sizeOrFolder - B.key.sizeOrFolder); break;
                     case FCID_DeviceId:    delta = a.deviceId - b.deviceId; break;
                     default: IM_ASSERT(0); break;
@@ -486,7 +490,6 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
     CustomLess customLess = { deviceData, sorts_specs };
 
     std::sort(view.begin(), view.end(), customLess);
-//    qsort(view.data(), view.size(), sizeof(view[0]), customLess);
 }
 
 bool EveryHere::loadCSV(const wchar_t* internalName)
@@ -599,6 +602,27 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
     data.verify();
     return !error;
+}
+
+// not reentrant, don't use with multithreading
+// https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+const char* DeviceData::generatePath(int64 fileEntryIndex) const
+{
+    static char pathBuffer[32 * 1024];
+
+    char* writer = pathBuffer + sizeof(pathBuffer) - 1;
+    *writer = 0;
+    while (fileEntryIndex >= 0)
+    {
+        const FileEntry& here = entries[fileEntryIndex];
+        assert(here.key.sizeOrFolder == -1);
+        fileEntryIndex = here.value.parent;
+        size_t len = here.key.fileName.size();
+        if (*writer) *--writer = '/';
+        writer -= len;
+        memcpy(writer, here.key.fileName.c_str(), len);
+    }
+    return writer;
 }
 
 void EveryHere::freeData() 

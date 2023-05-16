@@ -95,26 +95,6 @@ const char* computeReadableSize(uint64 inputSize, uint64 &outPrintSize)
     return "B";
 }
 
-// not reentrant, don't use with multithreading
-// https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
-const char* generatePath(int64 fileEntryIndex, const std::vector<FileEntry>& entries)
-{
-    static char pathBuffer[32 * 1024];
-
-    char* writer = pathBuffer + sizeof(pathBuffer) - 1;
-    *writer = 0;
-    while (fileEntryIndex >= 0)
-    {
-        const FileEntry& here = entries[fileEntryIndex];
-        assert(here.key.sizeOrFolder == -1);
-        fileEntryIndex = here.value.parent;
-        size_t len = here.key.fileName.size();
-        if (*writer) *--writer = '/';
-        writer -= len;
-        memcpy(writer, here.key.fileName.c_str(), len);
-    }
-    return writer;
-}
 
 void pushTableStyle3() 
 {
@@ -514,13 +494,15 @@ int Gui::test()
                                 {
                                     if (ImGui::MenuItem("Open (with default program)"))
                                     {
-                                        const char* path = generatePath(entry.value.parent, deviceData.entries);
+//                                        const char* path = deviceData.generatePath(entry.value.parent);
+                                        const char* path = entry.value.path.c_str();
                                         std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName;
                                         ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
                                     }
                                     if (ImGui::MenuItem("Open path (in Explorer)"))
                                     {
-                                        const char* path = generatePath(entry.value.parent, deviceData.entries);
+//                                        const char* path = deviceData.generatePath(entry.value.parent);
+                                        const char* path = entry.value.path.c_str();
                                         std::string fullPath = deviceData.drivePath + "/" + path;
                                         ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
                                     }
@@ -535,7 +517,8 @@ int Gui::test()
                                         const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
                                         if (entry.key.sizeOrFolder >= 0) 
                                         {
-                                            const char* path = generatePath(entry.value.parent, deviceData.entries);
+//                                            const char* path = deviceData.generatePath(entry.value.parent);
+                                            const char* path = entry.value.path.c_str();
                                             if(*path)
                                                 ImGui::LogText("%s/%s/%s\n", deviceData.drivePath.c_str(), path, entry.key.fileName.c_str());
                                             else
@@ -552,7 +535,8 @@ int Gui::test()
                             ImGui::TableSetColumnIndex(1);
 
                             {
-                                const char* path = generatePath(entry.value.parent, deviceData.entries);
+//                                const char* path = deviceData.generatePath(entry.value.parent);
+                                const char* path = entry.value.path.c_str();
                                 ImGui::TextUnformatted(path);
                             }
                             ImGui::TableSetColumnIndex(2);
