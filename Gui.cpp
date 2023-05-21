@@ -9,6 +9,7 @@
 
 #include "FileSystem.h"
 #include "Timer.h"
+#include "resource.h"
 
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_stdlib.h"
@@ -146,44 +147,49 @@ int Gui::test()
     // https://stackoverflow.com/questions/7375003/how-to-convert-hicon-to-hbitmap-in-vc
 #if _WIN32
     {
-        HICON hIcon = (HICON)LoadImage(GetModuleHandle(0), L"icon.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
+//      HICON hIcon = (HICON)LoadImage(GetModuleHandle(0), L"icon.ico", IMAGE_ICON, 0, 0, 0);
+        HICON hIcon = (HICON)LoadImage(GetModuleHandle(0), MAKEINTRESOURCE(IDI_SMALL), IMAGE_ICON, 0, 0, 0);
+        //        assert(hIcon);
 
-        HBITMAP hBITMAPcopy;
-        ICONINFOEX IconInfo;
-        BITMAP BM_32_bit_color;
+        if(hIcon)
+        {
+            HBITMAP hBITMAPcopy;
+            ICONINFOEX IconInfo;
+            BITMAP BM_32_bit_color;
 
-        memset((void*)&IconInfo, 0, sizeof(ICONINFOEX));
-        IconInfo.cbSize = sizeof(ICONINFOEX);
-        GetIconInfoEx(hIcon, &IconInfo);
+            memset((void*)&IconInfo, 0, sizeof(ICONINFOEX));
+            IconInfo.cbSize = sizeof(ICONINFOEX);
+            GetIconInfoEx(hIcon, &IconInfo);
 
-        hBITMAPcopy = (HBITMAP)CopyImage(IconInfo.hbmColor, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-        GetObject(hBITMAPcopy, sizeof(BITMAP), &BM_32_bit_color);
-        //Now: BM_32_bit_color.bmBits pointing to BGRA data.(.bmWidth * .bmHeight * (.bmBitsPixel/8))
+            hBITMAPcopy = (HBITMAP)CopyImage(IconInfo.hbmColor, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+            GetObject(hBITMAPcopy, sizeof(BITMAP), &BM_32_bit_color);
+            //Now: BM_32_bit_color.bmBits pointing to BGRA data.(.bmWidth * .bmHeight * (.bmBitsPixel/8))
 
-        //    BITMAP BM_1_bit_mask;
-        //HBITMAP IconInfo.hbmMask is 1bit per pxl
-        // From HBITMAP to BITMAP for mask
-    //    hBITMAPcopy = (HBITMAP)CopyImage(IconInfo.hbmMask, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-    //    GetObject(hBITMAPcopy, sizeof(BITMAP), &BM_1_bit_mask);
-        //Now: BM_1_bit_mask.bmBits pointing to mask data (.bmWidth * .bmHeight Bits!)
+            //    BITMAP BM_1_bit_mask;
+            //HBITMAP IconInfo.hbmMask is 1bit per pxl
+            // From HBITMAP to BITMAP for mask
+        //    hBITMAPcopy = (HBITMAP)CopyImage(IconInfo.hbmMask, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+        //    GetObject(hBITMAPcopy, sizeof(BITMAP), &BM_1_bit_mask);
+            //Now: BM_1_bit_mask.bmBits pointing to mask data (.bmWidth * .bmHeight Bits!)
 
-        assert(BM_32_bit_color.bmBitsPixel == 32);
+            assert(BM_32_bit_color.bmBitsPixel == 32);
 
-        GLFWimage images[1];
-        images[0].width = BM_32_bit_color.bmWidth;
-        images[0].height = BM_32_bit_color.bmHeight;
+            GLFWimage images[1];
+            images[0].width = BM_32_bit_color.bmWidth;
+            images[0].height = BM_32_bit_color.bmHeight;
 
-        std::vector<int> mem;
-        mem.resize(images[0].width * images[0].height);
-        int* src = (int*)BM_32_bit_color.bmBits;
-        for (int y = images[0].height - 1; y >= 0; --y) {
-            for (int x = 0; x < images[0].width; ++x) {
-                // seems glfwSetWindowIcon() doesn't support alpha
-                mem[y * images[0].width + x] = RGBSwizzle(*src++);
+            std::vector<int> mem;
+            mem.resize(images[0].width * images[0].height);
+            int* src = (int*)BM_32_bit_color.bmBits;
+            for (int y = images[0].height - 1; y >= 0; --y) {
+                for (int x = 0; x < images[0].width; ++x) {
+                    // seems glfwSetWindowIcon() doesn't support alpha
+                    mem[y * images[0].width + x] = RGBSwizzle(*src++);
+                }
             }
+            images[0].pixels = (unsigned char*)mem.data();
+            glfwSetWindowIcon(window, 1, images);
         }
-        images[0].pixels = (unsigned char*)mem.data();
-        glfwSetWindowIcon(window, 1, images);
     }
 #endif
 
