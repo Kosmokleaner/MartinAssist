@@ -316,8 +316,8 @@ int Gui::test()
 
             {
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                // number of columns: 67
-                if (ImGui::BeginTable("table_scrolly", 7, flags))
+                const uint32 numberOfColumns = 9;
+                if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
                 {
                     std::string line;
 
@@ -326,11 +326,12 @@ int Gui::test()
                     ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
-//                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_None);
                     ImGui::TableHeadersRow();
 
                     int line_no = 0;
@@ -370,6 +371,12 @@ int Gui::test()
 
                         ImGui::TableSetColumnIndex(6);
                         ImGui::Text("%llu", it->statsDirs);
+
+                        ImGui::TableSetColumnIndex(7);
+                        ImGui::TextUnformatted(it->computerName.c_str());
+
+                        ImGui::TableSetColumnIndex(8);
+                        ImGui::TextUnformatted(it->userName.c_str());
 
                         ImGui::PopID();
                     }

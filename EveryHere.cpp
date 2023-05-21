@@ -1,5 +1,6 @@
 #include "EveryHere.h"
 #include <time.h>   // _localtime64_s()
+#include <windows.h>
 #include <vector>
 #include "imgui.h"
 #include <algorithm>
@@ -242,6 +243,26 @@ struct DriveTraverse : public IDriveTraverse {
         wprintf(L"cleanName: %s\n", cleanName.c_str());
         // e.g. L"First Drive"
         wprintf(L"volumeName: %s\n\n", volumeName);
+
+        {
+            char name[256];
+            DWORD size = sizeof(name);
+            if(GetComputerNameA(name, &size))
+            {
+                // e.g. "RYZEN"
+                printf("computerName: %s\n\n", name);
+            }
+        }
+
+        {
+            char name[256];
+            DWORD size = sizeof(name);
+            if (GetUserNameA(name, &size))
+            {
+                // e.g. "Hans"
+                printf("userName: %s\n\n", name);
+            }
+        }
 
         int deviceId = (int)everyHere.deviceData.size();
         everyHere.deviceData.push_back(DeviceData());
@@ -546,6 +567,8 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                             data.volumeName = valueName;
                         if (keyName == "cleanName")
                             data.cleanName = valueName;
+                        if (keyName == "osName")
+                            data.computerName = valueName;
                         if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;

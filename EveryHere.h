@@ -73,6 +73,10 @@ struct DeviceData {
     std::string volumeName;
     // e.g. L"C:\"
     std::string drivePath;
+    // e.g. "RYZEN"
+    std::string computerName;
+    // e.g. "Hans"
+    std::string userName;
     // call computeStats() to update
     uint64 statsSize = 0;
     // call computeStats() to update, number of directories
