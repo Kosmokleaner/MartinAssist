@@ -67,11 +67,11 @@ struct DeviceData {
     std::vector<FileEntry> entries;
     // index in EveryHere.deviceData
     int deviceId = -1;
-    // e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
+    // e.g. "Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
     std::string cleanName;
-    // e.g. L"First Drive"
+    // e.g. "First Drive"
     std::string volumeName;
-    // e.g. L"C:\"
+    // e.g. "C:\"
     std::string drivePath;
     // e.g. "RYZEN"
     std::string computerName;
@@ -79,6 +79,10 @@ struct DeviceData {
     std::string userName;
     // when this data was gathered
     std::string date;
+    // in bytes
+    uint64 freeSpace = 0;
+    // in bytes
+    uint64 totalSpace = 0;
 
     // call computeStats() to update
     uint64 statsSize = 0;
@@ -89,11 +93,7 @@ struct DeviceData {
 
     void sort();
 
-    // @param fileName e.g. L"test.csv"
-    // @param drivePath may be 0, e.g. L"C:\"
-    // @param volumeName may be 0
-    // @param cleanName may be 0, e.g. L"First Drive"
-    void save(const wchar_t* fileName, const wchar_t* drivePath = 0, const wchar_t* volumeName = 0);
+    void save();
 
     // not reentrant, don't use with multithreading
     // https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry

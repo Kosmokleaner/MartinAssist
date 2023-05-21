@@ -35,6 +35,8 @@ bool parseName(const Char* &p, std::string &Out);
 bool parseInt64(const Char*& p, int64 &outValue);
 // outValue is not changed if return is false
 bool parseInt(const Char*& p, int& outValue);
+// @param str if 0 fail is used, no whitespace handling before, string parsing ends with end of integer
+int64 stringToInt64(const char* str, int64 fail = -1);
 
 // using Using KMP Algorithm (Efficient), case sensitive
 const char* strstrOptimized(const char* X, const char* Y, int m, int n);

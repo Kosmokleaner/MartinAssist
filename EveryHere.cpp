@@ -254,6 +254,18 @@ struct DriveTraverse : public IDriveTraverse {
         deviceData.volumeName = to_string(volumeName);
         deviceData.drivePath = to_string(drivePath);
 
+        // freeSpace, totalSpace
+        {
+            DWORD SectorsPerCluster = 0;
+            DWORD BytesPerSector = 0;
+            DWORD NumberOfFreeClusters = 0;
+            DWORD TotalNumberOfClusters = 0;
+            GetDiskFreeSpace(drivePath.c_str(), &SectorsPerCluster, &BytesPerSector, &NumberOfFreeClusters, &TotalNumberOfClusters);
+            
+            uint64 clusterSize = SectorsPerCluster * (uint64)BytesPerSector;
+            deviceData.freeSpace = clusterSize * NumberOfFreeClusters;
+            deviceData.totalSpace = clusterSize * TotalNumberOfClusters;
+        }
 
         {
             char name[256];
@@ -293,7 +305,7 @@ struct DriveTraverse : public IDriveTraverse {
         directoryTraverse(traverse, drivePath.c_str());
 
         if(traverse.fileEntryCount)
-            deviceData.save((cleanName + std::wstring(L".csv")).c_str(), drivePath.c_str(), volumeName);
+            deviceData.save();
     }
 };
 
@@ -367,8 +379,10 @@ void DeviceData::computeStats()
     }
 }
 
-void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const wchar_t* volumeName)
+void DeviceData::save()
 {
+    char str[MAX_PATH + 100];
+
     sort();
 
     CASCIIFile file;
@@ -376,42 +390,28 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     // to avoid reallocations
     fileData.reserve(10 * 1024 * 1024);
 
-    if (drivePath)
-    {
-        fileData += "# drivePath=";
-        fileData += to_string(drivePath);
-        fileData += "\n";
+#define HEADER_STRING(name) \
+    if (!name.empty()) \
+    {\
+        fileData += "# " #name "="; \
+        fileData += name; \
+        fileData += "\n"; \
     }
-    if(volumeName)
-    {
-        fileData += "# volumeName=";
-        fileData += to_string(volumeName);
-        fileData += "\n";
-    }
-    if(!cleanName.empty())
-    {
-        fileData += "# cleanName=";
-        fileData += cleanName;
-        fileData += "\n";
-    }
-    if (!computerName.empty())
-    {
-        fileData += "# computerName=";
-        fileData += computerName;
-        fileData += "\n";
-    }
-    if (!userName.empty())
-    {
-        fileData += "# userName=";
-        fileData += userName;
-        fileData += "\n";
-    }
-    if (!date.empty())
-    {
-        fileData += "# date=";
-        fileData += date;
-        fileData += "\n";
-    }
+
+    HEADER_STRING(drivePath)
+    HEADER_STRING(volumeName)
+    HEADER_STRING(cleanName)
+    HEADER_STRING(computerName)
+    HEADER_STRING(userName)
+    HEADER_STRING(date)
+
+#undef HEADER_STRING
+
+    sprintf_s(str, sizeof(str), "# freeSpace=%llu\n", freeSpace);
+    fileData += str;
+    sprintf_s(str, sizeof(str), "# totalSpace=%llu\n", totalSpace);
+    fileData += str;
+
     // 2: order: size, fileName, write, path, creat, access
     fileData += "# version=" SERIALIZE_VERSION "\n";
     fileData += "# size_t size (<0 for folder), fileName, __time64_t write, # parentEntryId(-1:root), __time64_t create, __time64_t access\n";
@@ -420,7 +420,6 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
 
     for (const auto& it : entries)
     {
-        char str[MAX_PATH + 100];
         sprintf_s(str, sizeof(str), "%lld,\"%s\",%llu,#%lld,%llu,%llu\n",
             // key
             it.key.sizeOrFolder,
@@ -438,7 +437,10 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
     const char* cpy = (const char*)malloc(len + 1);
     memcpy((void*)cpy, fileData.c_str(), len + 1);
     file.CoverThisData(cpy, len);
-    file.IO_SaveASCIIFile(fileName);
+
+    std::string fileName = (cleanName + std::string(".csv")).c_str();
+
+    file.IO_SaveASCIIFile(fileName.c_str());
 }
 
 void EveryHere::gatherData() 
@@ -623,6 +625,10 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                             data.userName = valueName;
                         if (keyName == "date")
                             data.date = valueName;
+                        if (keyName == "freeSpace")
+                            data.freeSpace = stringToInt64(valueName.c_str());
+                        if (keyName == "totalSpace")
+                            data.totalSpace = stringToInt64(valueName.c_str());
                         if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;

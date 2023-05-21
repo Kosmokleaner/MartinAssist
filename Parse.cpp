@@ -147,6 +147,20 @@ bool isDigitCharacter(const Char Value)
 	return Value >= '0' && Value <= '9';
 }
 
+int64 stringToInt64(const char* str, int64 fail) 
+{
+	if(!str)
+		return fail;
+
+	const Char* p = (const Char*)str;
+
+	int64 ret = -1;
+
+	parseInt64(p, ret);
+	
+	return ret;
+}
+
 bool parseInt(const Char*& p, int& outValue) 
 {
 	int64 value64;

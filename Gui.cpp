@@ -316,7 +316,7 @@ int Gui::test()
 
             {
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                const uint32 numberOfColumns = 10;
+                const uint32 numberOfColumns = 11;
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
                 {
                     std::string line;
@@ -333,6 +333,7 @@ int Gui::test()
                     ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_None);
                     ImGui::TableHeadersRow();
 
                     int line_no = 0;
@@ -363,9 +364,11 @@ int Gui::test()
                         ImGui::Text("%d", it->deviceId);
 
                         ImGui::TableSetColumnIndex(4);
-                        uint64 printSize = 0;
-                        const char* printUnit = computeReadableSize(it->statsSize, printSize);
-                        ImGui::Text("%llu %s", printSize, printUnit);
+                        {
+                            uint64 printSize = 0;
+                            const char* printUnit = computeReadableSize(it->statsSize, printSize);
+                            ImGui::Text("%llu %s", printSize, printUnit);
+                        }
 
                         ImGui::TableSetColumnIndex(5);
                         ImGui::Text("%llu", (uint64)it->entries.size());
@@ -381,6 +384,14 @@ int Gui::test()
 
                         ImGui::TableSetColumnIndex(9);
                         ImGui::TextUnformatted(it->date.c_str());
+
+                        ImGui::TableSetColumnIndex(10);
+                        if(it->totalSpace)
+                        {
+                            uint64 printSize = 0;
+                            const char* printUnit = computeReadableSize(it->totalSpace, printSize);
+                            ImGui::Text("%llu %s", printSize, printUnit);
+                        }
 
                         ImGui::PopID();
                     }
