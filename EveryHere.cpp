@@ -244,13 +244,24 @@ struct DriveTraverse : public IDriveTraverse {
         // e.g. L"First Drive"
         wprintf(L"volumeName: %s\n\n", volumeName);
 
+        everyHere.removeDevice(to_string(cleanName).c_str());
+
+        int deviceId = (int)everyHere.deviceData.size();
+        everyHere.deviceData.push_back(DeviceData());
+        DeviceData& deviceData = everyHere.deviceData.back();
+        deviceData.cleanName = to_string(cleanName);
+        deviceData.deviceId = deviceId;
+        deviceData.volumeName = to_string(volumeName);
+        deviceData.drivePath = to_string(drivePath);
+
+
         {
             char name[256];
             DWORD size = sizeof(name);
-            if(GetComputerNameA(name, &size))
+            if (GetComputerNameA(name, &size))
             {
                 // e.g. "RYZEN"
-                printf("computerName: %s\n\n", name);
+                deviceData.computerName = name;
             }
         }
 
@@ -260,17 +271,22 @@ struct DriveTraverse : public IDriveTraverse {
             if (GetUserNameA(name, &size))
             {
                 // e.g. "Hans"
-                printf("userName: %s\n\n", name);
+                deviceData.userName = name;
             }
         }
 
-        int deviceId = (int)everyHere.deviceData.size();
-        everyHere.deviceData.push_back(DeviceData());
-        DeviceData& deviceData = everyHere.deviceData.back();
-        deviceData.cleanName = to_string(cleanName);
-        deviceData.deviceId = deviceId;
-        deviceData.volumeName = to_string(volumeName);
-        deviceData.drivePath = to_string(drivePath);
+        {
+            // https://zetcode.com/gui/winapi/datetime/
+            SYSTEMTIME st = { 0 };
+
+            GetLocalTime(&st);
+
+            char str[1024];
+            sprintf_s(str, sizeof(str) / sizeof(*str), "%02d/%02d/%04d %02d:%02d:%02d\n",
+                st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
+
+            deviceData.date = str;
+        }
 
         DirectoryTraverse traverse(deviceData, deviceId, drivePath.c_str());
 
@@ -378,6 +394,24 @@ void DeviceData::save(const wchar_t* fileName, const wchar_t* drivePath, const w
         fileData += cleanName;
         fileData += "\n";
     }
+    if (!computerName.empty())
+    {
+        fileData += "# computerName=";
+        fileData += computerName;
+        fileData += "\n";
+    }
+    if (!userName.empty())
+    {
+        fileData += "# userName=";
+        fileData += userName;
+        fileData += "\n";
+    }
+    if (!date.empty())
+    {
+        fileData += "# date=";
+        fileData += date;
+        fileData += "\n";
+    }
     // 2: order: size, fileName, write, path, creat, access
     fileData += "# version=" SERIALIZE_VERSION "\n";
     fileData += "# size_t size (<0 for folder), fileName, __time64_t write, # parentEntryId(-1:root), __time64_t create, __time64_t access\n";
@@ -413,7 +447,23 @@ void EveryHere::gatherData()
     driveTraverse(drives);
 
     for (auto& itD : deviceData)
+    {
         itD.computeStats();
+    }
+}
+
+void EveryHere::removeDevice(const char* cleanName)
+{
+    uint32 i = 0;
+    for (auto& itD : deviceData)
+    {
+        if(itD.cleanName == cleanName)
+        {
+            deviceData.erase(deviceData.begin() + i);
+            return;
+        }
+        ++i;
+    }
 }
 
 void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs)
@@ -567,8 +617,12 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                             data.volumeName = valueName;
                         if (keyName == "cleanName")
                             data.cleanName = valueName;
-                        if (keyName == "osName")
+                        if (keyName == "computerName")
                             data.computerName = valueName;
+                        if (keyName == "userName")
+                            data.userName = valueName;
+                        if (keyName == "date")
+                            data.date = valueName;
                         if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;

@@ -316,7 +316,7 @@ int Gui::test()
 
             {
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                const uint32 numberOfColumns = 9;
+                const uint32 numberOfColumns = 10;
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
                 {
                     std::string line;
@@ -332,6 +332,7 @@ int Gui::test()
                     ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_None);
                     ImGui::TableHeadersRow();
 
                     int line_no = 0;
@@ -377,6 +378,9 @@ int Gui::test()
 
                         ImGui::TableSetColumnIndex(8);
                         ImGui::TextUnformatted(it->userName.c_str());
+
+                        ImGui::TableSetColumnIndex(9);
+                        ImGui::TextUnformatted(it->date.c_str());
 
                         ImGui::PopID();
                     }

@@ -77,6 +77,9 @@ struct DeviceData {
     std::string computerName;
     // e.g. "Hans"
     std::string userName;
+    // when this data was gathered
+    std::string date;
+
     // call computeStats() to update
     uint64 statsSize = 0;
     // call computeStats() to update, number of directories
@@ -135,6 +138,8 @@ struct EveryHere
     bool loadCSV(const wchar_t* internalName);
 
     void buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs);
+
+    void removeDevice(const char* cleanName);
 
     void freeData();
 };
