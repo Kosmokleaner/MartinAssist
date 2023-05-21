@@ -358,6 +358,24 @@ int Gui::test()
                             deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                             setViewDirty();
                         }
+                        if (ImGui::BeginPopupContextItem())
+                        {
+                            if (!deviceSelectionRange.isSelected(line_no))
+                            {
+                                deviceSelectionRange.reset();
+                                deviceSelectionRange.onClick(line_no, false, false);
+                            }
+
+                            if (deviceSelectionRange.count() == 1)
+                            {
+                                if (ImGui::MenuItem("Delete File"))
+                                {
+                                    DeleteFileA((it->cleanName + ".csv").c_str());
+                                    it->markedForDelete = true;
+                                }
+                            }
+                            ImGui::EndPopup();
+                        }
 
                         ImGui::TableSetColumnIndex(1);
                         line = it->cleanName;
@@ -408,6 +426,17 @@ int Gui::test()
             }
 
             ImGui::End();
+        }
+
+        for (auto it = everyHere.deviceData.begin(); it != everyHere.deviceData.end(); ++it)
+        {
+            if(it->markedForDelete)
+            {
+               everyHere.deviceData.erase(it);
+               it = everyHere.deviceData.begin();
+               deviceSelectionRange.reset();
+               setViewDirty();
+            }
         }
 
         // FileEntries

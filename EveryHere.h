@@ -84,6 +84,8 @@ struct DeviceData {
     // in bytes
     uint64 totalSpace = 0;
 
+    bool markedForDelete = false;
+
     // call computeStats() to update
     uint64 statsSize = 0;
     // call computeStats() to update, number of directories
