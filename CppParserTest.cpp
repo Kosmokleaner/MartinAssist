@@ -12,7 +12,7 @@ struct CppParserSink : public ICppParserSink
     virtual void onInclude(const char* path, bool local) {
         printf("%s include: '%s'\n", local ? "local" : "global", path);
     }
-    virtual void onCommentLine(const char* line) {
+    virtual void onCommentLine(const Char* line) {
         printf("comment line: '%s'\n", line);
     }
 };
@@ -108,5 +108,15 @@ void CppParserTest()
 //   parseFile(parser, (Char*)file.GetDataPtr());   
 }
 
+void CppParserTestStripComents() 
+{
+    CppParserSink cppSink;
 
+    DirectoryTraverse traverse;
+
+    traverse.parser.sink = &cppSink;
+
+    directoryTraverse(traverse, L"C:\\P4Depot");
+
+}
 
