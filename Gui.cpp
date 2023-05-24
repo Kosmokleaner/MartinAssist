@@ -344,7 +344,17 @@ int Gui::test()
             }
 
             {
-                ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                ImGuiTableFlags flags = 
+                    ImGuiTableFlags_Borders |
+                    ImGuiTableFlags_ScrollY |
+                    ImGuiTableFlags_BordersOuter |
+                    ImGuiTableFlags_BordersV |
+                    ImGuiTableFlags_Resizable |
+                    ImGuiTableFlags_Reorderable |
+                    ImGuiTableFlags_Hideable |
+                    ImGuiTableFlags_Sortable |
+                    ImGuiTableFlags_SortMulti;
+
                 const uint32 numberOfColumns = 13;
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
                 {
@@ -352,37 +362,41 @@ int Gui::test()
 
                     pushTableStyle3();
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_None, 0.0f, DCID_VolumeName);
+                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None, 0.0f, DCID_UniqueName);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 0.0f, DCID_Path);
+                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, DCID_DeviceId);
+                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None, 0.0f, DCID_Size);
+                    ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_None, 0.0f, DCID_Files);
+                    ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_None, 0.0f, DCID_Directories);
+                    ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_None, 0.0f, DCID_Computer);
+                    ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_None, 0.0f, DCID_User);
+                    ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_None, 0.0f, DCID_Date);
+                    ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_None, 0.0f, DCID_totalSpace);
+                    ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_None, 0.0f, DCID_type);
+                    ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_None, 0.0f, DCID_serial);
                     ImGui::TableHeadersRow();
 
+                    everyHere.buildDriveView(ImGui::TableGetSortSpecs());
+
                     int line_no = 0;
-                    for (auto it = everyHere.deviceData.begin(), end = everyHere.deviceData.end(); it != end; ++it, ++line_no)
+                    for (auto it = everyHere.driveView.begin(), end = everyHere.driveView.end(); it != end; ++it, ++line_no)
                     {
-                        if(tabId == 1 && !it->isLocalDrive)
+                        DeviceData& drive = everyHere.deviceData[*it];
+
+                        if(tabId == 1 && !drive.isLocalDrive)
                             continue;
 
                         ImGui::TableNextRow();
 
                         ImGui::PushID(line_no);
 
-                        ImGui::PushStyleColor(ImGuiCol_Text, it->isLocalDrive ? ImVec4(0.5f, 0.5f, 1.0f,1) : ImVec4(0.8f, 0.8f, 0.8f, 1));
+                        ImGui::PushStyleColor(ImGuiCol_Text, drive.isLocalDrive ? ImVec4(0.5f, 0.5f, 1.0f,1) : ImVec4(0.8f, 0.8f, 0.8f, 1));
 
                         ImGui::TableSetColumnIndex(0);
                         ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
                         bool selected = deviceSelectionRange.isSelected(line_no);
-                        ImGui::Selectable(it->volumeName.c_str(), &selected, selectable_flags);
+                        ImGui::Selectable(drive.volumeName.c_str(), &selected, selectable_flags);
                         if (ImGui::IsItemClicked(0))
                         {
                             deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
@@ -400,62 +414,62 @@ int Gui::test()
                             {
                                 if (ImGui::MenuItem("Delete File"))
                                 {
-                                    DeleteFileA((it->cleanName + ".csv").c_str());
-                                    it->markedForDelete = true;
+                                    DeleteFileA((drive.cleanName + ".csv").c_str());
+                                    drive.markedForDelete = true;
                                 }
                                 if (ImGui::MenuItem("Open path (in Explorer)"))
                                 {
-                                    ShellExecuteA(0, 0, (it->cleanName + ".csv").c_str(), 0, 0, SW_SHOW);
+                                    ShellExecuteA(0, 0, (drive.cleanName + ".csv").c_str(), 0, 0, SW_SHOW);
                                 }
                             }
                             ImGui::EndPopup();
                         }
 
                         ImGui::TableSetColumnIndex(1);
-                        line = it->cleanName;
+                        line = drive.cleanName;
                         ImGui::TextUnformatted(line.c_str());
 
                         ImGui::TableSetColumnIndex(2);
-                        ImGui::TextUnformatted(it->drivePath.c_str());
+                        ImGui::TextUnformatted(drive.drivePath.c_str());
 
                         ImGui::TableSetColumnIndex(3);
-                        ImGui::Text("%d", it->deviceId);
+                        ImGui::Text("%d", drive.deviceId);
 
                         ImGui::TableSetColumnIndex(4);
                         {
                             uint64 printSize = 0;
-                            const char* printUnit = computeReadableSize(it->statsSize, printSize);
+                            const char* printUnit = computeReadableSize(drive.statsSize, printSize);
                             ImGui::Text("%llu %s", printSize, printUnit);
                         }
 
                         ImGui::TableSetColumnIndex(5);
-                        ImGui::Text("%llu", (uint64)it->entries.size());
+                        ImGui::Text("%llu", (uint64)drive.entries.size());
 
                         ImGui::TableSetColumnIndex(6);
-                        ImGui::Text("%llu", it->statsDirs);
+                        ImGui::Text("%llu", drive.statsDirs);
 
                         ImGui::TableSetColumnIndex(7);
-                        ImGui::TextUnformatted(it->computerName.c_str());
+                        ImGui::TextUnformatted(drive.computerName.c_str());
 
                         ImGui::TableSetColumnIndex(8);
-                        ImGui::TextUnformatted(it->userName.c_str());
+                        ImGui::TextUnformatted(drive.userName.c_str());
 
                         ImGui::TableSetColumnIndex(9);
-                        ImGui::TextUnformatted(it->date.c_str());
+                        ImGui::TextUnformatted(drive.date.c_str());
 
                         ImGui::TableSetColumnIndex(10);
-                        if(it->totalSpace)
+                        if(drive.totalSpace)
                         {
                             uint64 printSize = 0;
-                            const char* printUnit = computeReadableSize(it->totalSpace, printSize);
+                            const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
                             ImGui::Text("%llu %s", printSize, printUnit);
                         }
                         ImGui::TableSetColumnIndex(11);
-                        bool supportsRemoteStorage = it->driveFlags & 0x100;
-                        ImGui::Text("%d", supportsRemoteStorage ? -(int)(it->driveType) : it->driveType);
+                        bool supportsRemoteStorage = drive.driveFlags & 0x100;
+                        ImGui::Text("%d", supportsRemoteStorage ? -(int)(drive.driveType) : drive.driveType);
 
                         ImGui::TableSetColumnIndex(12);
-                        ImGui::Text("%u", it->serialNumber);
+                        ImGui::Text("%u", drive.serialNumber);
 
                         ImGui::PopStyleColor();
                         ImGui::PopID();
@@ -546,7 +560,7 @@ int Gui::test()
                     {
                         fileSortCriteria = ImGui::TableGetSortSpecs();
                         int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                        everyHere.buildView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], deviceSelectionRange, fileSortCriteria);
+                        everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], deviceSelectionRange, fileSortCriteria);
                         selectionRange.reset();
                         whenToRebuildView = -1;
                         fileSortCriteria = {};

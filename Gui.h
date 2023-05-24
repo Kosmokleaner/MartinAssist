@@ -18,7 +18,7 @@ private:
     double whenToRebuildView = -1;
     //
     int32 minLogSize = 0;
-    //
+    // into driveView[]
     SelectionRange deviceSelectionRange;
     // number of frame until it triggers
     int triggerLoadOnStartup = 2; 

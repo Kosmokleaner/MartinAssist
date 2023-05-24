@@ -63,6 +63,31 @@ struct FileEntry
     FileValue value;
 };
 
+enum FileColumnID
+{
+    FCID_Name,
+    FCID_Path,
+    FCID_Size,
+    FCID_DeviceId
+};
+
+enum DriveColumnID
+{
+    DCID_VolumeName,
+    DCID_UniqueName,
+    DCID_Path,
+    DCID_DeviceId,
+    DCID_Size,
+    DCID_Files,
+    DCID_Directories,
+    DCID_Computer,
+    DCID_User,
+    DCID_Date,
+    DCID_totalSpace,
+    DCID_type,
+    DCID_serial,
+};
+
 struct DeviceData {
     std::vector<FileEntry> entries;
     // index in EveryHere.deviceData
@@ -122,14 +147,6 @@ struct ViewEntry
     int64 fileEntryId = -1;
 };
 
-enum FilesColumnID
-{
-    FCID_Name,
-    FCID_Path,
-    FCID_Size,
-    FCID_DeviceId
-};
-
 struct ImGuiTableSortSpecs;
 
 struct EveryHere
@@ -137,9 +154,11 @@ struct EveryHere
     // [deviceId] = DeviceData
     std::vector<DeviceData> deviceData;
 
-    // built by buildView()
+    // [line_no] = index into deviceData[]
+    std::vector<uint32> driveView;
+    // [line_no] = ViewEntry, built by buildView()
     std::vector<ViewEntry> fileView;
-//    std::vector<uint32> driveView;
+    //
     int64 viewSumSize = 0;
 
     void gatherData();
@@ -147,7 +166,9 @@ struct EveryHere
     // @return success
     bool loadCSV(const wchar_t* internalName);
 
-    void buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs);
+    void buildDriveView(ImGuiTableSortSpecs* sorts_specs);
+    // @param deviceSelectionRange into driveView[]
+    void buildFileView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs);
 
     void removeDevice(const char* cleanName);
 
