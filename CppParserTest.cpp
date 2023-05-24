@@ -17,7 +17,7 @@ struct CppParserSink : public ICppParserSink
     }
 };
 
-struct DirectoryTraverse : public IDirectoryTraverse {
+struct CppDirectoryTraverse : public IDirectoryTraverse {
 
     CppParser parser;
     uint32 fileEntryCount = 0;
@@ -25,7 +25,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
     // from CTimer
     double startTime = 0.0f;
 
-    DirectoryTraverse() {
+    CppDirectoryTraverse() {
         startTime = g_Timer.GetAbsoluteTime();
     }
 
@@ -107,16 +107,3 @@ void CppParserTest()
 //    file.IO_LoadASCIIFile("C:\\P4Depot\\QuickGame Wiggle\\WorldUnit.h"); // 50 KB
 //   parseFile(parser, (Char*)file.GetDataPtr());   
 }
-
-void CppParserTestStripComents() 
-{
-    CppParserSink cppSink;
-
-    DirectoryTraverse traverse;
-
-    traverse.parser.sink = &cppSink;
-
-    directoryTraverse(traverse, L"C:\\P4Depot");
-
-}
-

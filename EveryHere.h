@@ -85,6 +85,7 @@ struct DeviceData {
     uint64 totalSpace = 0;
 
     bool markedForDelete = false;
+    bool isLocalDrive = false;
 
     // call computeStats() to update
     uint64 statsSize = 0;
@@ -142,6 +143,11 @@ struct EveryHere
     void buildView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs);
 
     void removeDevice(const char* cleanName);
+
+    // @return 0 if not found
+    DeviceData* findDrive(const char* cleanName);
+
+    void updateLocalDriveState();
 
     void freeData();
 };

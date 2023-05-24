@@ -48,6 +48,11 @@ public:
         everyHere.freeData();
     }
 
+    void OnEnd() 
+    {
+        everyHere.updateLocalDriveState();
+    }
+
     bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData)
     {
         return false;
@@ -260,6 +265,24 @@ int Gui::test()
             ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
             ImGui::Begin("EveryHere Devices");
 
+            ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+            // 0: local drives, 1:all drives
+            int tabId = 0;
+            if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
+            {
+                if (ImGui::BeginTabItem("Local Drives"))
+                {
+                    tabId = 0;
+                    ImGui::EndTabItem();
+                }
+                if (ImGui::BeginTabItem("All Drives"))
+                {
+                    tabId = 1;
+                    ImGui::EndTabItem();
+                }
+                ImGui::EndTabBar();
+            }
+
             if (ImGui::Button("build"))
             {
                 everyHere.gatherData();
@@ -345,9 +368,14 @@ int Gui::test()
                     int line_no = 0;
                     for (auto it = everyHere.deviceData.begin(), end = everyHere.deviceData.end(); it != end; ++it, ++line_no)
                     {
+                        if(tabId == 0 && !it->isLocalDrive)
+                            continue;
+
                         ImGui::TableNextRow();
 
                         ImGui::PushID(line_no);
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, it->isLocalDrive ? ImVec4(0.5f, 0.5f, 1.0f,1) : ImVec4(0.8f, 0.8f, 0.8f, 1));
 
                         ImGui::TableSetColumnIndex(0);
                         ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
@@ -372,6 +400,10 @@ int Gui::test()
                                 {
                                     DeleteFileA((it->cleanName + ".csv").c_str());
                                     it->markedForDelete = true;
+                                }
+                                if (ImGui::MenuItem("Open path (in Explorer)"))
+                                {
+                                    ShellExecuteA(0, 0, (it->cleanName + ".csv").c_str(), 0, 0, SW_SHOW);
                                 }
                             }
                             ImGui::EndPopup();
@@ -417,6 +449,7 @@ int Gui::test()
                             ImGui::Text("%llu %s", printSize, printUnit);
                         }
 
+                        ImGui::PopStyleColor();
                         ImGui::PopID();
                     }
                     ImGui::PopStyleColor(3);

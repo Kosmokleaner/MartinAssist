@@ -2,4 +2,3 @@
 
 void CppParserTest();
 
-void CppParserTestStripComents();

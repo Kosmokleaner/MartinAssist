@@ -79,7 +79,7 @@ private:
 };
 
 
-struct DirectoryTraverse : public IDirectoryTraverse {
+struct EveryHereDirectory : public IDirectoryTraverse {
 
     // e.g. L"C:"
     const wchar_t* path = nullptr;
@@ -94,7 +94,7 @@ struct DirectoryTraverse : public IDirectoryTraverse {
     int64 fileEntryCount = 0;
     int deviceId = -1;
 
-    DirectoryTraverse(DeviceData& inDeviceData, int inDeviceId, const wchar_t* inPath)
+    EveryHereDirectory(DeviceData& inDeviceData, int inDeviceId, const wchar_t* inPath)
         : deviceData(inDeviceData), path(inPath), deviceId(inDeviceId)
     {
         assert(inPath);
@@ -211,10 +211,10 @@ void replace_all(
     s.swap(buf);
 }
 
-struct DriveTraverse : public IDriveTraverse {
+struct DriveGatherTraverse : public IDriveTraverse {
     EveryHere &everyHere;
 
-    DriveTraverse(EveryHere& inEveryHere) : everyHere(inEveryHere)
+    DriveGatherTraverse(EveryHere& inEveryHere) : everyHere(inEveryHere)
     {
     }
 
@@ -300,7 +300,7 @@ struct DriveTraverse : public IDriveTraverse {
             deviceData.date = str;
         }
 
-        DirectoryTraverse traverse(deviceData, deviceId, drivePath.c_str());
+        EveryHereDirectory traverse(deviceData, deviceId, drivePath.c_str());
 
         directoryTraverse(traverse, drivePath.c_str());
 
@@ -308,6 +308,39 @@ struct DriveTraverse : public IDriveTraverse {
             deviceData.save();
     }
 };
+
+
+struct LocalDriveStateTraverse : public IDriveTraverse {
+    EveryHere& everyHere;
+
+    LocalDriveStateTraverse(EveryHere& inEveryHere) : everyHere(inEveryHere)
+    {
+        // later we update the ones we find local with true
+        for (auto& drive : everyHere.deviceData)
+            drive.isLocalDrive = false;
+    }
+
+    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName) {
+        // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
+        std::wstring cleanName = internalName;
+        // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
+        replace_all(cleanName, L"\\", L"");
+        replace_all(cleanName, L"/", L"");
+        replace_all(cleanName, L"?", L"");
+
+        if(DeviceData * drive = everyHere.findDrive(to_string(cleanName).c_str()))
+        {
+            // before we them all with false so this is updating only the local ones
+            drive->isLocalDrive = true;
+        }
+    }
+};
+
+void EveryHere::updateLocalDriveState()
+{
+    LocalDriveStateTraverse drives(*this);
+    driveTraverse(drives);
+}
 
 
 DeviceData::DeviceData() 
@@ -445,13 +478,24 @@ void DeviceData::save()
 
 void EveryHere::gatherData() 
 {
-    DriveTraverse drives(*this);
+    DriveGatherTraverse drives(*this);
     driveTraverse(drives);
 
     for (auto& itD : deviceData)
     {
         itD.computeStats();
     }
+
+    updateLocalDriveState();
+}
+
+DeviceData* EveryHere::findDrive(const char* cleanName) 
+{
+    for (auto& itD : deviceData)
+        if (itD.cleanName == cleanName)
+            return &itD;
+
+    return nullptr;
 }
 
 void EveryHere::removeDevice(const char* cleanName)
