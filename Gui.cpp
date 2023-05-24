@@ -345,7 +345,7 @@ int Gui::test()
 
             {
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                const uint32 numberOfColumns = 12;
+                const uint32 numberOfColumns = 13;
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
                 {
                     std::string line;
@@ -364,6 +364,7 @@ int Gui::test()
                     ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_None);
                     ImGui::TableHeadersRow();
 
                     int line_no = 0;
@@ -452,6 +453,9 @@ int Gui::test()
                         ImGui::TableSetColumnIndex(11);
                         bool supportsRemoteStorage = it->driveFlags & 0x100;
                         ImGui::Text("%d", supportsRemoteStorage ? -it->driveType : it->driveType);
+
+                        ImGui::TableSetColumnIndex(12);
+                        ImGui::Text("%u", it->serialNumber);
 
                         ImGui::PopStyleColor();
                         ImGui::PopID();

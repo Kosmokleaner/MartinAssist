@@ -64,7 +64,7 @@ struct IDriveTraverse {
     // @param internalName e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
     // @param volumeName e.g. L"First Drive"
     // @param flags https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags) = 0;
+    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags, uint32 serialNumber) = 0;
     virtual void OnEnd() {}
 };
 

@@ -77,6 +77,8 @@ struct DeviceData {
     uint32 driveType = 0;
     // see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
     uint32 driveFlags = 0;
+    // see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
+    uint32 serialNumber = 0;
     // e.g. "RYZEN"
     std::string computerName;
     // e.g. "Hans"

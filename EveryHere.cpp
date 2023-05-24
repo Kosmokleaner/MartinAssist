@@ -218,7 +218,7 @@ struct DriveGatherTraverse : public IDriveTraverse {
     {
     }
 
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags) {
+    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags, uint32 serialNumber) {
         std::wstring drivePath = inDrivePath.path;
 
         if (!drivePath.empty() && drivePath.back() == '\\')
@@ -269,6 +269,7 @@ struct DriveGatherTraverse : public IDriveTraverse {
 
         deviceData.driveType = GetDriveType(drivePath.c_str());
         deviceData.driveFlags = driveFlags;
+        deviceData.serialNumber = serialNumber;
 
         // https://stackoverflow.com/questions/76022257/getdrivetype-detects-google-drive-as-drive-fixed-how-to-exclude-them
         
@@ -326,7 +327,7 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
             drive.isLocalDrive = false;
     }
 
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags) {
+    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags, uint32 serialNumber) {
         // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
         std::wstring cleanName = internalName;
         // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
@@ -450,9 +451,11 @@ void DeviceData::save()
     fileData += str;
     sprintf_s(str, sizeof(str), "# totalSpace=%llu\n", totalSpace);
     fileData += str;
-    sprintf_s(str, sizeof(str), "# type=%d\n", driveType);
+    sprintf_s(str, sizeof(str), "# type=%u\n", driveType);
     fileData += str;
-    sprintf_s(str, sizeof(str), "# flags=%d\n", driveType);
+    sprintf_s(str, sizeof(str), "# flags=%u\n", driveFlags);
+    fileData += str;
+    sprintf_s(str, sizeof(str), "# serialNumber=%u\n", serialNumber);
     fileData += str;
 
     // 2: order: size, fileName, write, path, creat, access
@@ -549,7 +552,7 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
 
             // should happen only in the beginnng
             if(fileEntry.value.parent >= 0 && fileEntry.value.path.empty())
-                fileEntry.value.path = itD.generatePath(entry.fileEntryId);
+                fileEntry.value.path = itD.generatePath(fileEntry.value.parent);
 
             if(fileEntry.key.sizeOrFolder < minSize)
                 continue;
@@ -578,8 +581,9 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
             FileEntry& A = deviceData[a.deviceId].entries[a.fileEntryId];
             FileEntry& B = deviceData[b.deviceId].entries[b.fileEntryId];
 
-            if(sorts_specs)
-            for (int n = 0; n < sorts_specs->SpecsCount; n++)
+            int count = sorts_specs ? sorts_specs->SpecsCount : 0;
+
+            for (int n = 0; n < count; n++)
             {
                 // Here we identify columns using the ColumnUserID value that we ourselves passed to TableSetupColumn()
                 // We could also choose to identify columns based on their index (sort_spec->ColumnIndex), which is simpler!
@@ -687,6 +691,8 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                             data.driveType = (uint32)stringToInt64(valueName.c_str());
                         if (keyName == "flags")
                             data.driveFlags = (uint32)stringToInt64(valueName.c_str());
+                        if (keyName == "serialNumber")
+                            data.serialNumber = (uint32)stringToInt64(valueName.c_str());
                         if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;
