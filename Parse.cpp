@@ -147,14 +147,14 @@ bool isDigitCharacter(const Char Value)
 	return Value >= '0' && Value <= '9';
 }
 
-int64 stringToInt64(const char* str, int64 fail) 
+int64_t stringToInt64(const char* str, int64_t fail)
 {
 	if(!str)
 		return fail;
 
 	const Char* p = (const Char*)str;
 
-	int64 ret = -1;
+	int64_t ret = -1;
 
 	parseInt64(p, ret);
 	
@@ -163,14 +163,14 @@ int64 stringToInt64(const char* str, int64 fail)
 
 bool parseInt(const Char*& p, int& outValue) 
 {
-	int64 value64;
+	int64_t value64;
 	bool ok = parseInt64(p, value64);
 	if(ok)
 		outValue = (int)value64;
 	return ok;
 }
 
-bool parseInt64(const Char*& p, int64 &outValue) 
+bool parseInt64(const Char*& p, int64_t &outValue)
 {
 	const Char* Backup = p;
 	bool bNegate = false;
@@ -295,7 +295,7 @@ SPushStringA<MAX_PATH> parsePath(const Char* &p)
 	return Ret;
 }
 
-bool computeLocationInFile(const Char* fileStart, const Char* where, uint32& outLine, uint32& outColumn, uint32 tabSize)
+bool computeLocationInFile(const Char* fileStart, const Char* where, uint32_t & outLine, uint32_t & outColumn, uint32_t tabSize)
 {
 	assert(fileStart);
 	assert(where);

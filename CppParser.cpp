@@ -190,8 +190,11 @@ bool parsePreprocessorLine(CppParser& parser, const Char*& p)
 
     parseWhiteSpaceOrLF(p);
 
+    // from MAX_PATH
+    const uint32_t maxPath = 260;
+
     // outside scope for easier debugging
-    SPushStringA<MAX_PATH> path;
+    SPushStringA<maxPath> path;
 
     if (parseStartsWith(p, "include")) {
         parseWhiteSpaceOrLF(p);
@@ -199,7 +202,7 @@ bool parsePreprocessorLine(CppParser& parser, const Char*& p)
         if (parseStartsWith(p, "<")) {
             parseWhiteSpaceOrLF(p);
 
-            SPushStringA<MAX_PATH> path = parsePath(p);
+            SPushStringA<maxPath> path = parsePath(p);
 
             if (parseStartsWith(p, ">")) {
                 parser.sink->onInclude(path.c_str(), false);
