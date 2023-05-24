@@ -529,7 +529,7 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
 {
     assert(filter);
 
-    view.clear();
+    fileView.clear();
     viewSumSize = 0;
     int filterLen = (int)strlen(filter);
 
@@ -540,7 +540,7 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
         if (!deviceSelectionRange.isSelected(itD.deviceId))
             continue;
 
-        view.reserve(itD.entries.size());
+        fileView.reserve(itD.entries.size());
 
         for (const auto& itE : itD.entries)
         {
@@ -565,7 +565,7 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
             if(fileEntry.key.sizeOrFolder < 0)
                 continue;
 
-            view.push_back(entry);
+            fileView.push_back(entry);
             viewSumSize += fileEntry.key.sizeOrFolder;
         }
     }
@@ -620,7 +620,7 @@ void EveryHere::buildView(const char* filter, int64 minSize, SelectionRange& dev
 
     CustomLess customLess = { deviceData, sorts_specs };
 
-    std::sort(view.begin(), view.end(), customLess);
+    std::sort(fileView.begin(), fileView.end(), customLess);
 }
 
 bool EveryHere::loadCSV(const wchar_t* internalName)
@@ -774,7 +774,7 @@ const char* DeviceData::generatePath(int64 fileEntryIndex) const
 
 void EveryHere::freeData() 
 {
-    view.clear();
+    fileView.clear();
     deviceData.clear();
 }
 

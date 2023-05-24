@@ -138,7 +138,8 @@ struct EveryHere
     std::vector<DeviceData> deviceData;
 
     // built by buildView()
-    std::vector<ViewEntry> view;
+    std::vector<ViewEntry> fileView;
+//    std::vector<uint32> driveView;
     int64 viewSumSize = 0;
 
     void gatherData();

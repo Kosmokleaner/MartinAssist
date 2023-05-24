@@ -452,7 +452,7 @@ int Gui::test()
                         }
                         ImGui::TableSetColumnIndex(11);
                         bool supportsRemoteStorage = it->driveFlags & 0x100;
-                        ImGui::Text("%d", supportsRemoteStorage ? -it->driveType : it->driveType);
+                        ImGui::Text("%d", supportsRemoteStorage ? -(int)(it->driveType) : it->driveType);
 
                         ImGui::TableSetColumnIndex(12);
                         ImGui::Text("%u", it->serialNumber);
@@ -553,17 +553,17 @@ int Gui::test()
                     }
 
                     ImGuiListClipper clipper;
-                    clipper.Begin((int)everyHere.view.size());
+                    clipper.Begin((int)everyHere.fileView.size());
                     std::string line;
                     pushTableStyle3();
                     while (clipper.Step())
                     {
                         for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
                         {
-                            if(line_no >= everyHere.view.size())
+                            if(line_no >= everyHere.fileView.size())
                                 break;
 
-                            ViewEntry& viewEntry = everyHere.view[line_no];
+                            ViewEntry& viewEntry = everyHere.fileView[line_no];
                             const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
                             const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
 
@@ -610,7 +610,7 @@ int Gui::test()
                                     ImGui::LogToClipboard();
 
                                     selectionRange.foreach([&](int64 line_no) {
-                                        ViewEntry& viewEntry = everyHere.view[line_no];
+                                        ViewEntry& viewEntry = everyHere.fileView[line_no];
                                         const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
                                         const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
                                         if (entry.key.sizeOrFolder >= 0) 
@@ -656,7 +656,7 @@ int Gui::test()
 
                 if(selectionRange.empty())
                 {
-                    ImGui::Text("Files: %lld", (int64)everyHere.view.size());
+                    ImGui::Text("Files: %lld", (int64)everyHere.fileView.size());
                     ImGui::SameLine();
 
                     uint64 printSize = 0;
@@ -670,7 +670,7 @@ int Gui::test()
 
                     uint64 selectedSize = 0;
                     selectionRange.foreach([&](int64 line_no) {
-                        ViewEntry& viewEntry = everyHere.view[line_no];
+                        ViewEntry& viewEntry = everyHere.fileView[line_no];
                         const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
                         const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
                         if(entry.key.sizeOrFolder >= 0)
