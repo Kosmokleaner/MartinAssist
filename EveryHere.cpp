@@ -218,7 +218,7 @@ struct DriveGatherTraverse : public IDriveTraverse {
     {
     }
 
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName) {
+    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags) {
         std::wstring drivePath = inDrivePath.path;
 
         if (!drivePath.empty() && drivePath.back() == '\\')
@@ -266,6 +266,12 @@ struct DriveGatherTraverse : public IDriveTraverse {
             deviceData.freeSpace = clusterSize * NumberOfFreeClusters;
             deviceData.totalSpace = clusterSize * TotalNumberOfClusters;
         }
+
+        deviceData.driveType = GetDriveType(drivePath.c_str());
+        deviceData.driveFlags = driveFlags;
+
+        // https://stackoverflow.com/questions/76022257/getdrivetype-detects-google-drive-as-drive-fixed-how-to-exclude-them
+        
 
         {
             char name[256];
@@ -320,7 +326,7 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
             drive.isLocalDrive = false;
     }
 
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName) {
+    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags) {
         // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
         std::wstring cleanName = internalName;
         // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
@@ -443,6 +449,10 @@ void DeviceData::save()
     sprintf_s(str, sizeof(str), "# freeSpace=%llu\n", freeSpace);
     fileData += str;
     sprintf_s(str, sizeof(str), "# totalSpace=%llu\n", totalSpace);
+    fileData += str;
+    sprintf_s(str, sizeof(str), "# type=%d\n", driveType);
+    fileData += str;
+    sprintf_s(str, sizeof(str), "# flags=%d\n", driveType);
     fileData += str;
 
     // 2: order: size, fileName, write, path, creat, access
@@ -673,6 +683,10 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                             data.freeSpace = stringToInt64(valueName.c_str());
                         if (keyName == "totalSpace")
                             data.totalSpace = stringToInt64(valueName.c_str());
+                        if (keyName == "type")
+                            data.driveType = (uint32)stringToInt64(valueName.c_str());
+                        if (keyName == "flags")
+                            data.driveFlags = (uint32)stringToInt64(valueName.c_str());
                         if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;

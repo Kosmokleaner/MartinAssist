@@ -266,16 +266,16 @@ int Gui::test()
             ImGui::Begin("EveryHere Devices");
 
             ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-            // 0: local drives, 1:all drives
+            // 0: all drives, 1:local drives
             int tabId = 0;
-            if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
+            if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
             {
-                if (ImGui::BeginTabItem("Local Drives"))
+                if (ImGui::BeginTabItem("All Drives"))
                 {
                     tabId = 0;
                     ImGui::EndTabItem();
                 }
-                if (ImGui::BeginTabItem("All Drives"))
+                if (ImGui::BeginTabItem("Local Drives"))
                 {
                     tabId = 1;
                     ImGui::EndTabItem();
@@ -345,7 +345,7 @@ int Gui::test()
 
             {
                 ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                const uint32 numberOfColumns = 11;
+                const uint32 numberOfColumns = 12;
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
                 {
                     std::string line;
@@ -363,12 +363,13 @@ int Gui::test()
                     ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_None);
                     ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_None);
+                    ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_None);
                     ImGui::TableHeadersRow();
 
                     int line_no = 0;
                     for (auto it = everyHere.deviceData.begin(), end = everyHere.deviceData.end(); it != end; ++it, ++line_no)
                     {
-                        if(tabId == 0 && !it->isLocalDrive)
+                        if(tabId == 1 && !it->isLocalDrive)
                             continue;
 
                         ImGui::TableNextRow();
@@ -448,6 +449,9 @@ int Gui::test()
                             const char* printUnit = computeReadableSize(it->totalSpace, printSize);
                             ImGui::Text("%llu %s", printSize, printUnit);
                         }
+                        ImGui::TableSetColumnIndex(11);
+                        bool supportsRemoteStorage = it->driveFlags & 0x100;
+                        ImGui::Text("%d", supportsRemoteStorage ? -it->driveType : it->driveType);
 
                         ImGui::PopStyleColor();
                         ImGui::PopID();

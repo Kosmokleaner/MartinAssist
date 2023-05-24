@@ -73,6 +73,10 @@ struct DeviceData {
     std::string volumeName;
     // e.g. "C:\"
     std::string drivePath;
+    // see GetDriveType() https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdrivetypea 
+    uint32 driveType = 0;
+    // see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
+    uint32 driveFlags = 0;
     // e.g. "RYZEN"
     std::string computerName;
     // e.g. "Hans"

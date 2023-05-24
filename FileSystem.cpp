@@ -294,14 +294,18 @@ void driveTraverse(IDriveTraverse& sink)
 			if (!path.empty())
 			{
 				WCHAR volumeName[MAX_PATH];//MAX_PATH is the size of the char array.
+				DWORD volumeSerialNumber = -1;
+				// https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
+				// FILE_SUPPORTS_REMOTE_STORAGE to detect google drive
+				DWORD driveFlags = -1;
 				if (GetVolumeInformation(path.c_str(), volumeName, sizeof(volumeName),
+					&volumeSerialNumber,
 					NULL,
-					NULL,
-					NULL,
+					&driveFlags,
 					NULL,
 					0))
 				{
-					sink.OnDrive(path, deviceName, internalName, volumeName);
+					sink.OnDrive(path, deviceName, internalName, volumeName, driveFlags);
 				}
 			}
 		}
