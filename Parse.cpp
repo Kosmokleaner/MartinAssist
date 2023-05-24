@@ -295,6 +295,50 @@ SPushStringA<MAX_PATH> parsePath(const Char* &p)
 	return Ret;
 }
 
+bool computeLocationInFile(const Char* fileStart, const Char* where, uint32& outLine, uint32& outColumn, uint32 tabSize)
+{
+	assert(fileStart);
+	assert(where);
+
+	const Char* p = fileStart;
+
+	outLine = 1;
+	outColumn = 1;
+
+	if (where >= fileStart)
+	for(;;)
+	{
+		if(p >= where)
+		{
+			return true;
+		}
+
+		if(parseLineFeed(p))
+		{
+			++outLine;
+			outColumn = 1;
+			continue;
+		}
+
+		if(*p=='\t')
+		{
+			++p;
+			outColumn += tabSize;
+			continue;
+		}
+
+		if(*p == 0)
+			break;
+
+		++p;
+		++outColumn;
+	};
+
+	outLine = 0;
+	outColumn = 0;
+	return false;
+}
+
 
 // https://www.techiedelight.com/implement-strstr-function-c-iterative-recursive/
 // Function to implement `strstr()` function using KMP algorithm

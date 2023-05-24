@@ -38,6 +38,14 @@ bool parseInt(const Char*& p, int& outValue);
 // @param str if 0 fail is used, no whitespace handling before, string parsing ends with end of integer
 int64 stringToInt64(const char* str, int64 fail = -1);
 
+// useful for error / warnings, assumes fileStart points to 0 terminiated string and p is inside this string
+// @param fileStart must not be 0
+// @param where must not be 0
+// @param outLine starts with 1
+// @param outColumn starts with 1
+// @return success (can fail if p is not in fileStart string before null termination, if false outLine and outColumn are 0
+bool computeLocationInFile(const Char* fileStart, const Char* where, uint32& outLine, uint32& outColumn, uint32 tabSize = 4);
+
 // using Using KMP Algorithm (Efficient), case sensitive
 const char* strstrOptimized(const char* X, const char* Y, int m, int n);
 // using Using KMP Algorithm (Efficient), case insensitive

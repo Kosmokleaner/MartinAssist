@@ -4,6 +4,7 @@
 #include "FileSystem.h"
 #include "Timer.h"
 #include "CppParserTest.h"
+#include <assert.h>
 
 
 /* C style comments */
@@ -66,6 +67,58 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
    /* fourth line */
 void CppParserTest() 
 {
+    {
+        uint32 line = -1, col = -1;
+
+        // todo: test in release as well
+        const Char *file = (const Char*)
+            "// start\n"                // 0
+            "float x;\n"                // 9
+            "\t\tAfter 2 Tabs\n"        // 18
+            "a special return\r"        // 33
+            "a different return\r\n"    // 50
+            "EOF"                       // 70
+            ;                           // 73
+
+        // start
+        assert(computeLocationInFile(file, file + 0, line, col));
+        assert(line == 1 && col == 1);
+        // 2 characters in
+        assert(computeLocationInFile(file, file + 2, line, col));
+        assert(line == 1 && col == 3);
+        // end of line 1
+        assert(computeLocationInFile(file, file + 8, line, col));
+        assert(line == 1 && col == 9);
+        // line 2
+        assert(computeLocationInFile(file, file + 9, line, col));
+        assert(line == 2 && col == 1);
+        // line 3
+        assert(computeLocationInFile(file, file + 18, line, col));
+        assert(line == 3 && col == 1);
+        // after one tab
+        assert(computeLocationInFile(file, file + 19, line, col));
+        assert(line == 3 && col == 5);
+        // after two tabs
+        assert(computeLocationInFile(file, file + 20, line, col));
+        assert(line == 3 && col == 9);
+        // line 4
+        assert(computeLocationInFile(file, file + 33, line, col));
+        assert(line == 4 && col == 1);
+        // line 5 a special return
+        assert(computeLocationInFile(file, file + 50, line, col));
+        assert(line == 5 && col == 1);
+        // line 6 a different return
+        assert(computeLocationInFile(file, file + 70, line, col));
+        assert(line == 6 && col == 1);
+        // line 7
+        assert(computeLocationInFile(file, file + 73, line, col));
+        assert(line == 6 && col == 4);
+        // End of file
+        assert(!computeLocationInFile(file, file + 74, line, col));
+        assert(line == 0 && col == 0);
+    }
+
+
     LiterateProcessor literateProcessor;
     // add all components in this file and apply to existing tree
     literateProcessor.addComponents(L"example0.cpp");
