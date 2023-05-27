@@ -606,7 +606,7 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, SelectionRange&
 
             // qsort() is instable so always return a way to differenciate items.
             // Your own compare function may want to avoid fallback on implicit sort specs e.g. a Name compare if it wasn't already part of the sort specs.
-            return &a < &b;
+            return &A < &B;
         }
     };
 
@@ -667,7 +667,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
 
             // qsort() is instable so always return a way to differenciate items.
             // Your own compare function may want to avoid fallback on implicit sort specs e.g. a Name compare if it wasn't already part of the sort specs.
-            return &a < &b;
+            return &A < &B;
         }
     };
 
