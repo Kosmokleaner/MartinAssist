@@ -1,6 +1,7 @@
 #pragma once
 #include "global.h"
 #include <map>
+#include <set>
 #include <vector>
 #include <string>
 #include "FileSystem.h"
@@ -66,9 +67,10 @@ struct FileEntry
 enum FileColumnID
 {
     FCID_Name,
-    FCID_Path,
     FCID_Size,
-    FCID_DeviceId
+    FCID_Redundancy,
+    FCID_DeviceId,
+    FCID_Path,
 };
 
 enum DriveColumnID
@@ -86,6 +88,7 @@ enum DriveColumnID
     DCID_totalSpace,
     DCID_type,
     DCID_serial,
+    DCID_selectedFiles,
 };
 
 struct DeviceData {
@@ -114,6 +117,8 @@ struct DeviceData {
     uint64 freeSpace = 0;
     // in bytes
     uint64 totalSpace = 0;
+    // is constantly updated
+    uint64 selectedKeys = 0;
 
     bool markedForDelete = false;
     bool isLocalDrive = false;
@@ -158,6 +163,8 @@ struct EveryHere
     std::vector<uint32> driveView;
     // [line_no] = ViewEntry, built by buildView()
     std::vector<ViewEntry> fileView;
+    // [key] = driveId bits
+    std::map<FileKey, std::vector<bool> > uniqueFiles;
     //
     int64 viewSumSize = 0;
 
@@ -178,4 +185,12 @@ struct EveryHere
     void updateLocalDriveState();
 
     void freeData();
+
+    void buildUniqueFiles();
+
+    std::vector<bool>& getRedundancy(const FileKey& fileKey);
+
+    void addRedundancy(const FileKey& fileKey, uint32 driveId, int delta);
+
+    uint32 findRedundancy(const FileKey& fileKey) const;
 };

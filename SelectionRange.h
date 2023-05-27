@@ -1,5 +1,6 @@
 #pragma once
 #include "types.h"
+#include <vector>
 #include <algorithm>
 
 
@@ -131,3 +132,20 @@ private:
     }
 };
 
+class SelectionRangeWithDriveUpdate : public SelectionRange
+{
+    struct EveryHere& everyHere;
+public:
+    SelectionRangeWithDriveUpdate(EveryHere& inEveryHere)
+        : everyHere(inEveryHere)
+    {
+    }
+
+    void reset();
+    void onClick(int64 x, bool shift, bool ctrl);
+    void toggle(int64 x);
+
+private:
+    // @param delta -1 or 1
+    void addRedundancy(int64 line_no, int32 delta);
+};

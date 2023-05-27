@@ -52,6 +52,7 @@
     <ClCompile Include="CppParserTest.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
+    <ClCompile Include="SelectionRange.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

@@ -500,6 +500,7 @@ void EveryHere::gatherData()
     }
 
     updateLocalDriveState();
+    buildUniqueFiles();
 }
 
 DeviceData* EveryHere::findDrive(const char* cleanName) 
@@ -573,14 +574,14 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, SelectionRange&
 
     struct CustomLessFile
     {
-        std::vector<DeviceData> & deviceData;
+        const EveryHere& everyHere;
         ImGuiTableSortSpecs* sorts_specs = {};
 
         bool operator()(const ViewEntry& a, const ViewEntry& b) const 
         {
             // todo: optimize vector [] in debug
-            FileEntry& A = deviceData[a.deviceId].entries[a.fileEntryId];
-            FileEntry& B = deviceData[b.deviceId].entries[b.fileEntryId];
+            const FileEntry& A = everyHere.deviceData[a.deviceId].entries[a.fileEntryId];
+            const FileEntry& B = everyHere.deviceData[b.deviceId].entries[b.fileEntryId];
 
             int count = sorts_specs ? sorts_specs->SpecsCount : 0;
 
@@ -593,9 +594,10 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, SelectionRange&
                 switch (sort_spec->ColumnUserID)
                 {
                     case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
-                    case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                     case FCID_Size:        delta = (int)(A.key.sizeOrFolder - B.key.sizeOrFolder); break;
+                    case FCID_Redundancy:  delta = (int)everyHere.findRedundancy(A.key) - (int)everyHere.findRedundancy(B.key); break;
                     case FCID_DeviceId:    delta = a.deviceId - b.deviceId; break;
+                    case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                     default: IM_ASSERT(0); break;
                 }
                 if (delta > 0)
@@ -610,10 +612,53 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, SelectionRange&
         }
     };
 
-    CustomLessFile customLess = { deviceData, sorts_specs };
+    CustomLessFile customLess = { *this, sorts_specs };
 
     std::sort(fileView.begin(), fileView.end(), customLess);
 }
+
+std::vector<bool>& EveryHere::getRedundancy(const FileKey& fileKey)
+{
+    auto it = uniqueFiles.find(fileKey);
+    if (it == uniqueFiles.end())
+    {
+        uniqueFiles.insert(std::pair<FileKey, std::vector<bool> >(fileKey, std::vector<bool>()));
+        it = uniqueFiles.find(fileKey);
+    }
+
+    return it->second;
+}
+
+void EveryHere::addRedundancy(const FileKey& fileKey, uint32 driveId, int delta)
+{
+    assert(delta == -1 || delta == 1);
+
+    std::vector<bool>& set = getRedundancy(fileKey);
+    if(set.size() <= driveId)
+        set.resize(driveId + 1, 0);
+
+    if(delta > 0)
+        set[driveId] = true;
+    else
+        set[driveId] = false;
+}
+
+uint32 EveryHere::findRedundancy(const FileKey& fileKey) const
+{
+    const auto& it = uniqueFiles.find(fileKey);
+    if(it == uniqueFiles.end())
+        return 0;
+
+    const std::vector<bool>& set = it->second;
+    uint32 ret = 0;
+    for (auto it = set.begin(), end = set.end(); it != end; ++it)
+    {
+        if(*it)
+            ++ret;
+    }
+    return ret;
+}
+
 
 void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
 {
@@ -656,7 +701,8 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_Date:   delta = strcmp(A.date.c_str(), B.date.c_str()); break;
                     case DCID_totalSpace:   delta = A.totalSpace - B.totalSpace; break;
                     case DCID_type:   delta = A.driveType - B.driveType; break;
-                    case DCID_serial:   delta = A.serialNumber- B.serialNumber; break;
+                    case DCID_serial:   delta = A.serialNumber - B.serialNumber; break;
+                    case DCID_selectedFiles:   delta = A.selectedKeys - B.selectedKeys; break;
                     default: IM_ASSERT(0); break;
                 }
                 if (delta > 0)
@@ -823,6 +869,21 @@ const char* DeviceData::generatePath(int64 fileEntryIndex) const
         memcpy(writer, here.key.fileName.c_str(), len);
     }
     return writer;
+}
+
+void EveryHere::buildUniqueFiles()
+{
+    uniqueFiles.clear();
+
+    uint32 driveId = 0;
+    for (auto& drive : deviceData)
+    {
+        for(auto& entry : drive.entries)
+        {
+            addRedundancy(entry.key, driveId, 1);
+        }
+        ++driveId;
+    }
 }
 
 void EveryHere::freeData() 
