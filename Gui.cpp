@@ -520,7 +520,14 @@ int Gui::test()
                 const char *fmt[] = {"", "1 KB", "1 MB", "10 MB", "100 MB", "1 GB"};
                 minLogSize = ImClamp(minLogSize, 0, 5);
                 ImGui::SetNextItemWidth(150);
-                if(ImGui::InputScalar(" minimum File Size", ImGuiDataType_S32, &minLogSize, &step, &step, fmt[ImClamp(minLogSize, 0, 5)]))
+                if(ImGui::InputScalar("minimum File Size  ", ImGuiDataType_S32, &minLogSize, &step, &step, fmt[ImClamp(minLogSize, 0, 5)]))
+                    setViewDirty();
+            }
+            ImGui::SameLine();
+            {
+                const char* fmt = " \000" "<2 no\000" "<3 minor\000" "=3 enough\000" ">3 too much\000" ">4 way too much\000" "\000";
+                ImGui::SetNextItemWidth(150);
+                if (ImGui::Combo("Redundancy  ", &redundancyFilter, fmt))
                     setViewDirty();
             }
 
@@ -571,7 +578,7 @@ int Gui::test()
                         // do this before changes to the fileView
                         fileSelectionRange.reset();
                         int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                        everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], deviceSelectionRange, fileSortCriteria);
+                        everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, deviceSelectionRange, fileSortCriteria);
                         whenToRebuildView = -1;
                         fileSortCriteria = {};
                     }

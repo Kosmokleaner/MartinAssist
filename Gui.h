@@ -20,6 +20,8 @@ private:
     double whenToRebuildView = -1;
     // 2: 1MB
     int32 minLogSize = 2;
+    //
+    int32 redundancyFilter = 0;
     // into everyHere.driveView[]
     SelectionRange deviceSelectionRange;
     // into everyHere.fileView[]

@@ -526,7 +526,7 @@ void EveryHere::removeDevice(const char* cleanName)
     }
 }
 
-void EveryHere::buildFileView(const char* filter, int64 minSize, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs)
+void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs)
 {
     assert(filter);
 
@@ -558,6 +558,26 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, SelectionRange&
 
             if(fileEntry.key.sizeOrFolder < minSize)
                 continue;
+
+            if(redundancyFilter)
+            {
+                int redundancy = (int)findRedundancy(fileEntry.key);
+                switch(redundancyFilter)
+                {
+                    case 1: if(redundancy >= 2) continue;
+                        break;
+                    case 2: if (redundancy >= 3) continue;
+                        break;
+                    case 3: if (redundancy != 3) continue;
+                        break;
+                    case 4: if (redundancy <= 3) continue;
+                        break;
+                    case 5: if (redundancy <= 4) continue;
+                        break;
+                    default:
+                        assert(0);
+                }
+            }
 
             // todo: optimize
             if(stristrOptimized(fileEntry.key.fileName.c_str(), filter, (int)fileEntry.key.fileName.size(), filterLen) == 0)
