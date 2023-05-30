@@ -3,7 +3,6 @@
 #include <windows.h>
 #include <vector>
 #include "imgui.h"
-#include <algorithm>
 #include "Timer.h"
 #include "ASCIIFile.h"
 #include "FileSystem.h"
@@ -184,32 +183,6 @@ struct EveryHereDirectory : public IDirectoryTraverse {
     }
 };
 
-// from https://stackoverflow.com/questions/5878775/how-to-find-and-replace-string
-void replace_all(
-    std::wstring& s,
-    std::wstring const& toReplace,
-    std::wstring const& replaceWith
-) {
-    std::wstring buf;
-    std::size_t pos = 0;
-    std::size_t prevPos;
-
-    // Reserves rough estimate of final size of string.
-    buf.reserve(s.size());
-
-    while (true) {
-        prevPos = pos;
-        pos = s.find(toReplace, pos);
-        if (pos == std::string::npos)
-            break;
-        buf.append(s, prevPos, pos - prevPos);
-        buf += replaceWith;
-        pos += toReplace.size();
-    }
-
-    buf.append(s, prevPos, s.size() - prevPos);
-    s.swap(buf);
-}
 
 struct DriveGatherTraverse : public IDriveTraverse {
     EveryHere &everyHere;
@@ -218,18 +191,13 @@ struct DriveGatherTraverse : public IDriveTraverse {
     {
     }
 
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags, uint32 serialNumber) {
-        std::wstring drivePath = inDrivePath.path;
+    virtual void OnDrive(const DriveInfo& driveInfo) {
+        std::wstring drivePath = driveInfo.drivePath.path;
 
         if (!drivePath.empty() && drivePath.back() == '\\')
             drivePath.pop_back();
 
-        // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
-        std::wstring cleanName = internalName;
-        // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
-        replace_all(cleanName, L"\\", L"");
-        replace_all(cleanName, L"/", L"");
-        replace_all(cleanName, L"?", L"");
+        std::wstring csvName = driveInfo.generateKeyName();
 
         // hack
 //        if(drivePath[0] != 'E')
@@ -238,20 +206,20 @@ struct DriveGatherTraverse : public IDriveTraverse {
         // filePath e.g. L"C:\"
         wprintf(L"\ndrivePath: %s\n", drivePath.c_str());
         // deviceName e.g. L"\Device\HarddiskVolume4"
-        wprintf(L"deviceName: %s\n", deviceName);
+        wprintf(L"deviceName: %s\n", driveInfo.deviceName);
         // e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
-        wprintf(L"cleanName: %s\n", cleanName.c_str());
+        wprintf(L"csvName: %s\n", csvName.c_str());
         // e.g. L"First Drive"
-        wprintf(L"volumeName: %s\n\n", volumeName);
+        wprintf(L"volumeName: %s\n\n", driveInfo.volumeName);
 
-        everyHere.removeDevice(to_string(cleanName).c_str());
+        everyHere.removeDevice(to_string(csvName).c_str());
 
         int deviceId = (int)everyHere.deviceData.size();
         everyHere.deviceData.push_back(DeviceData());
         DeviceData& deviceData = everyHere.deviceData.back();
-        deviceData.cleanName = to_string(cleanName);
+        deviceData.csvName = to_string(csvName);
         deviceData.deviceId = deviceId;
-        deviceData.volumeName = to_string(volumeName);
+        deviceData.volumeName = to_string(driveInfo.volumeName);
         deviceData.drivePath = to_string(drivePath);
 
         // freeSpace, totalSpace
@@ -268,8 +236,8 @@ struct DriveGatherTraverse : public IDriveTraverse {
         }
 
         deviceData.driveType = GetDriveType(drivePath.c_str());
-        deviceData.driveFlags = driveFlags;
-        deviceData.serialNumber = serialNumber;
+        deviceData.driveFlags = driveInfo.driveFlags;
+        deviceData.serialNumber = driveInfo.serialNumber;
 
         // https://stackoverflow.com/questions/76022257/getdrivetype-detects-google-drive-as-drive-fixed-how-to-exclude-them
         
@@ -316,7 +284,6 @@ struct DriveGatherTraverse : public IDriveTraverse {
     }
 };
 
-
 struct LocalDriveStateTraverse : public IDriveTraverse {
     EveryHere& everyHere;
 
@@ -327,15 +294,13 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
             drive.isLocalDrive = false;
     }
 
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags, uint32 serialNumber) {
-        // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
-        std::wstring cleanName = internalName;
-        // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
-        replace_all(cleanName, L"\\", L"");
-        replace_all(cleanName, L"/", L"");
-        replace_all(cleanName, L"?", L"");
+    virtual void OnDrive(const DriveInfo& driveInfo) {
+        std::wstring csvName = driveInfo.generateKeyName();
 
-        if(DeviceData * drive = everyHere.findDrive(to_string(cleanName).c_str()))
+        // todo: google drive is changing it's internalName so we cannot key by this
+        printf("LocalDriveStateTraverse '%s' '%s' '%s' %u\n", to_string(driveInfo.drivePath.path).c_str(),  to_string(csvName).c_str(), to_string(driveInfo.volumeName).c_str(), driveInfo.serialNumber);
+
+        if(DeviceData * drive = everyHere.findDrive(to_string(csvName).c_str()))
         {
             // before we them all with false so this is updating only the local ones
             drive->isLocalDrive = true;
@@ -419,6 +384,61 @@ void DeviceData::computeStats()
     }
 }
 
+// from https://stackoverflow.com/questions/5878775/how-to-find-and-replace-string
+void replace_all(
+    std::wstring& s,
+    std::wstring const& toReplace,
+    std::wstring const& replaceWith
+) {
+    std::wstring buf;
+    std::size_t pos = 0;
+    std::size_t prevPos;
+
+    // Reserves rough estimate of final size of string.
+    buf.reserve(s.size());
+
+    while (true) {
+        prevPos = pos;
+        pos = s.find(toReplace, pos);
+        if (pos == std::string::npos)
+            break;
+        buf.append(s, prevPos, pos - prevPos);
+        buf += replaceWith;
+        pos += toReplace.size();
+    }
+
+    buf.append(s, prevPos, s.size() - prevPos);
+    s.swap(buf);
+}
+
+// from https://stackoverflow.com/questions/5878775/how-to-find-and-replace-string
+void replace_all(
+    std::string& s,
+    std::string const& toReplace,
+    std::string const& replaceWith
+) {
+    std::string buf;
+    std::size_t pos = 0;
+    std::size_t prevPos;
+
+    // Reserves rough estimate of final size of string.
+    buf.reserve(s.size());
+
+    while (true) {
+        prevPos = pos;
+        pos = s.find(toReplace, pos);
+        if (pos == std::string::npos)
+            break;
+        buf.append(s, prevPos, pos - prevPos);
+        buf += replaceWith;
+        pos += toReplace.size();
+    }
+
+    buf.append(s, prevPos, s.size() - prevPos);
+    s.swap(buf);
+}
+
+
 void DeviceData::save()
 {
     char str[MAX_PATH + 100];
@@ -440,7 +460,7 @@ void DeviceData::save()
 
     HEADER_STRING(drivePath)
     HEADER_STRING(volumeName)
-    HEADER_STRING(cleanName)
+    HEADER_STRING(csvName)
     HEADER_STRING(computerName)
     HEADER_STRING(userName)
     HEADER_STRING(date)
@@ -484,7 +504,13 @@ void DeviceData::save()
     memcpy((void*)cpy, fileData.c_str(), len + 1);
     file.CoverThisData(cpy, len);
 
-    std::string fileName = (cleanName + std::string(".csv")).c_str();
+//    std::string fileName = (csvName + std::string(".csv")).c_str();
+    std::string fileName = (csvName + volumeName + std::string(".csv")).c_str();
+
+    replace_all(fileName, " ", "_");
+    replace_all(fileName, "\\", "");
+    replace_all(fileName, "/", "");
+    replace_all(fileName, "?", "");
 
     file.IO_SaveASCIIFile(fileName.c_str());
 }
@@ -506,18 +532,18 @@ void EveryHere::gatherData()
 DeviceData* EveryHere::findDrive(const char* cleanName) 
 {
     for (auto& itD : deviceData)
-        if (itD.cleanName == cleanName)
+        if (itD.csvName == cleanName)
             return &itD;
 
     return nullptr;
 }
 
-void EveryHere::removeDevice(const char* cleanName)
+void EveryHere::removeDevice(const char* csvName)
 {
     uint32 i = 0;
     for (auto& itD : deviceData)
     {
-        if(itD.cleanName == cleanName)
+        if(itD.csvName == csvName)
         {
             deviceData.erase(deviceData.begin() + i);
             return;
@@ -710,7 +736,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                 switch (sort_spec->ColumnUserID)
                 {
                     case DCID_VolumeName:   delta = strcmp(A.volumeName.c_str(), B.volumeName.c_str()); break;
-                    case DCID_UniqueName:   delta = strcmp(A.cleanName.c_str(), B.cleanName.c_str()); break;
+                    case DCID_UniqueName:   delta = strcmp(A.csvName.c_str(), B.csvName.c_str()); break;
                     case DCID_Path:   delta = strcmp(A.drivePath.c_str(), B.drivePath.c_str()); break;
                     case DCID_DeviceId:   delta = A.deviceId - B.deviceId; break;
                     case DCID_Size:   delta = A.statsSize - B.statsSize; break;
@@ -757,7 +783,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
     int deviceId = (int)deviceData.size();
     deviceData.push_back(DeviceData());
     DeviceData& data = deviceData.back();
-    data.cleanName = to_string(internalName);
+    data.csvName = to_string(internalName);
     data.deviceId = deviceId;
 
     bool error = false;
@@ -765,6 +791,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
     std::string sPath;
     std::string keyName;
     std::string valueName;
+    std::string cleanName;
 
     while(*p)
     {
@@ -795,7 +822,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                         if (keyName == "volumeName")
                             data.volumeName = valueName;
                         if (keyName == "cleanName")
-                            data.cleanName = valueName;
+                            cleanName = valueName;
                         if (keyName == "computerName")
                             data.computerName = valueName;
                         if (keyName == "userName")
@@ -864,6 +891,17 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
         parseLineFeed(p);
     }
+
+    DriveInfo driveInfo;
+    driveInfo.drivePath = FilePath(to_wstring(data.drivePath).c_str());
+//    driveInfo.deviceName = data.;
+//   driveInfo.internalName = data.;
+    driveInfo.volumeName = to_wstring(data.volumeName).c_str();
+    driveInfo.driveFlags = data.driveFlags;
+    driveInfo.serialNumber = data.serialNumber;
+
+    data.csvName = to_string(driveInfo.generateKeyName()).c_str();
+
     data.computeStats();
 
     data.verify();

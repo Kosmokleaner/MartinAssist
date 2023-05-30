@@ -56,15 +56,28 @@ public:
     static void Test();
 };
 
+struct DriveInfo
+{
+    // e.g. L"C:\"
+    FilePath drivePath;
+    // e.g. L"\Device\HarddiskVolume4", must not be 0
+    const wchar_t* deviceName = L"";
+    // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\", must not be 0
+    const wchar_t* internalName = L"";
+    // e.g. L"First Drive", must not be 0
+    const wchar_t* volumeName = L"";
+    // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
+    uint32 driveFlags = 0;
+    //
+    uint32 serialNumber = 0;
+
+    std::wstring generateKeyName() const;
+};
+
 // implement for DriveTraverse()
 struct IDriveTraverse {
     virtual void OnStart() {}
-    // @param inDrivePath e.g. L"C:\"
-    // @param deviceName e.g. L"\Device\HarddiskVolume4"
-    // @param internalName e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
-    // @param volumeName e.g. L"First Drive"
-    // @param flags https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
-    virtual void OnDrive(const FilePath& inDrivePath, const wchar_t* deviceName, const wchar_t* internalName, const wchar_t* volumeName, uint32 driveFlags, uint32 serialNumber) = 0;
+    virtual void OnDrive(const DriveInfo& driveInfo) = 0;
     virtual void OnEnd() {}
 };
 

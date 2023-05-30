@@ -3,6 +3,7 @@
 #include "FileSystem.h"
 #include <io.h>	// _A_SUBDIR, _findclose()
 #include <windows.h>    // GetVolumePathNamesForVolumeNameW()
+#include <algorithm>
 
 
 FilePath::FilePath(const wchar_t* in) {
@@ -172,6 +173,23 @@ static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePat
 	_findclose(hFile);
 }
 
+
+std::wstring DriveInfo::generateKeyName() const
+{
+	// Google drive will change it's internalName all the time so no good as drive key name
+	// e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\"
+//	std::wstring cleanName = internalName;
+
+	// renaming Google drive would create a new entry
+//	std::wstring cleanName = std::to_wstring(serialNumber) + L"_" + volumeName;
+
+	// not very human friendly but works to key the drive
+	std::wstring cleanName = std::to_wstring(serialNumber);
+
+	return cleanName;
+}
+
+
 void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
 	assert(pattern);
 	sink.OnStart();
@@ -305,7 +323,15 @@ void driveTraverse(IDriveTraverse& sink)
 					NULL,
 					0))
 				{
-					sink.OnDrive(path, deviceName, internalName, volumeName, driveFlags, serialNumber);
+					DriveInfo driveInfo;
+					driveInfo.drivePath = path;
+					driveInfo.deviceName = deviceName;
+					driveInfo.internalName = internalName;
+					driveInfo.volumeName = volumeName;
+					driveInfo.driveFlags = driveFlags;
+					driveInfo.serialNumber = serialNumber;
+
+					sink.OnDrive(driveInfo);
 				}
 			}
 		}

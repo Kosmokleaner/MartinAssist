@@ -421,19 +421,21 @@ int Gui::test()
                             {
                                 if (ImGui::MenuItem("Delete File"))
                                 {
-                                    DeleteFileA((drive.cleanName + ".csv").c_str());
+                                    DeleteFileA((drive.csvName + ".csv").c_str());
                                     drive.markedForDelete = true;
                                 }
                                 if (ImGui::MenuItem("Open path (in Explorer)"))
                                 {
-                                    ShellExecuteA(0, 0, (drive.cleanName + ".csv").c_str(), 0, 0, SW_SHOW);
+                                    FilePath filePath(to_wstring(drive.csvName + ".csv").c_str());
+
+                                    ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
                                 }
                             }
                             ImGui::EndPopup();
                         }
 
                         ImGui::TableSetColumnIndex(1);
-                        line = drive.cleanName;
+                        line = drive.csvName;
                         ImGui::TextUnformatted(line.c_str());
 
                         ImGui::TableSetColumnIndex(2);
