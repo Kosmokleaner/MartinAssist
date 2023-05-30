@@ -95,7 +95,7 @@ struct DeviceData {
     std::vector<FileEntry> entries;
     // index in EveryHere.deviceData
     int deviceId = -1;
-    // generated with generateCSVName() without .csv
+    // generated with generateKeyName() without .csv
     std::string csvName;
     // e.g. "First Drive"
     std::string volumeName;

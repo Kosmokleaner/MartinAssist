@@ -305,6 +305,15 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
             // before we them all with false so this is updating only the local ones
             drive->isLocalDrive = true;
         }
+        else 
+        {
+            everyHere.deviceData.push_back(DeviceData());
+            DeviceData& deviceData = everyHere.deviceData.back();
+            deviceData.csvName = to_string(csvName);
+            deviceData.deviceId = (int)(everyHere.deviceData.size() - 1);
+            deviceData.volumeName = to_string(driveInfo.volumeName);
+            deviceData.drivePath = to_string(driveInfo.drivePath.path);
+        }
     }
 };
 

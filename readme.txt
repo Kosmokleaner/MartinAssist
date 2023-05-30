@@ -37,9 +37,8 @@ EveryHere app:
 
 
 todo:
-* show which devices/HDs are present on this computer
+* deleteCSVFile is broken
 * Delete multiselect devices
-* sort devices
 * compute line number for parse errors
 * iterate include hierarchy
 * support unicode
