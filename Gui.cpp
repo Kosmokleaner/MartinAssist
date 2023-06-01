@@ -117,6 +117,16 @@ Gui::Gui()
 {
 }
 
+bool BeginTooltip()
+{
+    bool ret = ImGui::IsItemHovered() && GImGui->HoveredIdTimer > 1.0f;
+
+    if (ret)
+        ImGui::BeginTooltip();
+
+    return ret;
+}
+
 
 int Gui::test()
 {
@@ -376,9 +386,9 @@ int Gui::test()
                     pushTableStyle3();
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
                     ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_None, 0.0f, DCID_VolumeName);
-                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None, 0.0f, DCID_UniqueName);
+//                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None, 0.0f, DCID_UniqueName);
                     ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 0.0f, DCID_Path);
-                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, DCID_DeviceId);
+//                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, DCID_DeviceId);
                     ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None, 0.0f, DCID_Size);
                     ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_None, 0.0f, DCID_Files);
                     ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_None, 0.0f, DCID_Directories);
@@ -407,7 +417,9 @@ int Gui::test()
 
                         ImGui::PushStyleColor(ImGuiCol_Text, drive.isLocalDrive ? ImVec4(0.5f, 0.5f, 1.0f,1) : ImVec4(0.8f, 0.8f, 0.8f, 1));
 
-                        ImGui::TableSetColumnIndex(0);
+                        int columnId = 0;
+
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
                         bool selected = deviceSelectionRange.isSelected(line_no);
                         ImGui::Selectable(drive.volumeName.c_str(), &selected, selectable_flags);
@@ -416,6 +428,13 @@ int Gui::test()
                             deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                             setViewDirty();
                         }
+                        if (BeginTooltip())
+                        {
+                            ImGui::Text("UniqueName: %s.csv", drive.csvName.c_str());
+                            ImGui::Text("DeviceId: %d", drive.deviceId);
+                            ImGui::EndTooltip();
+                        }
+
                         if (ImGui::BeginPopupContextItem())
                         {
                             if (!deviceSelectionRange.isSelected(line_no))
@@ -441,53 +460,53 @@ int Gui::test()
                             ImGui::EndPopup();
                         }
 
-                        ImGui::TableSetColumnIndex(1);
-                        line = drive.csvName;
-                        ImGui::TextUnformatted(line.c_str());
+//                        ImGui::TableSetColumnIndex(columnId++);
+//                        line = drive.csvName;
+//                        ImGui::TextUnformatted(line.c_str());
 
-                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::TextUnformatted(drive.drivePath.c_str());
 
-                        ImGui::TableSetColumnIndex(3);
-                        ImGui::Text("%d", drive.deviceId);
+//                        ImGui::TableSetColumnIndex(columnId++);
+//                        ImGui::Text("%d", drive.deviceId);
 
-                        ImGui::TableSetColumnIndex(4);
+                        ImGui::TableSetColumnIndex(columnId++);
                         {
                             uint64 printSize = 0;
                             const char* printUnit = computeReadableSize(drive.statsSize, printSize);
                             ImGui::Text("%llu %s", printSize, printUnit);
                         }
 
-                        ImGui::TableSetColumnIndex(5);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::Text("%llu", (uint64)drive.entries.size());
 
-                        ImGui::TableSetColumnIndex(6);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::Text("%llu", drive.statsDirs);
 
-                        ImGui::TableSetColumnIndex(7);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::TextUnformatted(drive.computerName.c_str());
 
-                        ImGui::TableSetColumnIndex(8);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::TextUnformatted(drive.userName.c_str());
 
-                        ImGui::TableSetColumnIndex(9);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::TextUnformatted(drive.date.c_str());
 
-                        ImGui::TableSetColumnIndex(10);
+                        ImGui::TableSetColumnIndex(columnId++);
                         if(drive.totalSpace)
                         {
                             uint64 printSize = 0;
                             const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
                             ImGui::Text("%llu %s", printSize, printUnit);
                         }
-                        ImGui::TableSetColumnIndex(11);
+                        ImGui::TableSetColumnIndex(columnId++);
                         bool supportsRemoteStorage = drive.driveFlags & 0x100;
                         ImGui::Text("%d", supportsRemoteStorage ? -(int)(drive.driveType) : drive.driveType);
 
-                        ImGui::TableSetColumnIndex(12);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::Text("%u", drive.serialNumber);
 
-                        ImGui::TableSetColumnIndex(13);
+                        ImGui::TableSetColumnIndex(columnId++);
                         ImGui::Text("%llu", drive.selectedKeys);
 
                         ImGui::PopStyleColor();
