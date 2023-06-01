@@ -175,7 +175,7 @@ struct EveryHere
 
     void buildDriveView(ImGuiTableSortSpecs* sorts_specs);
     // @param deviceSelectionRange into driveView[]
-    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs);
+    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders);
 
     void removeDevice(const char* cleanName);
 

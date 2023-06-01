@@ -122,9 +122,20 @@ bool BeginTooltip()
     bool ret = ImGui::IsItemHovered() && GImGui->HoveredIdTimer > 1.0f;
 
     if (ret)
+    {
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.9f, 0.9f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
         ImGui::BeginTooltip();
+    }
 
     return ret;
+}
+void EndTooltip()
+{
+    ImGui::EndTooltip();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(2);
 }
 
 
@@ -232,6 +243,7 @@ int Gui::test()
         ImVec4* colors = ImGui::GetStyle().Colors;
         // no transparent windows
         colors[ImGuiCol_WindowBg].w = 1.0f;
+        colors[ImGuiCol_PopupBg].w = 1.0f;
 
         ImGui::GetStyle().GrabMinSize = 20;
     }
@@ -288,17 +300,17 @@ int Gui::test()
 
             ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
             // 0: all drives, 1:local drives
-            int tabId = 0;
+            int driveTabId = 0;
             if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
             {
                 if (ImGui::BeginTabItem("All Drives"))
                 {
-                    tabId = 0;
+                    driveTabId = 0;
                     ImGui::EndTabItem();
                 }
                 if (ImGui::BeginTabItem("Local Drives"))
                 {
-                    tabId = 1;
+                    driveTabId = 1;
                     ImGui::EndTabItem();
                 }
                 ImGui::EndTabBar();
@@ -408,7 +420,7 @@ int Gui::test()
                     {
                         DeviceData& drive = everyHere.deviceData[*it];
 
-                        if(tabId == 1 && !drive.isLocalDrive)
+                        if(driveTabId == 1 && !drive.isLocalDrive)
                             continue;
 
                         ImGui::TableNextRow();
@@ -432,7 +444,7 @@ int Gui::test()
                         {
                             ImGui::Text("UniqueName: %s.csv", drive.csvName.c_str());
                             ImGui::Text("DeviceId: %d", drive.deviceId);
-                            ImGui::EndTooltip();
+                            EndTooltip();
                         }
 
                         if (ImGui::BeginPopupContextItem())
@@ -543,20 +555,47 @@ int Gui::test()
                 setViewDirty();
             }
 
+            ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+            // 0: files, 1:folders
+            int filesTabId = 0;
+            static int oldFilesTabId = 0;
+            if (ImGui::BeginTabBar("FilesOrDir", tab_bar_flags))
             {
-                int step=1;
-                const char *fmt[] = {"", "1 KB", "1 MB", "10 MB", "100 MB", "1 GB"};
-                minLogSize = ImClamp(minLogSize, 0, 5);
-                ImGui::SetNextItemWidth(150);
-                if(ImGui::InputScalar("minimum File Size  ", ImGuiDataType_S32, &minLogSize, &step, &step, fmt[ImClamp(minLogSize, 0, 5)]))
-                    setViewDirty();
+                if (ImGui::BeginTabItem("Files"))
+                {
+                    filesTabId = 0;
+                    ImGui::EndTabItem();
+                }
+                if (ImGui::BeginTabItem("Folders"))
+                {
+                    filesTabId = 1;
+                    ImGui::EndTabItem();
+                }
+                ImGui::EndTabBar();
             }
-            ImGui::SameLine();
+            if(oldFilesTabId != filesTabId)
             {
-                const char* fmt = " \000" "<2 no\000" "<3 minor\000" "=3 enough\000" ">3 too much\000" ">4 way too much\000" "\000";
-                ImGui::SetNextItemWidth(150);
-                if (ImGui::Combo("Redundancy  ", &redundancyFilter, fmt))
-                    setViewDirty();
+                oldFilesTabId = filesTabId;
+                setViewDirty();
+            }
+
+            if(filesTabId == 0)
+            {
+                {
+                    int step=1;
+                    const char *fmt[] = {"", "1 KB", "1 MB", "10 MB", "100 MB", "1 GB"};
+                    minLogSize = ImClamp(minLogSize, 0, 5);
+                    ImGui::SetNextItemWidth(150);
+                    if(ImGui::InputScalar("minimum File Size  ", ImGuiDataType_S32, &minLogSize, &step, &step, fmt[ImClamp(minLogSize, 0, 5)]))
+                        setViewDirty();
+                }
+                ImGui::SameLine();
+                {
+                    const char* fmt = " \000" "<2 no\000" "<3 minor\000" "=3 enough\000" ">3 too much\000" ">4 way too much\000" "\000";
+                    ImGui::SetNextItemWidth(150);
+                    if (ImGui::Combo("Redundancy  ", &redundancyFilter, fmt))
+                        setViewDirty();
+                }
             }
 
             {
@@ -578,15 +617,21 @@ int Gui::test()
 
                 // safe space for info line
                 ImVec2 outerSize = ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() - ImGui::GetStyle().ItemSpacing.y);
-                const uint32 numberOfColumns = 5;
+                uint32 numberOfColumns = 3;
+                if (filesTabId == 0)
+                    numberOfColumns += 2;
+
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
                 {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 0.0f, FCID_Name);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None, 0.0f, FCID_Size);
-                    ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_None, 0.0f, FCID_Redundancy);
-                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, FCID_DeviceId);
+                    if(filesTabId == 0)
+                    {
+                        ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None, 0.0f, FCID_Size);
+                        ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_None, 0.0f, FCID_Redundancy);
+                    }
                     ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 0.0f, FCID_Path);
+                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, FCID_DeviceId);
                     //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
@@ -606,7 +651,7 @@ int Gui::test()
                         // do this before changes to the fileView
                         fileSelectionRange.reset();
                         int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                        everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, deviceSelectionRange, fileSortCriteria);
+                        everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, deviceSelectionRange, fileSortCriteria, filesTabId == 1);
                         whenToRebuildView = -1;
                         fileSortCriteria = {};
                     }
@@ -632,7 +677,9 @@ int Gui::test()
 
                             ImGui::PushID(line_no);
 
-                            ImGui::TableSetColumnIndex(0);
+                            int columnId = 0;
+
+                            ImGui::TableSetColumnIndex(columnId++);
                             ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
                             bool selected = fileSelectionRange.isSelected(line_no);
                             ImGui::Selectable(line.c_str(), &selected, selectable_flags); 
@@ -691,19 +738,22 @@ int Gui::test()
 
                             ImGui::PopID();
 
-                            ImGui::TableSetColumnIndex(1);
-                            uint64 printSize = 0;
-                            const char* printUnit = computeReadableSize(entry.key.sizeOrFolder, printSize);
-                            ImGui::Text("%llu %s", printSize, printUnit);
+                            if(filesTabId == 0)
+                            {
+                                ImGui::TableSetColumnIndex(columnId++);
+                                uint64 printSize = 0;
+                                const char* printUnit = computeReadableSize(entry.key.sizeOrFolder, printSize);
+                                ImGui::Text("%llu %s", printSize, printUnit);
 
-                            ImGui::TableSetColumnIndex(2);
-                            ImGui::Text("%d", everyHere.findRedundancy(entry.key));
+                                ImGui::TableSetColumnIndex(columnId++);
+                                ImGui::Text("%d", everyHere.findRedundancy(entry.key));
+                            }
 
-                            ImGui::TableSetColumnIndex(3);
-                            ImGui::Text("%d", entry.value.deviceId);
-
-                            ImGui::TableSetColumnIndex(4);
+                            ImGui::TableSetColumnIndex(columnId++);
                             ImGui::TextUnformatted(entry.value.path.c_str());
+
+                            ImGui::TableSetColumnIndex(columnId++);
+                            ImGui::Text("%d", entry.value.deviceId);
                         }
                     }
                     clipper.End();

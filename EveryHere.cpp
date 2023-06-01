@@ -561,8 +561,9 @@ void EveryHere::removeDevice(const char* csvName)
     }
 }
 
-void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs)
+void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders)
 {
+    assert(minSize >= 0);
     assert(filter);
 
     fileView.clear();
@@ -591,8 +592,16 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
             if(fileEntry.value.parent >= 0 && fileEntry.value.path.empty())
                 fileEntry.value.path = itD.generatePath(fileEntry.value.parent);
 
-            if(fileEntry.key.sizeOrFolder < minSize)
-                continue;
+            if(folders)
+            {
+                if (fileEntry.key.sizeOrFolder >= 0)
+                    continue;
+            }
+            else
+            {
+                if(fileEntry.key.sizeOrFolder < minSize)
+                    continue;
+            }
 
             if(redundancyFilter)
             {
@@ -616,10 +625,6 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
 
             // todo: optimize
             if(stristrOptimized(fileEntry.key.fileName.c_str(), filter, (int)fileEntry.key.fileName.size(), filterLen) == 0)
-                continue;
-
-            // exclude folders
-            if(fileEntry.key.sizeOrFolder < 0)
                 continue;
 
             fileView.push_back(entry);
