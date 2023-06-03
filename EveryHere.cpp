@@ -702,12 +702,12 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
                 // Here we identify columns using the ColumnUserID value that we ourselves passed to TableSetupColumn()
                 // We could also choose to identify columns based on their index (sort_spec->ColumnIndex), which is simpler!
                 const ImGuiTableColumnSortSpecs* sort_spec = &sorts_specs->Specs[n];
-                int delta = 0;
+                int64 delta = 0;
                 switch (sort_spec->ColumnUserID)
                 {
                     case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
-                    case FCID_Size:        delta = (int)(A.key.sizeOrFolder - B.key.sizeOrFolder); break;
-                    case FCID_Redundancy:  delta = (int)everyHere.findRedundancy(A.key) - (int)everyHere.findRedundancy(B.key); break;
+                    case FCID_Size:        delta = A.key.sizeOrFolder - B.key.sizeOrFolder; break;
+                    case FCID_Redundancy:  delta = everyHere.findRedundancy(A.key) - everyHere.findRedundancy(B.key); break;
                     case FCID_DeviceId:    delta = a.deviceId - b.deviceId; break;
                     case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                     default: IM_ASSERT(0); break;

@@ -79,28 +79,28 @@ void Gui::setViewDirty()
     whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.25f;
 }
 
-// @return printUnit e.g. "GB" or "MB" 
-const char* computeReadableSize(uint64 inputSize, uint64 &outPrintSize) 
+// @return printUnit e.g. "%.3f GB" or "%.3f MB" 
+const char* computeReadableSize(uint64 inputSize, double &outPrintSize) 
 {
-    outPrintSize = inputSize;
+    outPrintSize = (double)inputSize;
 
     if (inputSize >= 1024 * 1024 * 1024)
     {
-        outPrintSize /= (1024 * 1024 * 1024);
-        return "GB";
+        outPrintSize /= (double)(1024 * 1024 * 1024);
+        return ((inputSize / 1024 / 1024) % 1024) ? "%.3f GB" : "%.0f GB";
     }
     else if (inputSize >= 1024 * 1024)
     {
-        outPrintSize /= (1024 * 1024);
-        return "MB";
+        outPrintSize /= (double)(1024 * 1024);
+        return ((inputSize / 1024) % 1024) ? "%.3f MB" : "%.0f MB";
     }
     else if (inputSize >= 1024)
     {
-        outPrintSize /= 1024;
-        return "KB";
+        outPrintSize /= (double)1024;
+        return (inputSize % 1024) ? "%.3f KB" : "%.0f KB";
     }
 
-    return "B";
+    return "%.0f B";
 }
 
 
@@ -485,9 +485,9 @@ int Gui::test()
 
                         ImGui::TableSetColumnIndex(columnId++);
                         {
-                            uint64 printSize = 0;
+                            double printSize = 0;
                             const char* printUnit = computeReadableSize(drive.statsSize, printSize);
-                            ImGui::Text("%llu %s", printSize, printUnit);
+                            ImGui::Text(printUnit, printSize);
                         }
 
                         ImGui::TableSetColumnIndex(columnId++);
@@ -508,9 +508,9 @@ int Gui::test()
                         ImGui::TableSetColumnIndex(columnId++);
                         if(drive.totalSpace)
                         {
-                            uint64 printSize = 0;
+                            double printSize = 0;
                             const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
-                            ImGui::Text("%llu %s", printSize, printUnit);
+                            ImGui::Text(printUnit, printSize);
                         }
                         ImGui::TableSetColumnIndex(columnId++);
                         bool supportsRemoteStorage = drive.driveFlags & 0x100;
@@ -689,6 +689,13 @@ int Gui::test()
                             {
                                 fileSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                             }
+                            if (BeginTooltip())
+                            {
+                                // todo: path concat needs to be improved
+                                ImGui::Text("FilePath: %s%s/%s", deviceData.drivePath.c_str(), entry.value.path.c_str(), line.c_str());
+                                ImGui::Text("Size: %llu Bytes", entry.key.sizeOrFolder);
+                                EndTooltip();
+                            }
                             if (ImGui::BeginPopupContextItem())
                             {
                                 if(!fileSelectionRange.isSelected(line_no))
@@ -743,9 +750,9 @@ int Gui::test()
                             if(filesTabId == 0)
                             {
                                 ImGui::TableSetColumnIndex(columnId++);
-                                uint64 printSize = 0;
+                                double printSize = 0;
                                 const char* printUnit = computeReadableSize(entry.key.sizeOrFolder, printSize);
-                                ImGui::Text("%llu %s", printSize, printUnit);
+                                ImGui::Text(printUnit, printSize);
 
                                 ImGui::TableSetColumnIndex(columnId++);
                                 ImGui::Text("%d", everyHere.findRedundancy(entry.key));
@@ -768,10 +775,12 @@ int Gui::test()
                 {
                     ImGui::Text("Files: %lld", (int64)everyHere.fileView.size());
                     ImGui::SameLine();
+                    ImGui::Text("Size: ");
+                    ImGui::SameLine();
 
-                    uint64 printSize = 0;
+                    double printSize = 0;
                     const char* printUnit = computeReadableSize(everyHere.viewSumSize, printSize);
-                    ImGui::Text("Size: %llu %s", printSize, printUnit);
+                    ImGui::Text(printUnit, printSize);
                 }
                 else 
                 {
@@ -788,7 +797,7 @@ int Gui::test()
                             selectedSize += entry.key.sizeOrFolder;
                     });
 
-                    uint64 printSize = 0;
+                    double printSize = 0;
                     const char* printUnit = computeReadableSize(selectedSize, printSize);
                     ImGui::Text("Size: %llu %s", printSize, printUnit);
                 }
