@@ -236,6 +236,7 @@ int Gui::test()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+    // theme
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsClassic();
@@ -243,7 +244,7 @@ int Gui::test()
         ImVec4* colors = ImGui::GetStyle().Colors;
         // no transparent windows
         colors[ImGuiCol_WindowBg].w = 1.0f;
-        colors[ImGuiCol_PopupBg].w = 1.0f;
+        colors[ImGuiCol_PopupBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
 
         ImGui::GetStyle().GrabMinSize = 20;
     }
