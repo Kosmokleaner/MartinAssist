@@ -272,7 +272,7 @@ struct DriveGatherTraverse : public IDriveTraverse {
             sprintf_s(str, sizeof(str) / sizeof(*str), "%02d/%02d/%04d %02d:%02d:%02d\n",
                 st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
 
-            deviceData.date = str;
+            deviceData.dateGathered = str;
         }
 
         EveryHereDirectory traverse(deviceData, deviceId, drivePath.c_str());
@@ -472,7 +472,7 @@ void DeviceData::save()
     HEADER_STRING(csvName)
     HEADER_STRING(computerName)
     HEADER_STRING(userName)
-    HEADER_STRING(date)
+    HEADER_STRING(dateGathered)
 
 #undef HEADER_STRING
 
@@ -758,7 +758,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_Directories:   delta = A.statsDirs - B.statsDirs; break;
                     case DCID_Computer:   delta = strcmp(A.computerName.c_str(), B.computerName.c_str()); break;
                     case DCID_User:   delta = strcmp(A.userName.c_str(), B.userName.c_str()); break;
-                    case DCID_Date:   delta = strcmp(A.date.c_str(), B.date.c_str()); break;
+                    case DCID_Date:   delta = strcmp(A.dateGathered.c_str(), B.dateGathered.c_str()); break;
                     case DCID_totalSpace:   delta = A.totalSpace - B.totalSpace; break;
                     case DCID_type:   delta = A.driveType - B.driveType; break;
                     case DCID_serial:   delta = A.serialNumber - B.serialNumber; break;
@@ -842,7 +842,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                         if (keyName == "userName")
                             data.userName = valueName;
                         if (keyName == "date")
-                            data.date = valueName;
+                            data.dateGathered = valueName;
                         if (keyName == "freeSpace")
                             data.freeSpace = stringToInt64(valueName.c_str());
                         if (keyName == "totalSpace")

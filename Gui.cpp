@@ -384,33 +384,34 @@ int Gui::test()
                     ImGuiTableFlags_ScrollY |
                     ImGuiTableFlags_BordersOuter |
                     ImGuiTableFlags_BordersV |
+                    ImGuiTableFlags_SizingFixedFit |
                     ImGuiTableFlags_Resizable |
                     ImGuiTableFlags_Reorderable |
                     ImGuiTableFlags_Hideable |
                     ImGuiTableFlags_Sortable |
                     ImGuiTableFlags_SortMulti;
 
-                const uint32 numberOfColumns = 14;
+                const uint32 numberOfColumns = 12;
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
                 {
                     std::string line;
 
                     pushTableStyle3();
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_None, 0.0f, DCID_VolumeName);
+                    ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_VolumeName);
 //                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None, 0.0f, DCID_UniqueName);
-                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 0.0f, DCID_Path);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Path);
 //                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, DCID_DeviceId);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None, 0.0f, DCID_Size);
-                    ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_None, 0.0f, DCID_Files);
-                    ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_None, 0.0f, DCID_Directories);
-                    ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_None, 0.0f, DCID_Computer);
-                    ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_None, 0.0f, DCID_User);
-                    ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_None, 0.0f, DCID_Date);
-                    ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_None, 0.0f, DCID_totalSpace);
-                    ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_None, 0.0f, DCID_type);
-                    ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_None, 0.0f, DCID_serial);
-                    ImGui::TableSetupColumn("selected Files", ImGuiTableColumnFlags_None, 0.0f, DCID_selectedFiles);
+                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Size);
+                    ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Files);
+                    ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_Directories);
+                    ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Computer);
+                    ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_User);
+                    ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Date);
+                    ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_totalSpace);
+                    ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_type);
+                    ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_serial);
+                    ImGui::TableSetupColumn("selected Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_selectedFiles);
                     ImGui::TableHeadersRow();
 
                     everyHere.buildDriveView(ImGui::TableGetSortSpecs());
@@ -502,7 +503,7 @@ int Gui::test()
                         ImGui::TextUnformatted(drive.userName.c_str());
 
                         ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::TextUnformatted(drive.date.c_str());
+                        ImGui::TextUnformatted(drive.dateGathered.c_str());
 
                         ImGui::TableSetColumnIndex(columnId++);
                         if(drive.totalSpace)
@@ -609,7 +610,8 @@ int Gui::test()
                     ImGuiTableFlags_ScrollY |
                     ImGuiTableFlags_BordersOuter | 
                     ImGuiTableFlags_BordersV | 
-                    ImGuiTableFlags_Resizable | 
+                    ImGuiTableFlags_SizingFixedFit |
+                    ImGuiTableFlags_Resizable |
                     ImGuiTableFlags_Reorderable | 
                     ImGuiTableFlags_Hideable | 
                     ImGuiTableFlags_Sortable | 
@@ -624,14 +626,14 @@ int Gui::test()
                 if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
                 {
                     ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None, 0.0f, FCID_Name);
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Name);
                     if(filesTabId == 0)
                     {
-                        ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_None, 0.0f, FCID_Size);
-                        ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_None, 0.0f, FCID_Redundancy);
+                        ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Size);
+                        ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Redundancy);
                     }
-                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_None, 0.0f, FCID_Path);
-                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, FCID_DeviceId);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Path);
+                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_DeviceId);
                     //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);

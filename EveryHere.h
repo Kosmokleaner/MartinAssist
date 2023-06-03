@@ -112,7 +112,7 @@ struct DeviceData {
     // e.g. "Hans"
     std::string userName;
     // when this data was gathered
-    std::string date;
+    std::string dateGathered;
     // in bytes
     uint64 freeSpace = 0;
     // in bytes
