@@ -340,7 +340,7 @@ int Gui::test()
                     str[2] = 0;
                     everyHere.deviceData.push_back(DeviceData());
                     DeviceData &d = everyHere.deviceData.back();
-                    d.cleanName = str;
+                    d.csvName = str;
                     d.volumeName = str;
                     str[0] = 'A' + (rand() % 26);
                     str[1] = ':';
@@ -503,7 +503,7 @@ int Gui::test()
                         ImGui::TextUnformatted(drive.userName.c_str());
 
                         ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::TextUnformatted(drive.dateGathered.c_str());
+                        ImGui::TextUnformatted(drive.dateGatheredString.c_str());
 
                         ImGui::TableSetColumnIndex(columnId++);
                         if(drive.totalSpace)

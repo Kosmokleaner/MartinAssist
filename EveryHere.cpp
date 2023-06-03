@@ -17,6 +17,44 @@ void dateToCString(__time64_t t, char outTimeStr[80])
     strftime(outTimeStr, 80, "%m/%d/%Y %H:%M:%S", &tm);
 }
 
+// @param inTime date in this form: "%02d/%02d/%04d %02d:%02d:%02d"
+int64 timeStringToValue(const char* inTime)
+{
+    assert(inTime);
+
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+
+    SYSTEMTIME a = {};
+
+    if (*inTime)
+    {
+        int cnt = sscanf_s(inTime, "%02d/%02d/%04d %02d:%02d:%02d", &day, &month, &year, &hour, &minute, &second);
+        assert(cnt == 6);
+        if (cnt != 6)
+            return 0;
+
+        a.wYear = year;
+        a.wMonth = month;
+        a.wDay = day;
+        a.wHour = hour;
+        a.wMinute = minute;
+        a.wSecond = second;
+    }
+
+    FILETIME v_ftime;
+    BOOL ok = SystemTimeToFileTime(&a, &v_ftime);
+    assert(ok);
+    ULARGE_INTEGER v_ui;
+    v_ui.LowPart = v_ftime.dwLowDateTime;
+    v_ui.HighPart = v_ftime.dwHighDateTime;
+    return v_ui.QuadPart;
+}
+
 struct FolderTree
 {
     // -1 is used for root 
@@ -272,7 +310,8 @@ struct DriveGatherTraverse : public IDriveTraverse {
             sprintf_s(str, sizeof(str) / sizeof(*str), "%02d/%02d/%04d %02d:%02d:%02d\n",
                 st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
 
-            deviceData.dateGathered = str;
+            deviceData.dateGatheredString = str;
+            deviceData.dateGatheredValue = timeStringToValue(str);
         }
 
         EveryHereDirectory traverse(deviceData, deviceId, drivePath.c_str());
@@ -472,7 +511,7 @@ void DeviceData::save()
     HEADER_STRING(csvName)
     HEADER_STRING(computerName)
     HEADER_STRING(userName)
-    HEADER_STRING(dateGathered)
+    HEADER_STRING(dateGatheredString)
 
 #undef HEADER_STRING
 
@@ -522,6 +561,19 @@ void DeviceData::save()
     replace_all(fileName, "?", "");
 
     file.IO_SaveASCIIFile(fileName.c_str());
+}
+
+EveryHere::EveryHere()
+{
+    // some unit tests
+    int64 a = timeStringToValue("23/05/2023 19:40:40");
+    int64 b = timeStringToValue("30/05/2023 01:47:36");
+    int64 c = timeStringToValue("30/05/2023 01:48:31");
+    int64 d = timeStringToValue("30/05/2023 01:49:57");
+    assert(a < b);
+    assert(b < c);
+    assert(c < d);
+    int f = 0;
 }
 
 void EveryHere::gatherData() 
@@ -719,7 +771,6 @@ uint32 EveryHere::findRedundancy(const FileKey& fileKey) const
     return ret;
 }
 
-
 void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
 {
     uint32 count = (uint32)driveView.size();
@@ -758,7 +809,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_Directories:   delta = A.statsDirs - B.statsDirs; break;
                     case DCID_Computer:   delta = strcmp(A.computerName.c_str(), B.computerName.c_str()); break;
                     case DCID_User:   delta = strcmp(A.userName.c_str(), B.userName.c_str()); break;
-                    case DCID_Date:   delta = strcmp(A.dateGathered.c_str(), B.dateGathered.c_str()); break;
+                    case DCID_Date:   delta = A.dateGatheredValue - B.dateGatheredValue; break;
                     case DCID_totalSpace:   delta = A.totalSpace - B.totalSpace; break;
                     case DCID_type:   delta = A.driveType - B.driveType; break;
                     case DCID_serial:   delta = A.serialNumber - B.serialNumber; break;
@@ -842,7 +893,10 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                         if (keyName == "userName")
                             data.userName = valueName;
                         if (keyName == "date")
-                            data.dateGathered = valueName;
+                        {
+                            data.dateGatheredString = valueName;
+                            data.dateGatheredValue = timeStringToValue(valueName.c_str());
+                        }
                         if (keyName == "freeSpace")
                             data.freeSpace = stringToInt64(valueName.c_str());
                         if (keyName == "totalSpace")

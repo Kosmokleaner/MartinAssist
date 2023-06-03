@@ -111,8 +111,10 @@ struct DeviceData {
     std::string computerName;
     // e.g. "Hans"
     std::string userName;
-    // when this data was gathered
-    std::string dateGathered;
+    // when this data was gathered, saved
+    std::string dateGatheredString;
+    // computed from dateGathered
+    int64 dateGatheredValue = 0;
     // in bytes
     uint64 freeSpace = 0;
     // in bytes
@@ -168,6 +170,9 @@ struct EveryHere
     //
     int64 viewSumSize = 0;
 
+
+    EveryHere();
+        
     void gatherData();
     // @param internalName must not be null, e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
     // @return success
