@@ -20,8 +20,12 @@ bool parseCpp(CppParser& parser, const Char*& p)
     // can happen e.g. non C++ token in string or non compilable code
     ++p;
     parseWhiteSpaceOrLF(p);
+
+#pragma warning (push)
+#pragma warning (disable: 4189)
     // e.g. 
     const char* challenge = "ô";
+#pragma warning (pop)
 
     return true;
 }
@@ -54,8 +58,13 @@ bool parseFile(CppParser& parser, const Char*& p) {
         assert(!isWhiteSpaceOrLF(*p));
 
         bool ok = parseCpp(parser, p);
-        // check *p what the parse wasn't able to consume, todo: error message
+        // check *p what the parse wasn't able to consume
         assert(ok);
+        if(!ok)
+        {
+            // todo: error message
+            return false;
+        }
 
         assert(!isWhiteSpaceOrLF(*p)); // last function should have called parseWhiteSpace
 
@@ -132,6 +141,9 @@ bool parseNameOrNumber(const Char*& p)
 
 bool parseCppToken(CppParser& parser, const Char*& p)
 {
+    // to supress compiler warning
+    parser;
+
     assert(!isWhiteSpaceOrLF(*p)); // call parseWhiteSpace before or last function should have
 
     if(parseNameOrNumber(p))
@@ -202,7 +214,7 @@ bool parsePreprocessorLine(CppParser& parser, const Char*& p)
         if (parseStartsWith(p, "<")) {
             parseWhiteSpaceOrLF(p);
 
-            SPushStringA<maxPath> path = parsePath(p);
+            path = parsePath(p);
 
             if (parseStartsWith(p, ">")) {
                 parser.sink->onInclude(path.c_str(), false);

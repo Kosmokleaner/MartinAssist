@@ -297,7 +297,7 @@ int Gui::test()
         // Devices
         {
             ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
-            ImGui::Begin("EveryHere Devices");
+            ImGui::Begin("EveryHere Devices", 0, ImGuiWindowFlags_NoCollapse);
 
             ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
             // 0: all drives, 1:local drives
@@ -549,7 +549,7 @@ int Gui::test()
         // FileEntries
         {
             ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
-            ImGui::Begin("EveryHere Files");
+            ImGui::Begin("EveryHere Files", 0, ImGuiWindowFlags_NoCollapse);
 
             // todo: filter button
             if(ImGui::InputText("filter", &filter))
