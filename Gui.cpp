@@ -235,6 +235,7 @@ int Gui::test()
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
 
     // theme
     // Setup Dear ImGui style
