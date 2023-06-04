@@ -13,6 +13,11 @@ void dateToCString(__time64_t t, char outTimeStr[80])
     struct tm tm;
     errno_t err =  _localtime64_s(&tm, &t);
     assert(!err);
+    if(err)
+    {
+        *outTimeStr = 0;
+        return;
+    }    
     // https://support.echo360.com/hc/en-us/articles/360035034372-Formatting-Dates-for-CSV-Imports#:~:text=Some%20of%20the%20CSV%20imports,program%20like%20Microsoft%C2%AE%20Excelf
     strftime(outTimeStr, 80, "%m/%d/%Y %H:%M:%S", &tm);
 }
@@ -38,17 +43,19 @@ int64 timeStringToValue(const char* inTime)
         if (cnt != 6)
             return 0;
 
-        a.wYear = year;
-        a.wMonth = month;
-        a.wDay = day;
-        a.wHour = hour;
-        a.wMinute = minute;
-        a.wSecond = second;
+        a.wYear = (WORD)year;
+        a.wMonth = (WORD)month;
+        a.wDay = (WORD)day;
+        a.wHour = (WORD)hour;
+        a.wMinute = (WORD)minute;
+        a.wSecond = (WORD)second;
     }
 
     FILETIME v_ftime;
     BOOL ok = SystemTimeToFileTime(&a, &v_ftime);
     assert(ok);
+    if(!ok)
+        return 0;
     ULARGE_INTEGER v_ui;
     v_ui.LowPart = v_ftime.dwLowDateTime;
     v_ui.HighPart = v_ftime.dwHighDateTime;
@@ -565,7 +572,7 @@ void DeviceData::save()
 
 EveryHere::EveryHere()
 {
-    // some unit tests
+/*    // some unit tests
     int64 a = timeStringToValue("23/05/2023 19:40:40");
     int64 b = timeStringToValue("30/05/2023 01:47:36");
     int64 c = timeStringToValue("30/05/2023 01:48:31");
@@ -573,8 +580,7 @@ EveryHere::EveryHere()
     assert(a < b);
     assert(b < c);
     assert(c < d);
-    int f = 0;
-}
+*/}
 
 void EveryHere::gatherData() 
 {
@@ -622,23 +628,23 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
     viewSumSize = 0;
     int filterLen = (int)strlen(filter);
 
-    for (uint32 line_no = 0; line_no < driveView.size(); ++line_no)
+    for (uint32 lineNoDrive = 0; lineNoDrive < driveView.size(); ++lineNoDrive)
     {
-        if (!deviceSelectionRange.isSelected(line_no))
+        if (!deviceSelectionRange.isSelected(lineNoDrive))
             continue;
 
-        DeviceData& itD = deviceData[driveView[line_no]];
-        uint64 id = 0;
+        DeviceData& itD = deviceData[driveView[lineNoDrive]];
 
         fileView.reserve(itD.entries.size());
 
-        for (const auto& itE : itD.entries)
+        uint64 id = 0;
+        for (auto& fileEntry : itD.entries)
         {
             ViewEntry entry;
             entry.deviceId = itD.deviceId;
             entry.fileEntryId = id++;
 
-            FileEntry& fileEntry = itD.entries[entry.fileEntryId];
+//            FileEntry& fileEntry = itD.entries[entry.fileEntryId];
 
             // should happen only in the beginnng
             if(fileEntry.value.parent >= 0 && fileEntry.value.path.empty())
@@ -763,9 +769,9 @@ uint32 EveryHere::findRedundancy(const FileKey& fileKey) const
 
     const std::vector<bool>& set = it->second;
     uint32 ret = 0;
-    for (auto it = set.begin(), end = set.end(); it != end; ++it)
+    for (auto itBool = set.begin(), end = set.end(); itBool != end; ++itBool)
     {
-        if(*it)
+        if(*itBool)
             ++ret;
     }
     return ret;

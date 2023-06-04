@@ -31,10 +31,17 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
     }
 
     virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) {
+        // to prevent compiler warning
+        filePath;directory;findData;
+
+
         return true;
     }
 
     virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData) {
+        // to prevent compiler warning
+        findData;
+
         // todo: static to avoid heap allocations, prevents multithreading use
         static FilePath local; local.path.clear();
 
@@ -61,6 +68,13 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
     }
 };
 
+void check(bool a) 
+{
+    assert(a);
+    if(!a)
+        __debugbreak();
+}
+
 /* This is the main function
    ** just a few parser confusing constructs / *** *  * / \/ *
    this is the third line */
@@ -68,7 +82,7 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
 void CppParserTest() 
 {
     {
-        uint32 line = -1, col = -1;
+        int32 line = -1, col = -1;
 
         // todo: test in release as well
         const Char *file = (const Char*)
@@ -81,41 +95,41 @@ void CppParserTest()
             ;                           // 73
 
         // start
-        assert(computeLocationInFile(file, file + 0, line, col));
-        assert(line == 1 && col == 1);
+        check(computeLocationInFile(file, file + 0, line, col));
+        check(line == 1 && col == 1);
         // 2 characters in
-        assert(computeLocationInFile(file, file + 2, line, col));
-        assert(line == 1 && col == 3);
+        check(computeLocationInFile(file, file + 2, line, col));
+        check(line == 1 && col == 3);
         // end of line 1
-        assert(computeLocationInFile(file, file + 8, line, col));
-        assert(line == 1 && col == 9);
+        check(computeLocationInFile(file, file + 8, line, col));
+        check(line == 1 && col == 9);
         // line 2
-        assert(computeLocationInFile(file, file + 9, line, col));
-        assert(line == 2 && col == 1);
+        check(computeLocationInFile(file, file + 9, line, col));
+        check(line == 2 && col == 1);
         // line 3
-        assert(computeLocationInFile(file, file + 18, line, col));
-        assert(line == 3 && col == 1);
+        check(computeLocationInFile(file, file + 18, line, col));
+        check(line == 3 && col == 1);
         // after one tab
-        assert(computeLocationInFile(file, file + 19, line, col));
-        assert(line == 3 && col == 5);
+        check(computeLocationInFile(file, file + 19, line, col));
+        check(line == 3 && col == 5);
         // after two tabs
-        assert(computeLocationInFile(file, file + 20, line, col));
-        assert(line == 3 && col == 9);
+        check(computeLocationInFile(file, file + 20, line, col));
+        check(line == 3 && col == 9);
         // line 4
-        assert(computeLocationInFile(file, file + 33, line, col));
-        assert(line == 4 && col == 1);
+        check(computeLocationInFile(file, file + 33, line, col));
+        check(line == 4 && col == 1);
         // line 5 a special return
-        assert(computeLocationInFile(file, file + 50, line, col));
-        assert(line == 5 && col == 1);
+        check(computeLocationInFile(file, file + 50, line, col));
+        check(line == 5 && col == 1);
         // line 6 a different return
-        assert(computeLocationInFile(file, file + 70, line, col));
-        assert(line == 6 && col == 1);
+        check(computeLocationInFile(file, file + 70, line, col));
+        check(line == 6 && col == 1);
         // line 7
-        assert(computeLocationInFile(file, file + 73, line, col));
-        assert(line == 6 && col == 4);
+        check(computeLocationInFile(file, file + 73, line, col));
+        check(line == 6 && col == 4);
         // End of file
-        assert(!computeLocationInFile(file, file + 74, line, col));
-        assert(line == 0 && col == 0);
+        check(!computeLocationInFile(file, file + 74, line, col));
+        check(line == 0 && col == 0);
     }
 
 

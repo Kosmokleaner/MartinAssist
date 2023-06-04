@@ -96,7 +96,6 @@ bool parseLineFeed(const Char*& p)
 
 bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 {
-	bool ret = false;
 	Out.clear();
 
 	const Char* start = p;
@@ -295,7 +294,7 @@ SPushStringA<MAX_PATH> parsePath(const Char* &p)
 	return Ret;
 }
 
-bool computeLocationInFile(const Char* fileStart, const Char* where, uint32_t & outLine, uint32_t & outColumn, uint32_t tabSize)
+bool computeLocationInFile(const Char* fileStart, const Char* where, int32_t & outLine, int32_t & outColumn, uint32_t tabSize)
 {
 	assert(fileStart);
 	assert(where);
@@ -404,7 +403,7 @@ const char* stristrOptimized(const char* X, const char* Y, int m, int n)
 	{
 		// build table to avoid costly localization functions
 		for (int i = 1; i < 256; ++i)
-			tab[i] = toupper(i);
+			tab[i] = (char)toupper(i);
 	}
 
 	// base case 1: `Y` is NULL or empty

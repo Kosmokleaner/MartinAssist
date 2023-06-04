@@ -48,6 +48,8 @@ void LiterateProcessor::build(const wchar_t* outputFile) {
 }
 
 void LiterateProcessor::onInclude(const char* path, bool local) {
+    // to prevent compile warning
+    path; local;
 }
 
 void LiterateProcessor::onCommentLine(const Char* line) {

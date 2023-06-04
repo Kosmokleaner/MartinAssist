@@ -44,7 +44,7 @@ int64_t stringToInt64(const char* str, int64_t fail = -1);
 // @param outLine starts with 1
 // @param outColumn starts with 1
 // @return success (can fail if p is not in fileStart string before null termination, if false outLine and outColumn are 0
-bool computeLocationInFile(const Char* fileStart, const Char* where, uint32_t& outLine, uint32_t& outColumn, uint32_t tabSize = 4);
+bool computeLocationInFile(const Char* fileStart, const Char* where, int32_t& outLine, int32_t& outColumn, uint32_t tabSize = 4);
 
 // using Using KMP Algorithm (Efficient), case sensitive
 const char* strstrOptimized(const char* X, const char* Y, int m, int n);

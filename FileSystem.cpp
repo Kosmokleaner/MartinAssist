@@ -21,8 +21,7 @@ const wchar_t* FilePath::getFileName() const
 {
 	const wchar_t* start = path.c_str();
 	const wchar_t* ret = start;
-	const wchar_t* p = start;
-
+	
 	for(const wchar_t* p = start; *p; ++p) {
 		if(IsAnySlash(*p) || *p == ':')
 			ret = p + 1;
@@ -206,7 +205,6 @@ static std::wstring getVolumePaths(__in PWCHAR InternalName)
 {
 	DWORD  CharCount = MAX_PATH + 1;
 	PWCHAR Names = NULL;
-	PWCHAR NameIdx = NULL;
 	BOOL   Success = FALSE;
 
 	std::wstring ret;
@@ -261,7 +259,6 @@ void driveTraverse(IDriveTraverse& sink)
 	WCHAR  deviceName[MAX_PATH] = L"";
 	DWORD  Error = ERROR_SUCCESS;
 	HANDLE FindHandle = INVALID_HANDLE_VALUE;
-	BOOL   Found = FALSE;
 	size_t Index = 0;
 	BOOL   Success = FALSE;
 	WCHAR  internalName[MAX_PATH] = L"";
@@ -312,10 +309,10 @@ void driveTraverse(IDriveTraverse& sink)
 			if (!path.empty())
 			{
 				WCHAR volumeName[MAX_PATH];//MAX_PATH is the size of the char array.
-				DWORD serialNumber = -1;
+				DWORD serialNumber = (DWORD)-1;
 				// https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
 				// FILE_SUPPORTS_REMOTE_STORAGE to detect google drive
-				DWORD driveFlags = -1;
+				DWORD driveFlags = (DWORD)-1;
 				if (GetVolumeInformation(path.c_str(), volumeName, sizeof(volumeName),
 					&serialNumber,
 					NULL,
