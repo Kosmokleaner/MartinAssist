@@ -9,6 +9,9 @@ public:
 
     int test();
     
+    void guiDrives();
+    void guiFiles();
+
     EveryHere everyHere;
 
     void setViewDirty();
@@ -31,4 +34,16 @@ private:
 
     ImGuiTableSortSpecs* fileSortCriteria = {};
 };
+
+
+void pushTableStyle3();
+
+bool BeginTooltip();
+
+void EndTooltip();
+
+
+// @return printUnit e.g. "%.3f GB" or "%.3f MB" 
+const char* computeReadableSize(uint64 inputSize, double& outPrintSize);
+
 

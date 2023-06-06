@@ -22,7 +22,7 @@
 #endif
 #include <ImGui/GLFW/glfw3.h> // Will drag system OpenGL headers
 
-#include <shlobj.h>
+#include <shlobj.h> // _wfinddata_t
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -39,36 +39,6 @@ static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
-
-class LoadCVSFiles : public IDirectoryTraverse
-{
-    EveryHere& everyHere;
-public:
-    LoadCVSFiles(EveryHere& inEveryHere)
-        : everyHere(inEveryHere)
-    {
-        everyHere.freeData();
-    }
-
-    void OnEnd() 
-    {
-        everyHere.updateLocalDriveState();
-    }
-
-    bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData)
-    {
-        return false;
-    }
-    void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData)
-    {
-        FilePath combined = path;
-        combined.Append(file);
-
-        everyHere.loadCSV(combined.path.c_str());
-    }
-};
-
-
 unsigned int RGBSwizzle(unsigned int c) {
     return (c >> 16) | (c & 0xff00) | ((c & 0xff) << 16);
 }
@@ -79,63 +49,9 @@ void Gui::setViewDirty()
     whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.25f;
 }
 
-// @return printUnit e.g. "%.3f GB" or "%.3f MB" 
-const char* computeReadableSize(uint64 inputSize, double &outPrintSize) 
-{
-    outPrintSize = (double)inputSize;
-
-    if (inputSize >= 1024 * 1024 * 1024)
-    {
-        outPrintSize /= (double)(1024 * 1024 * 1024);
-        return ((inputSize / 1024 / 1024) % 1024) ? "%.3f GB" : "%.0f GB";
-    }
-    else if (inputSize >= 1024 * 1024)
-    {
-        outPrintSize /= (double)(1024 * 1024);
-        return ((inputSize / 1024) % 1024) ? "%.3f MB" : "%.0f MB";
-    }
-    else if (inputSize >= 1024)
-    {
-        outPrintSize /= (double)1024;
-        return (inputSize % 1024) ? "%.3f KB" : "%.0f KB";
-    }
-
-    return "%.0f B";
-}
-
-
-void pushTableStyle3() 
-{
-    // top to bottom priority, the colors do not blend
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
-    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
-}
-
 Gui::Gui()
     : fileSelectionRange(everyHere)
 {
-}
-
-bool BeginTooltip()
-{
-    bool ret = ImGui::IsItemHovered() && GImGui->HoveredIdTimer > 1.0f;
-
-    if (ret)
-    {
-        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.9f, 0.9f, 0.4f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
-        ImGui::BeginTooltip();
-    }
-
-    return ret;
-}
-void EndTooltip()
-{
-    ImGui::EndTooltip();
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor(2);
 }
 
 
@@ -295,246 +211,10 @@ int Gui::test()
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
 
-        // Devices
-        {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
-            ImGui::Begin("EveryHere Devices", 0, ImGuiWindowFlags_NoCollapse);
+        
 
-            ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-            // 0: all drives, 1:local drives
-            int driveTabId = 0;
-            if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
-            {
-                if (ImGui::BeginTabItem("All Drives"))
-                {
-                    driveTabId = 0;
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Local Drives"))
-                {
-                    driveTabId = 1;
-                    ImGui::EndTabItem();
-                }
-                ImGui::EndTabBar();
-            }
-
-            if (ImGui::Button("build"))
-            {
-                everyHere.gatherData();
-                setViewDirty();
-            }
-
-            ImGui::SameLine();
-
-            --triggerLoadOnStartup;
-            if (triggerLoadOnStartup < -1)
-                triggerLoadOnStartup = -1;
-
-#ifdef _DEBUG
-            if(triggerLoadOnStartup == 0) 
-            {
-                everyHere.freeData();
-                char str[80];
-                for(int i = 0; i < 5; ++i)
-                {
-                    str[0] = 'a' + (rand() % 26);
-                    str[1] = 'a' + (rand() % 26);
-                    str[2] = 0;
-                    everyHere.deviceData.push_back(DeviceData());
-                    DeviceData &d = everyHere.deviceData.back();
-                    d.csvName = str;
-                    d.volumeName = str;
-                    str[0] = 'A' + (rand() % 26);
-                    str[1] = ':';
-                    str[2] = 0;
-                    d.drivePath = str;
-                    d.deviceId = i;
-                }
-
-                for(int i = 0; i < 200; ++i)
-                {
-                    int deviceId = rand() % 5;
-                    DeviceData& r = everyHere.deviceData[deviceId];
-                    r.entries.push_back(FileEntry());
-                    FileEntry &e = r.entries.back();
-                    str[0] = 'a' + (rand() % 26);
-                    str[1] = 'a' + (rand() % 26);
-                    str[2] = 0;
-                    e.key.fileName = str;
-                    e.key.sizeOrFolder = rand() * 1000;
-                    e.key.time_write = rand();
-                    e.value.parent = -1;
-                    e.value.deviceId = deviceId;
-                }
-                setViewDirty();
-                everyHere.buildUniqueFiles();
-                triggerLoadOnStartup = -1;
-            }
-#endif
-
-            if (ImGui::Button("load") || triggerLoadOnStartup == 0)
-            {
-                LoadCVSFiles loadCVSFiles(everyHere);
-                directoryTraverse(loadCVSFiles, FilePath(), L"*.csv");
-                setViewDirty();
-                everyHere.buildUniqueFiles();
-            }
-
-            {
-                ImGuiTableFlags flags = 
-                    ImGuiTableFlags_Borders |
-                    ImGuiTableFlags_ScrollY |
-                    ImGuiTableFlags_BordersOuter |
-                    ImGuiTableFlags_BordersV |
-                    ImGuiTableFlags_SizingFixedFit |
-                    ImGuiTableFlags_Resizable |
-                    ImGuiTableFlags_Reorderable |
-                    ImGuiTableFlags_Hideable |
-                    ImGuiTableFlags_Sortable |
-                    ImGuiTableFlags_SortMulti;
-
-                const uint32 numberOfColumns = 12;
-                if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
-                {
-                    std::string line;
-
-                    pushTableStyle3();
-                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_VolumeName);
-//                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None, 0.0f, DCID_UniqueName);
-                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Path);
-//                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, DCID_DeviceId);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Size);
-                    ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Files);
-                    ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_Directories);
-                    ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Computer);
-                    ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_User);
-                    ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Date);
-                    ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_totalSpace);
-                    ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_type);
-                    ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_serial);
-                    ImGui::TableSetupColumn("selected Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_selectedFiles);
-                    ImGui::TableHeadersRow();
-
-                    everyHere.buildDriveView(ImGui::TableGetSortSpecs());
-
-                    int line_no = 0;
-                    for (auto it = everyHere.driveView.begin(), end = everyHere.driveView.end(); it != end; ++it, ++line_no)
-                    {
-                        DeviceData& drive = everyHere.deviceData[*it];
-
-                        if(driveTabId == 1 && !drive.isLocalDrive)
-                            continue;
-
-                        ImGui::TableNextRow();
-
-                        ImGui::PushID(line_no);
-
-                        ImGui::PushStyleColor(ImGuiCol_Text, drive.isLocalDrive ? ImVec4(0.5f, 0.5f, 1.0f,1) : ImVec4(0.8f, 0.8f, 0.8f, 1));
-
-                        int columnId = 0;
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                        bool selected = deviceSelectionRange.isSelected(line_no);
-                        ImGui::Selectable(drive.volumeName.c_str(), &selected, selectable_flags);
-                        if (ImGui::IsItemClicked(0))
-                        {
-                            deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
-                            setViewDirty();
-                        }
-                        if (BeginTooltip())
-                        {
-                            ImGui::Text("UniqueName: %s.csv", drive.csvName.c_str());
-                            ImGui::Text("DeviceId: %d", drive.deviceId);
-                            EndTooltip();
-                        }
-
-                        if (ImGui::BeginPopupContextItem())
-                        {
-                            if (!deviceSelectionRange.isSelected(line_no))
-                            {
-                                deviceSelectionRange.reset();
-                                deviceSelectionRange.onClick(line_no, false, false);
-                            }
-
-                            if (deviceSelectionRange.count() == 1)
-                            {
-                                if (ImGui::MenuItem("Delete File"))
-                                {
-                                    DeleteFileA((drive.csvName + ".csv").c_str());
-                                    drive.markedForDelete = true;
-                                }
-                                if (ImGui::MenuItem("Open path (in Explorer)"))
-                                {
-                                    FilePath filePath(to_wstring(drive.csvName + ".csv").c_str());
-
-                                    ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
-                                }
-                            }
-                            ImGui::EndPopup();
-                        }
-
-//                        ImGui::TableSetColumnIndex(columnId++);
-//                        line = drive.csvName;
-//                        ImGui::TextUnformatted(line.c_str());
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::TextUnformatted(drive.drivePath.c_str());
-
-//                        ImGui::TableSetColumnIndex(columnId++);
-//                        ImGui::Text("%d", drive.deviceId);
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        {
-                            double printSize = 0;
-                            const char* printUnit = computeReadableSize(drive.statsSize, printSize);
-                            ImGui::Text(printUnit, printSize);
-                        }
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::Text("%llu", (uint64)drive.entries.size());
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::Text("%llu", drive.statsDirs);
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::TextUnformatted(drive.computerName.c_str());
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::TextUnformatted(drive.userName.c_str());
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::TextUnformatted(drive.dateGatheredString.c_str());
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        if(drive.totalSpace)
-                        {
-                            double printSize = 0;
-                            const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
-                            ImGui::Text(printUnit, printSize);
-                        }
-                        ImGui::TableSetColumnIndex(columnId++);
-                        bool supportsRemoteStorage = drive.driveFlags & 0x100;
-                        ImGui::Text("%d", supportsRemoteStorage ? -(int)(drive.driveType) : drive.driveType);
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::Text("%u", drive.serialNumber);
-
-                        ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::Text("%llu", drive.selectedKeys);
-
-                        ImGui::PopStyleColor();
-                        ImGui::PopID();
-                    }
-                    ImGui::PopStyleColor(3);
-
-                    ImGui::EndTable();
-                }
-            }
-
-            ImGui::End();
-        }
+        guiDrives();
+        
 
         for (auto it = everyHere.deviceData.begin(); it != everyHere.deviceData.end(); ++it)
         {
@@ -547,266 +227,8 @@ int Gui::test()
             }
         }
 
-        // FileEntries
-        {
-            ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
-            ImGui::Begin("EveryHere Files", 0, ImGuiWindowFlags_NoCollapse);
+        guiFiles();
 
-            // todo: filter button
-            if(ImGui::InputText("filter", &filter))
-            {
-                setViewDirty();
-            }
-
-            ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-            // 0: files, 1:folders
-            int filesTabId = 0;
-            static int oldFilesTabId = 0;
-            if (ImGui::BeginTabBar("FilesOrDir", tab_bar_flags))
-            {
-                if (ImGui::BeginTabItem("Files"))
-                {
-                    filesTabId = 0;
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Folders"))
-                {
-                    filesTabId = 1;
-                    ImGui::EndTabItem();
-                }
-                ImGui::EndTabBar();
-            }
-            if(oldFilesTabId != filesTabId)
-            {
-                oldFilesTabId = filesTabId;
-                setViewDirty();
-            }
-
-            if(filesTabId == 0)
-            {
-                {
-                    int step=1;
-                    const char *fmt[] = {"", "1 KB", "1 MB", "10 MB", "100 MB", "1 GB"};
-                    minLogSize = ImClamp(minLogSize, 0, 5);
-                    ImGui::SetNextItemWidth(150);
-                    if(ImGui::InputScalar("minimum File Size  ", ImGuiDataType_S32, &minLogSize, &step, &step, fmt[ImClamp(minLogSize, 0, 5)]))
-                        setViewDirty();
-                }
-                ImGui::SameLine();
-                {
-                    const char* fmt = " \000" "<2 no\000" "<3 minor\000" "=3 enough\000" ">3 too much\000" ">4 way too much\000" "\000";
-                    ImGui::SetNextItemWidth(150);
-                    if (ImGui::Combo("Redundancy  ", &redundancyFilter, fmt))
-                        setViewDirty();
-                }
-            }
-
-            {
-                // todo: 0
-//                DeviceData& data = everyHere.deviceData[0];
-
-//                const int lineHeight = (int)ImGui::GetFontSize();
-//                int height = (int)data.files.size() * lineHeight;
-
-                ImGuiTableFlags flags = ImGuiTableFlags_Borders |
-                    ImGuiTableFlags_ScrollY |
-                    ImGuiTableFlags_BordersOuter | 
-                    ImGuiTableFlags_BordersV | 
-                    ImGuiTableFlags_SizingFixedFit |
-                    ImGuiTableFlags_Resizable |
-                    ImGuiTableFlags_Reorderable | 
-                    ImGuiTableFlags_Hideable | 
-                    ImGuiTableFlags_Sortable | 
-                    ImGuiTableFlags_SortMulti;
-
-                // safe space for info line
-                ImVec2 outerSize = ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() - ImGui::GetStyle().ItemSpacing.y);
-                uint32 numberOfColumns = 3;
-                if (filesTabId == 0)
-                    numberOfColumns += 2;
-
-                if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
-                {
-                    ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Name);
-                    if(filesTabId == 0)
-                    {
-                        ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Size);
-                        ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Redundancy);
-                    }
-                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Path);
-                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_DeviceId);
-                    //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
-//                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
-//                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
-                    ImGui::TableHeadersRow();
-
-                    if(ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
-                        if(sorts_specs->SpecsDirty) 
-                        {
-                            whenToRebuildView = 0;
-                            sorts_specs->SpecsDirty = false;
-                        }
-
-                    if (whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
-                    {
-                        fileSortCriteria = ImGui::TableGetSortSpecs();
-                        // do this before changes to the fileView
-                        fileSelectionRange.reset();
-                        int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                        everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, deviceSelectionRange, fileSortCriteria, filesTabId == 1);
-                        whenToRebuildView = -1;
-                        fileSortCriteria = {};
-                    }
-
-                    ImGuiListClipper clipper;
-                    clipper.Begin((int)everyHere.fileView.size());
-                    std::string line;
-                    pushTableStyle3();
-                    while (clipper.Step())
-                    {
-                        for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
-                        {
-                            if(line_no >= everyHere.fileView.size())
-                                break;
-
-                            ViewEntry& viewEntry = everyHere.fileView[line_no];
-                            const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
-                            const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
-
-                            line = entry.key.fileName;
-
-                            ImGui::TableNextRow();
-
-                            ImGui::PushID(line_no);
-
-                            int columnId = 0;
-
-                            ImGui::TableSetColumnIndex(columnId++);
-                            ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                            bool selected = fileSelectionRange.isSelected(line_no);
-                            ImGui::Selectable(line.c_str(), &selected, selectable_flags); 
-                            if (ImGui::IsItemClicked(0))
-                            {
-                                fileSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
-                            }
-                            if (BeginTooltip())
-                            {
-                                // todo: path concat needs to be improved
-                                ImGui::Text("FilePath: %s%s/%s", deviceData.drivePath.c_str(), entry.value.path.c_str(), line.c_str());
-                                ImGui::Text("Size: %llu Bytes", entry.key.sizeOrFolder);
-                                EndTooltip();
-                            }
-                            if (ImGui::BeginPopupContextItem())
-                            {
-                                if(!fileSelectionRange.isSelected(line_no))
-                                {
-                                    fileSelectionRange.reset();
-                                    fileSelectionRange.onClick(line_no, false, false);
-                                }
-
-                                if(fileSelectionRange.count() == 1)
-                                {
-                                    if (ImGui::MenuItem("Open (with default program)"))
-                                    {
-//                                        const char* path = deviceData.generatePath(entry.value.parent);
-                                        const char* path = entry.value.path.c_str();
-                                        std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName;
-                                        ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
-                                    }
-                                    if (ImGui::MenuItem("Open path (in Explorer)"))
-                                    {
-//                                        const char* path = deviceData.generatePath(entry.value.parent);
-                                        const char* path = entry.value.path.c_str();
-                                        std::string fullPath = deviceData.drivePath + "/" + path;
-                                        ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
-                                    }
-                                }
-                                if (ImGui::MenuItem("Copy selection as path (to clipboard)")) 
-                                {
-                                    ImGui::LogToClipboard();
-
-                                    fileSelectionRange.foreach([&](int64 line_no) {
-                                        ViewEntry& viewEntry = everyHere.fileView[line_no];
-                                        const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
-                                        const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
-                                        if (entry.key.sizeOrFolder >= 0) 
-                                        {
-//                                            const char* path = deviceData.generatePath(entry.value.parent);
-                                            const char* path = entry.value.path.c_str();
-                                            if(*path)
-                                                ImGui::LogText("%s/%s/%s\n", deviceData.drivePath.c_str(), path, entry.key.fileName.c_str());
-                                            else
-                                                ImGui::LogText("%s/%s\n", deviceData.drivePath.c_str(), entry.key.fileName.c_str());
-                                        }
-                                        });
-
-                                    ImGui::LogFinish();
-                                }
-                                ImGui::EndPopup();
-                            }
-
-                            ImGui::PopID();
-
-                            if(filesTabId == 0)
-                            {
-                                ImGui::TableSetColumnIndex(columnId++);
-                                double printSize = 0;
-                                const char* printUnit = computeReadableSize(entry.key.sizeOrFolder, printSize);
-                                ImGui::Text(printUnit, printSize);
-
-                                ImGui::TableSetColumnIndex(columnId++);
-                                ImGui::Text("%d", everyHere.findRedundancy(entry.key));
-                            }
-
-                            ImGui::TableSetColumnIndex(columnId++);
-                            ImGui::TextUnformatted(entry.value.path.c_str());
-
-                            ImGui::TableSetColumnIndex(columnId++);
-                            ImGui::Text("%d", entry.value.deviceId);
-                        }
-                    }
-                    clipper.End();
-                    ImGui::PopStyleColor(3);
-
-                    ImGui::EndTable();
-                }
-
-                if(fileSelectionRange.empty())
-                {
-                    ImGui::Text("Files: %lld", (int64)everyHere.fileView.size());
-                    ImGui::SameLine();
-                    ImGui::Text("Size: ");
-                    ImGui::SameLine();
-
-                    double printSize = 0;
-                    const char* printUnit = computeReadableSize(everyHere.viewSumSize, printSize);
-                    ImGui::Text(printUnit, printSize);
-                }
-                else 
-                {
-                    ImGui::Text("Selected: %lld", (int64)fileSelectionRange.count());
-                    ImGui::SameLine();
-
-                    // Can be optimized when using drives instead but then we need selectedFileSize there as well
-                    uint64 selectedSize = 0;
-                    fileSelectionRange.foreach([&](int64 line_no) {
-                        ViewEntry& viewEntry = everyHere.fileView[line_no];
-                        const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
-                        const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
-                        if(entry.key.sizeOrFolder >= 0)
-                            selectedSize += entry.key.sizeOrFolder;
-                    });
-
-                    double printSize = 0;
-                    const char* printUnit = computeReadableSize(selectedSize, printSize);
-                    ImGui::Text("Size: %llu %s", printSize, printUnit);
-                }
-            }
-
-            ImGui::End();
-        }
 
         // Rendering
         ImGui::Render();
@@ -829,4 +251,59 @@ int Gui::test()
     glfwTerminate();
 
     return 0;
+}
+
+void pushTableStyle3()
+{
+    // top to bottom priority, the colors do not blend
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
+}
+
+bool BeginTooltip()
+{
+    bool ret = ImGui::IsItemHovered() && GImGui->HoveredIdTimer > 1.0f;
+
+    if (ret)
+    {
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.9f, 0.9f, 0.4f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
+        ImGui::BeginTooltip();
+    }
+
+    return ret;
+}
+
+void EndTooltip()
+{
+    ImGui::EndTooltip();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(2);
+}
+
+
+// @return printUnit e.g. "%.3f GB" or "%.3f MB" 
+const char* computeReadableSize(uint64 inputSize, double& outPrintSize)
+{
+    outPrintSize = (double)inputSize;
+
+    if (inputSize >= 1024 * 1024 * 1024)
+    {
+        outPrintSize /= (double)(1024 * 1024 * 1024);
+        return ((inputSize / 1024 / 1024) % 1024) ? "%.3f GB" : "%.0f GB";
+    }
+    else if (inputSize >= 1024 * 1024)
+    {
+        outPrintSize /= (double)(1024 * 1024);
+        return ((inputSize / 1024) % 1024) ? "%.3f MB" : "%.0f MB";
+    }
+    else if (inputSize >= 1024)
+    {
+        outPrintSize /= (double)1024;
+        return (inputSize % 1024) ? "%.3f KB" : "%.0f KB";
+    }
+
+    return "%.0f B";
 }

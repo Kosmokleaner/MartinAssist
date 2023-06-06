@@ -159,6 +159,8 @@
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="GuiDrives.cpp" />
+    <ClCompile Include="GuiFiles.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
     <ClCompile Include="ImGui\imgui_demo.cpp" />
     <ClCompile Include="ImGui\imgui_draw.cpp" />

@@ -53,6 +53,8 @@
       <Filter>Hidden</Filter>
     </ClCompile>
     <ClCompile Include="SelectionRange.cpp" />
+    <ClCompile Include="GuiFiles.cpp" />
+    <ClCompile Include="GuiDrives.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
