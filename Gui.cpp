@@ -162,6 +162,8 @@ int Gui::test()
         // no transparent windows
         colors[ImGuiCol_WindowBg].w = 1.0f;
         colors[ImGuiCol_PopupBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
+        // not selected tab more distinct
+        colors[ImGuiCol_Tab].w = 0.5f;
 
         ImGui::GetStyle().GrabMinSize = 20;
     }

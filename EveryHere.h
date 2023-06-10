@@ -99,7 +99,7 @@ struct DeviceData {
     std::string csvName;
     // e.g. "First Drive"
     std::string volumeName;
-    // e.g. "C:\"
+    // e.g. "C:", no '\' in the end, use setDrivePath() to set
     std::string drivePath;
     // see GetDriveType() https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdrivetypea 
     uint32 driveType = 0;
@@ -132,9 +132,14 @@ struct DeviceData {
 
     DeviceData();
 
+    // fast, done on startup for all local drives
+    void gatherInfo(const DriveInfo& driveInfo);
+    // slow, gather all info and update .csv file
+    void rebuild(const DriveInfo& driveInfo);
+
     void sort();
 
-    void save();
+    void saveCSV();
 
     // not reentrant, don't use with multithreading
     // https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
@@ -144,6 +149,9 @@ struct DeviceData {
     void computeStats();
 
     void verify();
+
+    // @param value must not be 0
+    void setDrivePath(const char* value);
 };
 
 struct ViewEntry

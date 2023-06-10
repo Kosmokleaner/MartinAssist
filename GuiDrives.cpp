@@ -43,19 +43,20 @@ public:
 void Gui::guiDrives()
 {
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("EveryHere Devices", 0, ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("EveryHere Drives", 0, ImGuiWindowFlags_NoCollapse);
+
+    // 0:Local Drives, 1: Historical Data
+    int driveTabId = 0;
 
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-    // 0: all drives, 1:local drives
-    int driveTabId = 0;
     if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
     {
-        if (ImGui::BeginTabItem("All Drives"))
+        if (ImGui::BeginTabItem("Local Drives"))
         {
             driveTabId = 0;
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Local Drives"))
+        if (ImGui::BeginTabItem("Historical Data"))
         {
             driveTabId = 1;
             ImGui::EndTabItem();
@@ -92,7 +93,7 @@ void Gui::guiDrives()
             str[0] = 'A' + (rand() % 26);
             str[1] = ':';
             str[2] = 0;
-            d.drivePath = str;
+            d.setDrivePath(str);
             d.deviceId = i;
         }
 
@@ -111,6 +112,7 @@ void Gui::guiDrives()
             e.value.parent = -1;
             e.value.deviceId = deviceId;
         }
+        everyHere.updateLocalDriveState();
         setViewDirty();
         everyHere.buildUniqueFiles();
         triggerLoadOnStartup = -1;
@@ -138,7 +140,10 @@ void Gui::guiDrives()
             ImGuiTableFlags_Sortable |
             ImGuiTableFlags_SortMulti;
 
-        const uint32 numberOfColumns = 12;
+        uint32 numberOfColumns = 11;
+        if(driveTabId != 0)
+            ++numberOfColumns;  // date makes no sense for local drives
+
         if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
         {
             std::string line;
@@ -154,7 +159,8 @@ void Gui::guiDrives()
             ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_Directories);
             ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Computer);
             ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_User);
-            ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Date);
+            if (driveTabId == 1) // date makes no sense for local drives
+                ImGui::TableSetupColumn("Date", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Date);
             ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_totalSpace);
             ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_type);
             ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_serial);
@@ -168,7 +174,7 @@ void Gui::guiDrives()
             {
                 DeviceData& drive = everyHere.deviceData[*it];
 
-                if (driveTabId == 1 && !drive.isLocalDrive)
+                if (driveTabId == 0 && !drive.isLocalDrive)
                     continue;
 
                 ImGui::TableNextRow();
@@ -205,10 +211,14 @@ void Gui::guiDrives()
 
                     if (deviceSelectionRange.count() == 1)
                     {
-                        if (ImGui::MenuItem("Delete File"))
+                        if (ImGui::MenuItem("Delete .csv File"))
                         {
                             DeleteFileA((drive.csvName + ".csv").c_str());
                             drive.markedForDelete = true;
+                        }
+                        if (ImGui::MenuItem("[Re]build .csv"))
+                        {
+                            drive.rebuild();
                         }
                         if (ImGui::MenuItem("Open path (in Explorer)"))
                         {
@@ -249,8 +259,12 @@ void Gui::guiDrives()
                 ImGui::TableSetColumnIndex(columnId++);
                 ImGui::TextUnformatted(drive.userName.c_str());
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::TextUnformatted(drive.dateGatheredString.c_str());
+                // date makes no sense for local drives
+                if (driveTabId != 0)
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::TextUnformatted(drive.dateGatheredString.c_str());
+                }
 
                 ImGui::TableSetColumnIndex(columnId++);
                 if (drive.totalSpace)

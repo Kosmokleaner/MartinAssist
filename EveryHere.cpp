@@ -237,96 +237,15 @@ struct DriveGatherTraverse : public IDriveTraverse {
     }
 
     virtual void OnDrive(const DriveInfo& driveInfo) {
-        std::wstring drivePath = driveInfo.drivePath.path;
-
-        if (!drivePath.empty() && drivePath.back() == '\\')
-            drivePath.pop_back();
-
         std::wstring csvName = driveInfo.generateKeyName();
-
-        // hack
-//        if(drivePath[0] != 'E')
-//            return;
-
-        // filePath e.g. L"C:\"
-        wprintf(L"\ndrivePath: %s\n", drivePath.c_str());
-        // deviceName e.g. L"\Device\HarddiskVolume4"
-        wprintf(L"deviceName: %s\n", driveInfo.deviceName);
-        // e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
-        wprintf(L"csvName: %s\n", csvName.c_str());
-        // e.g. L"First Drive"
-        wprintf(L"volumeName: %s\n\n", driveInfo.volumeName);
-
         everyHere.removeDevice(to_string(csvName).c_str());
 
         int deviceId = (int)everyHere.deviceData.size();
         everyHere.deviceData.push_back(DeviceData());
+
         DeviceData& deviceData = everyHere.deviceData.back();
-        deviceData.csvName = to_string(csvName);
         deviceData.deviceId = deviceId;
-        deviceData.volumeName = to_string(driveInfo.volumeName);
-        deviceData.drivePath = to_string(drivePath);
-
-        // freeSpace, totalSpace
-        {
-            DWORD SectorsPerCluster = 0;
-            DWORD BytesPerSector = 0;
-            DWORD NumberOfFreeClusters = 0;
-            DWORD TotalNumberOfClusters = 0;
-            GetDiskFreeSpace(drivePath.c_str(), &SectorsPerCluster, &BytesPerSector, &NumberOfFreeClusters, &TotalNumberOfClusters);
-            
-            uint64 clusterSize = SectorsPerCluster * (uint64)BytesPerSector;
-            deviceData.freeSpace = clusterSize * NumberOfFreeClusters;
-            deviceData.totalSpace = clusterSize * TotalNumberOfClusters;
-        }
-
-        deviceData.driveType = GetDriveType(drivePath.c_str());
-        deviceData.driveFlags = driveInfo.driveFlags;
-        deviceData.serialNumber = driveInfo.serialNumber;
-
-        // https://stackoverflow.com/questions/76022257/getdrivetype-detects-google-drive-as-drive-fixed-how-to-exclude-them
-        
-
-        {
-            char name[256];
-            DWORD size = sizeof(name);
-            if (GetComputerNameA(name, &size))
-            {
-                // e.g. "RYZEN"
-                deviceData.computerName = name;
-            }
-        }
-
-        {
-            char name[256];
-            DWORD size = sizeof(name);
-            if (GetUserNameA(name, &size))
-            {
-                // e.g. "Hans"
-                deviceData.userName = name;
-            }
-        }
-
-        {
-            // https://zetcode.com/gui/winapi/datetime/
-            SYSTEMTIME st = { 0 };
-
-            GetLocalTime(&st);
-
-            char str[1024];
-            sprintf_s(str, sizeof(str) / sizeof(*str), "%02d/%02d/%04d %02d:%02d:%02d\n",
-                st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
-
-            deviceData.dateGatheredString = str;
-            deviceData.dateGatheredValue = timeStringToValue(str);
-        }
-
-        EveryHereDirectory traverse(deviceData, deviceId, drivePath.c_str());
-
-        directoryTraverse(traverse, drivePath.c_str());
-
-        if(traverse.fileEntryCount)
-            deviceData.save();
+        deviceData.rebuild(driveInfo);
     }
 };
 
@@ -346,19 +265,14 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
         // todo: google drive is changing it's internalName so we cannot key by this
         printf("LocalDriveStateTraverse '%s' '%s' '%s' %u\n", to_string(driveInfo.drivePath.path).c_str(),  to_string(csvName).c_str(), to_string(driveInfo.volumeName).c_str(), driveInfo.serialNumber);
 
-        if(DeviceData * drive = everyHere.findDrive(to_string(csvName).c_str()))
-        {
-            // before we them all with false so this is updating only the local ones
-            drive->isLocalDrive = true;
-        }
-        else 
+        DeviceData* drive = everyHere.findDrive(to_string(csvName).c_str());
+
+        if(!drive)
         {
             everyHere.deviceData.push_back(DeviceData());
             DeviceData& deviceData = everyHere.deviceData.back();
-            deviceData.csvName = to_string(csvName);
             deviceData.deviceId = (int)(everyHere.deviceData.size() - 1);
-            deviceData.volumeName = to_string(driveInfo.volumeName);
-            deviceData.drivePath = to_string(driveInfo.drivePath.path);
+            deviceData.gatherInfo(driveInfo);
         }
     }
 };
@@ -375,6 +289,102 @@ DeviceData::DeviceData()
     // to avoid some reallocations
     entries.reserve(10 * 1024 * 1024);
 }
+
+
+void DeviceData::rebuild(const DriveInfo& driveInfo)
+{
+    // set this before
+    assert(deviceId >= 0);
+
+    gatherInfo(driveInfo);
+
+    // cleaned up e.g. L"C:"
+    std::wstring wDrivePath = to_wstring(drivePath);
+
+    // filePath e.g. L"C:"
+    printf("\ndrivePath: %s\n", drivePath.c_str());
+    // deviceName e.g. L"\Device\HarddiskVolume4"
+    wprintf(L"deviceName: %s\n", driveInfo.deviceName);
+    // e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
+    printf("csvName: %s\n", csvName.c_str());
+    // e.g. L"First Drive"
+    wprintf(L"volumeName: %s\n\n", driveInfo.volumeName);
+
+    driveFlags = driveInfo.driveFlags;
+    serialNumber = driveInfo.serialNumber;
+
+    // https://stackoverflow.com/questions/76022257/getdrivetype-detects-google-drive-as-drive-fixed-how-to-exclude-them
+
+
+
+    {
+        // https://zetcode.com/gui/winapi/datetime/
+        SYSTEMTIME st = { 0 };
+
+        GetLocalTime(&st);
+
+        char str[1024];
+        sprintf_s(str, sizeof(str) / sizeof(*str), "%02d/%02d/%04d %02d:%02d:%02d\n",
+            st.wDay, st.wMonth, st.wYear, st.wHour, st.wMinute, st.wSecond);
+
+        dateGatheredString = str;
+        dateGatheredValue = timeStringToValue(str);
+    }
+
+    EveryHereDirectory traverse(*this, deviceId, wDrivePath.c_str());
+
+    directoryTraverse(traverse, wDrivePath.c_str());
+
+//    if (traverse.fileEntryCount)
+    saveCSV();
+}
+
+
+void DeviceData::gatherInfo(const DriveInfo& driveInfo)
+{
+    csvName = to_string(driveInfo.generateKeyName());
+    
+    volumeName = to_string(driveInfo.volumeName);
+    setDrivePath(to_string(driveInfo.drivePath.path).c_str());
+    // before we them all with false so this is updating only the local ones
+    isLocalDrive = true;
+
+    // freeSpace, totalSpace
+    {
+        DWORD SectorsPerCluster = 0;
+        DWORD BytesPerSector = 0;
+        DWORD NumberOfFreeClusters = 0;
+        DWORD TotalNumberOfClusters = 0;
+        GetDiskFreeSpace(to_wstring(drivePath).c_str(), &SectorsPerCluster, &BytesPerSector, &NumberOfFreeClusters, &TotalNumberOfClusters);
+
+        uint64 clusterSize = SectorsPerCluster * (uint64)BytesPerSector;
+        freeSpace = clusterSize * NumberOfFreeClusters;
+        totalSpace = clusterSize * TotalNumberOfClusters;
+    }
+
+    driveType = GetDriveType(to_wstring(drivePath).c_str());
+
+    {
+        char name[256];
+        DWORD size = sizeof(name);
+        if (GetComputerNameA(name, &size))
+        {
+            // e.g. "RYZEN"
+            computerName = name;
+        }
+    }
+
+    {
+        char name[256];
+        DWORD size = sizeof(name);
+        if (GetUserNameA(name, &size))
+        {
+            // e.g. "Hans"
+            userName = name;
+        }
+    }
+}
+
 
 void DeviceData::sort()
 {
@@ -494,7 +504,7 @@ void replace_all(
 }
 
 
-void DeviceData::save()
+void DeviceData::saveCSV()
 {
     char str[MAX_PATH + 100];
 
@@ -889,7 +899,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                     if (parseLine(p, valueName))
                     {
                         if (keyName == "drivePath")
-                            data.drivePath = valueName;
+                            data.setDrivePath(valueName.c_str());
                         if (keyName == "volumeName")
                             data.volumeName = valueName;
                         if (keyName == "cleanName")
@@ -1022,6 +1032,14 @@ void EveryHere::freeData()
 {
     fileView.clear();
     deviceData.clear();
+}
+
+void DeviceData::setDrivePath(const char * inDrivePath)
+{
+    drivePath = inDrivePath;
+
+    if (!drivePath.empty() && drivePath.back() == '\\')
+        drivePath.pop_back();
 }
 
 void DeviceData::verify() 
