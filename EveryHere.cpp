@@ -244,8 +244,9 @@ struct DriveGatherTraverse : public IDriveTraverse {
         everyHere.deviceData.push_back(DeviceData());
 
         DeviceData& deviceData = everyHere.deviceData.back();
+        deviceData.driveInfo = driveInfo;
         deviceData.deviceId = deviceId;
-        deviceData.rebuild(driveInfo);
+        deviceData.rebuild();
     }
 };
 
@@ -272,7 +273,8 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
             everyHere.deviceData.push_back(DeviceData());
             DeviceData& deviceData = everyHere.deviceData.back();
             deviceData.deviceId = (int)(everyHere.deviceData.size() - 1);
-            deviceData.gatherInfo(driveInfo);
+            deviceData.driveInfo = driveInfo;
+            deviceData.gatherInfo();
         }
     }
 };
@@ -291,12 +293,12 @@ DeviceData::DeviceData()
 }
 
 
-void DeviceData::rebuild(const DriveInfo& driveInfo)
+void DeviceData::rebuild()
 {
     // set this before
     assert(deviceId >= 0);
 
-    gatherInfo(driveInfo);
+    gatherInfo();
 
     // cleaned up e.g. L"C:"
     std::wstring wDrivePath = to_wstring(drivePath);
@@ -304,14 +306,13 @@ void DeviceData::rebuild(const DriveInfo& driveInfo)
     // filePath e.g. L"C:"
     printf("\ndrivePath: %s\n", drivePath.c_str());
     // deviceName e.g. L"\Device\HarddiskVolume4"
-    wprintf(L"deviceName: %s\n", driveInfo.deviceName);
+    wprintf(L"deviceName: %s\n", driveInfo.deviceName.c_str());
     // e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
     printf("csvName: %s\n", csvName.c_str());
     // e.g. L"First Drive"
-    wprintf(L"volumeName: %s\n\n", driveInfo.volumeName);
+    wprintf(L"volumeName: %s\n\n", driveInfo.volumeName.c_str());
 
     driveFlags = driveInfo.driveFlags;
-    serialNumber = driveInfo.serialNumber;
 
     // https://stackoverflow.com/questions/76022257/getdrivetype-detects-google-drive-as-drive-fixed-how-to-exclude-them
 
@@ -340,7 +341,7 @@ void DeviceData::rebuild(const DriveInfo& driveInfo)
 }
 
 
-void DeviceData::gatherInfo(const DriveInfo& driveInfo)
+void DeviceData::gatherInfo()
 {
     csvName = to_string(driveInfo.generateKeyName());
     
@@ -540,7 +541,7 @@ void DeviceData::saveCSV()
     fileData += str;
     sprintf_s(str, sizeof(str), "# flags=%u\n", driveFlags);
     fileData += str;
-    sprintf_s(str, sizeof(str), "# serialNumber=%u\n", serialNumber);
+    sprintf_s(str, sizeof(str), "# serialNumber=%u\n", driveInfo.serialNumber);
     fileData += str;
 
     // 2: order: size, fileName, write, path, creat, access
@@ -827,8 +828,8 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_User:   delta = strcmp(A.userName.c_str(), B.userName.c_str()); break;
                     case DCID_Date:   delta = A.dateGatheredValue - B.dateGatheredValue; break;
                     case DCID_totalSpace:   delta = A.totalSpace - B.totalSpace; break;
-                    case DCID_type:   delta = A.driveType - B.driveType; break;
-                    case DCID_serial:   delta = A.serialNumber - B.serialNumber; break;
+                    case DCID_type:   delta = (int64)A.driveType - (int64)B.driveType; break;
+                    case DCID_serial:   delta = (int64)A.driveInfo.serialNumber - (int64)B.driveInfo.serialNumber; break;
                     case DCID_selectedFiles:   delta = A.selectedKeys - B.selectedKeys; break;
                     default: IM_ASSERT(0); break;
                 }
@@ -922,7 +923,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                         if (keyName == "flags")
                             data.driveFlags = (uint32)stringToInt64(valueName.c_str());
                         if (keyName == "serialNumber")
-                            data.serialNumber = (uint32)stringToInt64(valueName.c_str());
+                            data.driveInfo.serialNumber = (uint32)stringToInt64(valueName.c_str());
                         if (keyName == "version" && valueName != SERIALIZE_VERSION)
                         {
                             error = true;
@@ -982,7 +983,6 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 //   driveInfo.internalName = data.;
     driveInfo.volumeName = to_wstring(data.volumeName).c_str();
     driveInfo.driveFlags = data.driveFlags;
-    driveInfo.serialNumber = data.serialNumber;
 
     data.csvName = to_string(driveInfo.generateKeyName()).c_str();
 

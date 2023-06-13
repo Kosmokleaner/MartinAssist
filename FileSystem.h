@@ -61,11 +61,11 @@ struct DriveInfo
     // e.g. L"C:\"
     FilePath drivePath;
     // e.g. L"\Device\HarddiskVolume4", must not be 0
-    const wchar_t* deviceName = L"";
+    std::wstring deviceName;
     // e.g. L"\\?\Volume{41122dbf-6011-11ed-1232-04d4121124bd}\", must not be 0
-    const wchar_t* internalName = L"";
+    std::wstring internalName;
     // e.g. L"First Drive", must not be 0
-    const wchar_t* volumeName = L"";
+    std::wstring volumeName;
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
     uint32 driveFlags = 0;
     //

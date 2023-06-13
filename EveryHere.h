@@ -73,6 +73,7 @@ enum FileColumnID
     FCID_Path,
 };
 
+// need to match DriveColumnNames
 enum DriveColumnID
 {
     DCID_VolumeName,
@@ -89,9 +90,35 @@ enum DriveColumnID
     DCID_type,
     DCID_serial,
     DCID_selectedFiles,
+    //
+    DCID_MAX,
+};
+// need to match DriveColumnID
+inline const char* getDriveColumnName(DriveColumnID e)
+{
+    const char* names[] = {
+        "VolumeName",
+        "UniqueName",
+        "Path",
+        "DeviceId",
+        "Size",
+        "Files",
+        "Directories",
+        "Computer",
+        "User",
+        "Date",
+        "totalSpace",
+        "type",
+        "serial",
+        "selectedFiles",
+    };
+    assert(sizeof(names) / sizeof(names[0]) == DCID_MAX);
+    return names[e];
 };
 
 struct DeviceData {
+    DriveInfo driveInfo;
+
     std::vector<FileEntry> entries;
     // index in EveryHere.deviceData
     int deviceId = -1;
@@ -105,8 +132,6 @@ struct DeviceData {
     uint32 driveType = 0;
     // see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
     uint32 driveFlags = 0;
-    // see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
-    uint32 serialNumber = 0;
     // e.g. "RYZEN"
     std::string computerName;
     // e.g. "Hans"
@@ -132,10 +157,12 @@ struct DeviceData {
 
     DeviceData();
 
+    // uses driveInfo
     // fast, done on startup for all local drives
-    void gatherInfo(const DriveInfo& driveInfo);
+    void gatherInfo();
+    // setup driveInfo before
     // slow, gather all info and update .csv file
-    void rebuild(const DriveInfo& driveInfo);
+    void rebuild();
 
     void sort();
 

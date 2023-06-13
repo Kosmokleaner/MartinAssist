@@ -42,11 +42,36 @@ public:
 
 void Gui::guiDrives()
 {
+    static bool localDrivesColumns[DCID_MAX] = { false };
+    localDrivesColumns[DCID_VolumeName] = true;
+    localDrivesColumns[DCID_Path] = true;
+    localDrivesColumns[DCID_Computer] = true;
+    localDrivesColumns[DCID_User] = true;
+    localDrivesColumns[DCID_totalSpace] = true;
+    localDrivesColumns[DCID_type] = true;
+    localDrivesColumns[DCID_serial] = true;
+
+    static bool historicalDataColumns[DCID_MAX] = { false };
+    historicalDataColumns[DCID_VolumeName] = true;
+    historicalDataColumns[DCID_Path] = true;
+    historicalDataColumns[DCID_Computer] = true;
+    historicalDataColumns[DCID_User] = true;
+    historicalDataColumns[DCID_totalSpace] = true;
+    historicalDataColumns[DCID_type] = true;
+    historicalDataColumns[DCID_serial] = true;
+    historicalDataColumns[DCID_Size] = true;
+    historicalDataColumns[DCID_Files] = true;
+    historicalDataColumns[DCID_Directories] = true;
+    historicalDataColumns[DCID_Date] = true;
+    historicalDataColumns[DCID_selectedFiles] = true;
+
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("EveryHere Drives", 0, ImGuiWindowFlags_NoCollapse);
 
     // 0:Local Drives, 1: Historical Data
     int driveTabId = 0;
+
+    bool *columns = (bool*)((driveTabId == 1) ? &historicalDataColumns : &localDrivesColumns);
 
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
     if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
@@ -140,23 +165,37 @@ void Gui::guiDrives()
             ImGuiTableFlags_Sortable |
             ImGuiTableFlags_SortMulti;
 
-        uint32 numberOfColumns = 11;
-        if(driveTabId != 0)
-            ++numberOfColumns;  // date makes no sense for local drives
+        uint32 numberOfColumns = 0;
+        for (uint32 column = 0; column < DCID_MAX; ++column)
+        {
+            if(columns[column])
+                ++numberOfColumns;
+        }
+        assert(numberOfColumns);
 
-        if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags))
+        if (ImGui::BeginTable((driveTabId == 1) ? "HistoricalData" : "LocalDrives", numberOfColumns, flags))
         {
             std::string line;
 
             pushTableStyle3();
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+
+            for(uint32 column = 0; column < DCID_MAX; ++column)
+            {
+                if (columns[column])
+                    ImGui::TableSetupColumn(getDriveColumnName((DriveColumnID)column), ImGuiTableColumnFlags_WidthFixed, 0.0f, column);
+            }
+/*
             ImGui::TableSetupColumn("VolumeName", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_VolumeName);
             //                    ImGui::TableSetupColumn("UniqueName", ImGuiTableColumnFlags_None, 0.0f, DCID_UniqueName);
             ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Path);
             //                    ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_None, 0.0f, DCID_DeviceId);
-            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Size);
-            ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Files);
-            ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_Directories);
+            if (driveTabId == 1) // date makes no sense for local drives
+                ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Size);
+            if (driveTabId == 1) // date makes no sense for local drives
+                ImGui::TableSetupColumn("Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Files);
+            if (driveTabId == 1) // date makes no sense for local drives
+                ImGui::TableSetupColumn("Directories", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_Directories);
             ImGui::TableSetupColumn("Computer", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_Computer);
             ImGui::TableSetupColumn("User", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_User);
             if (driveTabId == 1) // date makes no sense for local drives
@@ -164,7 +203,9 @@ void Gui::guiDrives()
             ImGui::TableSetupColumn("totalSpace", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_totalSpace);
             ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_type);
             ImGui::TableSetupColumn("serial", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 0.0f, DCID_serial);
-            ImGui::TableSetupColumn("selected Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_selectedFiles);
+            if (driveTabId == 1) // date makes no sense for local drives
+                ImGui::TableSetupColumn("selected Files", ImGuiTableColumnFlags_WidthFixed, 0.0f, DCID_selectedFiles);
+*/
             ImGui::TableHeadersRow();
 
             everyHere.buildDriveView(ImGui::TableGetSortSpecs());
@@ -185,103 +226,129 @@ void Gui::guiDrives()
 
                 int columnId = 0;
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                bool selected = deviceSelectionRange.isSelected(line_no);
-                ImGui::Selectable(drive.volumeName.c_str(), &selected, selectable_flags);
-                if (ImGui::IsItemClicked(0))
+                if (columns[DCID_VolumeName])
                 {
-                    deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
-                    setViewDirty();
-                }
-                if (BeginTooltip())
-                {
-                    ImGui::Text("UniqueName: %s.csv", drive.csvName.c_str());
-                    ImGui::Text("DeviceId: %d", drive.deviceId);
-                    EndTooltip();
-                }
-
-                if (ImGui::BeginPopupContextItem())
-                {
-                    if (!deviceSelectionRange.isSelected(line_no))
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                    bool selected = deviceSelectionRange.isSelected(line_no);
+                    ImGui::Selectable(drive.volumeName.c_str(), &selected, selectable_flags);
+                    if (ImGui::IsItemClicked(0))
                     {
-                        deviceSelectionRange.reset();
-                        deviceSelectionRange.onClick(line_no, false, false);
+                        deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+                        setViewDirty();
+                    }
+                    if (BeginTooltip())
+                    {
+                        ImGui::Text("UniqueName: %s.csv", drive.csvName.c_str());
+                        ImGui::Text("DeviceId: %d", drive.deviceId);
+                        EndTooltip();
                     }
 
-                    if (deviceSelectionRange.count() == 1)
+                    if (ImGui::BeginPopupContextItem())
                     {
-                        if (ImGui::MenuItem("Delete .csv File"))
+                        if (!deviceSelectionRange.isSelected(line_no))
                         {
-                            DeleteFileA((drive.csvName + ".csv").c_str());
-                            drive.markedForDelete = true;
+                            deviceSelectionRange.reset();
+                            deviceSelectionRange.onClick(line_no, false, false);
                         }
-                        if (ImGui::MenuItem("[Re]build .csv"))
-                        {
-                            drive.rebuild();
-                        }
-                        if (ImGui::MenuItem("Open path (in Explorer)"))
-                        {
-                            FilePath filePath(to_wstring(drive.csvName + ".csv").c_str());
 
-                            ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
+                        if (deviceSelectionRange.count() == 1)
+                        {
+                            if (ImGui::MenuItem("Delete .csv File"))
+                            {
+                                DeleteFileA((drive.csvName + ".csv").c_str());
+                                drive.markedForDelete = true;
+                            }
+                            if (ImGui::MenuItem("[Re]build .csv"))
+                            {
+                                drive.rebuild();
+                            }
+                            if (ImGui::MenuItem("Open path (in Explorer)"))
+                            {
+                                FilePath filePath(to_wstring(drive.csvName + ".csv").c_str());
+
+                                ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
+                            }
                         }
+                        ImGui::EndPopup();
                     }
-                    ImGui::EndPopup();
                 }
 
-                //                        ImGui::TableSetColumnIndex(columnId++);
-                //                        line = drive.csvName;
-                //                        ImGui::TextUnformatted(line.c_str());
-
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::TextUnformatted(drive.drivePath.c_str());
-
-                //                        ImGui::TableSetColumnIndex(columnId++);
-                //                        ImGui::Text("%d", drive.deviceId);
-
-                ImGui::TableSetColumnIndex(columnId++);
+                if (columns[DCID_Path])
                 {
-                    double printSize = 0;
-                    const char* printUnit = computeReadableSize(drive.statsSize, printSize);
-                    ImGui::Text(printUnit, printSize);
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::TextUnformatted(drive.drivePath.c_str());
                 }
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::Text("%llu", (uint64)drive.entries.size());
+                if (columns[DCID_Size])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    {
+                        double printSize = 0;
+                        const char* printUnit = computeReadableSize(drive.statsSize, printSize);
+                        ImGui::Text(printUnit, printSize);
+                    }
+                }
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::Text("%llu", drive.statsDirs);
+                if (columns[DCID_Files])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::Text("%llu", (uint64)drive.entries.size());
+                }
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::TextUnformatted(drive.computerName.c_str());
+                if (columns[DCID_Directories])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::Text("%llu", drive.statsDirs);
+                }
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::TextUnformatted(drive.userName.c_str());
+                if (columns[DCID_Computer])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::TextUnformatted(drive.computerName.c_str());
+                }
 
-                // date makes no sense for local drives
-                if (driveTabId != 0)
+                if (columns[DCID_User])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::TextUnformatted(drive.userName.c_str());
+                }
+
+                if (columns[DCID_Date])
                 {
                     ImGui::TableSetColumnIndex(columnId++);
                     ImGui::TextUnformatted(drive.dateGatheredString.c_str());
                 }
 
-                ImGui::TableSetColumnIndex(columnId++);
-                if (drive.totalSpace)
+                if (columns[DCID_totalSpace])
                 {
-                    double printSize = 0;
-                    const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
-                    ImGui::Text(printUnit, printSize);
+                    ImGui::TableSetColumnIndex(columnId++);
+                    if (drive.totalSpace)
+                    {
+                        double printSize = 0;
+                        const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
+                        ImGui::Text(printUnit, printSize);
+                    }
                 }
-                ImGui::TableSetColumnIndex(columnId++);
-                bool supportsRemoteStorage = drive.driveFlags & 0x100;
-                ImGui::Text("%d", supportsRemoteStorage ? -(int)(drive.driveType) : drive.driveType);
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::Text("%u", drive.serialNumber);
+                if (columns[DCID_type])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    bool supportsRemoteStorage = drive.driveFlags & 0x100;
+                    ImGui::Text("%d", supportsRemoteStorage ? -(int)(drive.driveType) : drive.driveType);
+                }
 
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::Text("%llu", drive.selectedKeys);
+                if (columns[DCID_serial])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::Text("%u", drive.driveInfo.serialNumber);
+                }
+
+                if (columns[DCID_selectedFiles])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::Text("%llu", drive.selectedKeys);
+                }
 
                 ImGui::PopStyleColor();
                 ImGui::PopID();

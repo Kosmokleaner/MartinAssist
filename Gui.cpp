@@ -189,8 +189,12 @@ int Gui::test()
     char fonts[MAX_PATH];
     HRESULT result = SHGetFolderPathA(NULL, CSIDL_FONTS, NULL, SHGFP_TYPE_CURRENT, fonts);
 
-    ImFont* font = io.Fonts->AddFontFromFileTTF((std::string(fonts) +  "\\Arial.ttf").c_str(), 21.0f);
-    //IM_ASSERT(font != NULL);
+    if(result == S_OK)
+    {
+        ImFont* font = io.Fonts->AddFontFromFileTTF((std::string(fonts) +  "\\Arial.ttf").c_str(), 21.0f);
+        font;
+        //IM_ASSERT(font != NULL);
+    }
 
     bool show_demo_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
