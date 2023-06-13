@@ -127,7 +127,7 @@ struct EveryHereDirectory : public IDirectoryTraverse {
 
     // e.g. L"C:"
     const wchar_t* path = nullptr;
-    DeviceData& deviceData;
+    DriveData& driveData;
     FolderTree folderRoot;
 
     uint64 size = 0;
@@ -136,10 +136,10 @@ struct EveryHereDirectory : public IDirectoryTraverse {
     double nextPrintTime = 0.0f;
     // ever increasing during traversal
     int64 fileEntryCount = 0;
-    int deviceId = -1;
+    int driveId = -1;
 
-    EveryHereDirectory(DeviceData& inDeviceData, int inDeviceId, const wchar_t* inPath)
-        : deviceData(inDeviceData), path(inPath), deviceId(inDeviceId)
+    EveryHereDirectory(DriveData& inDriveData, int inDriveId, const wchar_t* inPath)
+        : driveData(inDriveData), path(inPath), driveId(inDriveId)
     {
         assert(inPath);
     }
@@ -155,7 +155,7 @@ struct EveryHereDirectory : public IDirectoryTraverse {
         logState();
         wprintf(L"\n");
 
-        deviceData.verify();
+        driveData.verify();
     }
 
     void logState()
@@ -187,9 +187,9 @@ struct EveryHereDirectory : public IDirectoryTraverse {
         entry.value.parent = whereToInsert.fileEntry;
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
-        entry.value.deviceId = deviceId;
+        entry.value.driveId = driveId;
 
-        deviceData.entries.push_back(entry);
+        driveData.entries.push_back(entry);
         ++fileEntryCount;
 
         return true;
@@ -213,9 +213,9 @@ struct EveryHereDirectory : public IDirectoryTraverse {
         entry.value.parent = folderRoot.findRecursive(filePath.getPathWithoutDrive()).fileEntry;
         entry.value.time_access = findData.time_access;
         entry.value.time_create = findData.time_create;
-        entry.value.deviceId = deviceId;
+        entry.value.driveId = driveId;
 
-        deviceData.entries.push_back(entry);
+        driveData.entries.push_back(entry);
         ++fileEntryCount;
 
         double nowTime = g_Timer.GetAbsoluteTime();
@@ -238,15 +238,15 @@ struct DriveGatherTraverse : public IDriveTraverse {
 
     virtual void OnDrive(const DriveInfo& driveInfo) {
         std::wstring csvName = driveInfo.generateKeyName();
-        everyHere.removeDevice(to_string(csvName).c_str());
+        everyHere.removeDrive(to_string(csvName).c_str());
 
-        int deviceId = (int)everyHere.deviceData.size();
-        everyHere.deviceData.push_back(DeviceData());
+        int deviceId = (int)everyHere.driveData.size();
+        everyHere.driveData.push_back(DriveData());
 
-        DeviceData& deviceData = everyHere.deviceData.back();
-        deviceData.driveInfo = driveInfo;
-        deviceData.deviceId = deviceId;
-        deviceData.rebuild();
+        DriveData& data = everyHere.driveData.back();
+        data.driveInfo = driveInfo;
+        data.driveId = deviceId;
+        data.rebuild();
     }
 };
 
@@ -256,7 +256,7 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
     LocalDriveStateTraverse(EveryHere& inEveryHere) : everyHere(inEveryHere)
     {
         // later we update the ones we find local with true
-        for (auto& drive : everyHere.deviceData)
+        for (auto& drive : everyHere.driveData)
             drive.isLocalDrive = false;
     }
 
@@ -266,15 +266,15 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
         // todo: google drive is changing it's internalName so we cannot key by this
         printf("LocalDriveStateTraverse '%s' '%s' '%s' %u\n", to_string(driveInfo.drivePath.path).c_str(),  to_string(csvName).c_str(), to_string(driveInfo.volumeName).c_str(), driveInfo.serialNumber);
 
-        DeviceData* drive = everyHere.findDrive(to_string(csvName).c_str());
+        DriveData* drive = everyHere.findDrive(to_string(csvName).c_str());
 
         if(!drive)
         {
-            everyHere.deviceData.push_back(DeviceData());
-            DeviceData& deviceData = everyHere.deviceData.back();
-            deviceData.deviceId = (int)(everyHere.deviceData.size() - 1);
-            deviceData.driveInfo = driveInfo;
-            deviceData.gatherInfo();
+            everyHere.driveData.push_back(DriveData());
+            DriveData& data = everyHere.driveData.back();
+            data.driveId = (int)(everyHere.driveData.size() - 1);
+            data.driveInfo = driveInfo;
+            data.gatherInfo();
         }
     }
 };
@@ -286,17 +286,17 @@ void EveryHere::updateLocalDriveState()
 }
 
 
-DeviceData::DeviceData() 
+DriveData::DriveData() 
 {
     // to avoid some reallocations
     entries.reserve(10 * 1024 * 1024);
 }
 
 
-void DeviceData::rebuild()
+void DriveData::rebuild()
 {
     // set this before
-    assert(deviceId >= 0);
+    assert(driveId >= 0);
 
     gatherInfo();
 
@@ -332,7 +332,7 @@ void DeviceData::rebuild()
         dateGatheredValue = timeStringToValue(str);
     }
 
-    EveryHereDirectory traverse(*this, deviceId, wDrivePath.c_str());
+    EveryHereDirectory traverse(*this, driveId, wDrivePath.c_str());
 
     directoryTraverse(traverse, wDrivePath.c_str());
 
@@ -341,7 +341,7 @@ void DeviceData::rebuild()
 }
 
 
-void DeviceData::gatherInfo()
+void DriveData::gatherInfo()
 {
     csvName = to_string(driveInfo.generateKeyName());
     
@@ -387,7 +387,7 @@ void DeviceData::gatherInfo()
 }
 
 
-void DeviceData::sort()
+void DriveData::sort()
 {
     verify();
 
@@ -436,7 +436,7 @@ void DeviceData::sort()
     verify();
 }
 
-void DeviceData::computeStats() 
+void DriveData::computeStats() 
 {
     statsSize = 0;
     statsDirs = 0;
@@ -505,7 +505,7 @@ void replace_all(
 }
 
 
-void DeviceData::saveCSV()
+void DriveData::saveCSV()
 {
     char str[MAX_PATH + 100];
 
@@ -598,7 +598,7 @@ void EveryHere::gatherData()
     DriveGatherTraverse drives(*this);
     driveTraverse(drives);
 
-    for (auto& itD : deviceData)
+    for (auto& itD : driveData)
     {
         itD.computeStats();
     }
@@ -607,30 +607,30 @@ void EveryHere::gatherData()
     buildUniqueFiles();
 }
 
-DeviceData* EveryHere::findDrive(const char* cleanName) 
+DriveData* EveryHere::findDrive(const char* cleanName) 
 {
-    for (auto& itD : deviceData)
+    for (auto& itD : driveData)
         if (itD.csvName == cleanName)
             return &itD;
 
     return nullptr;
 }
 
-void EveryHere::removeDevice(const char* csvName)
+void EveryHere::removeDrive(const char* csvName)
 {
     uint32 i = 0;
-    for (auto& itD : deviceData)
+    for (auto& itD : driveData)
     {
         if(itD.csvName == csvName)
         {
-            deviceData.erase(deviceData.begin() + i);
+            driveData.erase(driveData.begin() + i);
             return;
         }
         ++i;
     }
 }
 
-void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders)
+void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders)
 {
     assert(minSize >= 0);
     assert(filter);
@@ -641,10 +641,10 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
 
     for (uint32 lineNoDrive = 0; lineNoDrive < driveView.size(); ++lineNoDrive)
     {
-        if (!deviceSelectionRange.isSelected(lineNoDrive))
+        if (!driveSelectionRange.isSelected(lineNoDrive))
             continue;
 
-        DeviceData& itD = deviceData[driveView[lineNoDrive]];
+        DriveData& itD = driveData[driveView[lineNoDrive]];
 
         fileView.reserve(itD.entries.size());
 
@@ -652,7 +652,7 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
         for (auto& fileEntry : itD.entries)
         {
             ViewEntry entry;
-            entry.deviceId = itD.deviceId;
+            entry.driveId = itD.driveId;
             entry.fileEntryId = id++;
 
 //            FileEntry& fileEntry = itD.entries[entry.fileEntryId];
@@ -709,8 +709,8 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
         bool operator()(const ViewEntry& a, const ViewEntry& b) const 
         {
             // todo: optimize vector [] in debug
-            const FileEntry& A = everyHere.deviceData[a.deviceId].entries[a.fileEntryId];
-            const FileEntry& B = everyHere.deviceData[b.deviceId].entries[b.fileEntryId];
+            const FileEntry& A = everyHere.driveData[a.driveId].entries[a.fileEntryId];
+            const FileEntry& B = everyHere.driveData[b.driveId].entries[b.fileEntryId];
 
             int count = sorts_specs ? sorts_specs->SpecsCount : 0;
 
@@ -725,7 +725,7 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
                     case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
                     case FCID_Size:        delta = A.key.sizeOrFolder - B.key.sizeOrFolder; break;
                     case FCID_Redundancy:  delta = everyHere.findRedundancy(A.key) - everyHere.findRedundancy(B.key); break;
-                    case FCID_DeviceId:    delta = a.deviceId - b.deviceId; break;
+                    case FCID_DriveId:    delta = a.driveId - b.driveId; break;
                     case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                     default: IM_ASSERT(0); break;
                 }
@@ -791,21 +791,21 @@ uint32 EveryHere::findRedundancy(const FileKey& fileKey) const
 void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
 {
     uint32 count = (uint32)driveView.size();
-    driveView.resize(deviceData.size());
+    driveView.resize(driveData.size());
 
     for(uint32 i = 0; i < count; ++i)
         driveView[i] = i;
 
     struct CustomLessDrive
     {
-        std::vector<DeviceData>& deviceData;
+        std::vector<DriveData>& driveData;
         ImGuiTableSortSpecs* sorts_specs = {};
 
         bool operator()(const uint32 a, const uint32 b) const
         {
             // todo: optimize vector [] in debug
-            DeviceData& A = deviceData[a];
-            DeviceData& B = deviceData[b];
+            DriveData& A = driveData[a];
+            DriveData& B = driveData[b];
 
             int count = sorts_specs ? sorts_specs->SpecsCount : 0;
 
@@ -820,7 +820,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_VolumeName:   delta = strcmp(A.volumeName.c_str(), B.volumeName.c_str()); break;
                     case DCID_UniqueName:   delta = strcmp(A.csvName.c_str(), B.csvName.c_str()); break;
                     case DCID_Path:   delta = strcmp(A.drivePath.c_str(), B.drivePath.c_str()); break;
-                    case DCID_DeviceId:   delta = A.deviceId - B.deviceId; break;
+                    case DCID_DriveId:   delta = A.driveId - B.driveId; break;
                     case DCID_Size:   delta = A.statsSize - B.statsSize; break;
                     case DCID_Files:   delta = A.entries.size() - B.entries.size(); break;
                     case DCID_Directories:   delta = A.statsDirs - B.statsDirs; break;
@@ -845,7 +845,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
         }
     };
 
-    CustomLessDrive customLess = { deviceData, sorts_specs };
+    CustomLessDrive customLess = { driveData, sorts_specs };
 
     std::sort(driveView.begin(), driveView.end(), customLess);
 }
@@ -862,11 +862,11 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
     std::string line;
 
-    int deviceId = (int)deviceData.size();
-    deviceData.push_back(DeviceData());
-    DeviceData& data = deviceData.back();
+    int deviceId = (int)driveData.size();
+    driveData.push_back(DriveData());
+    DriveData& data = driveData.back();
     data.csvName = to_string(internalName);
-    data.deviceId = deviceId;
+    data.driveId = deviceId;
 
     bool error = false;
 
@@ -972,7 +972,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
             break;
         }
 
-        entry.value.deviceId = deviceId;
+        entry.value.driveId = deviceId;
 
         parseLineFeed(p);
     }
@@ -994,7 +994,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
 // not reentrant, don't use with multithreading
 // https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
-const char* DeviceData::generatePath(int64 fileEntryIndex) const
+const char* DriveData::generatePath(int64 fileEntryIndex) const
 {
     static char pathBuffer[32 * 1024];
 
@@ -1018,7 +1018,7 @@ void EveryHere::buildUniqueFiles()
     uniqueFiles.clear();
 
     uint32 driveId = 0;
-    for (auto& drive : deviceData)
+    for (auto& drive : driveData)
     {
         for(auto& entry : drive.entries)
         {
@@ -1031,10 +1031,10 @@ void EveryHere::buildUniqueFiles()
 void EveryHere::freeData() 
 {
     fileView.clear();
-    deviceData.clear();
+    driveData.clear();
 }
 
-void DeviceData::setDrivePath(const char * inDrivePath)
+void DriveData::setDrivePath(const char * inDrivePath)
 {
     drivePath = inDrivePath;
 
@@ -1042,7 +1042,7 @@ void DeviceData::setDrivePath(const char * inDrivePath)
         drivePath.pop_back();
 }
 
-void DeviceData::verify() 
+void DriveData::verify() 
 {
     for (const auto& it : entries)
     {

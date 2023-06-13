@@ -71,8 +71,6 @@ void Gui::guiDrives()
     // 0:Local Drives, 1: Historical Data
     int driveTabId = 0;
 
-    bool *columns = (bool*)((driveTabId == 1) ? &historicalDataColumns : &localDrivesColumns);
-
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
     if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
     {
@@ -88,6 +86,8 @@ void Gui::guiDrives()
         }
         ImGui::EndTabBar();
     }
+
+    bool* columns = (bool*)((driveTabId == 1) ? &historicalDataColumns : &localDrivesColumns);
 
     if (ImGui::Button("build"))
     {
@@ -111,21 +111,21 @@ void Gui::guiDrives()
             str[0] = 'a' + (rand() % 26);
             str[1] = 'a' + (rand() % 26);
             str[2] = 0;
-            everyHere.deviceData.push_back(DeviceData());
-            DeviceData& d = everyHere.deviceData.back();
+            everyHere.driveData.push_back(DriveData());
+            DriveData& d = everyHere.driveData.back();
             d.csvName = str;
             d.volumeName = str;
             str[0] = 'A' + (rand() % 26);
             str[1] = ':';
             str[2] = 0;
             d.setDrivePath(str);
-            d.deviceId = i;
+            d.driveId = i;
         }
 
         for (int i = 0; i < 200; ++i)
         {
-            int deviceId = rand() % 5;
-            DeviceData& r = everyHere.deviceData[deviceId];
+            int driveId = rand() % 5;
+            DriveData& r = everyHere.driveData[driveId];
             r.entries.push_back(FileEntry());
             FileEntry& e = r.entries.back();
             str[0] = 'a' + (rand() % 26);
@@ -135,7 +135,7 @@ void Gui::guiDrives()
             e.key.sizeOrFolder = rand() * 1000;
             e.key.time_write = rand();
             e.value.parent = -1;
-            e.value.deviceId = deviceId;
+            e.value.driveId = driveId;
         }
         everyHere.updateLocalDriveState();
         setViewDirty();
@@ -213,9 +213,11 @@ void Gui::guiDrives()
             int line_no = 0;
             for (auto it = everyHere.driveView.begin(), end = everyHere.driveView.end(); it != end; ++it, ++line_no)
             {
-                DeviceData& drive = everyHere.deviceData[*it];
+                DriveData& drive = everyHere.driveData[*it];
 
                 if (driveTabId == 0 && !drive.isLocalDrive)
+                    continue;
+                if (driveTabId == 1 && drive.isLocalDrive)
                     continue;
 
                 ImGui::TableNextRow();
@@ -230,29 +232,29 @@ void Gui::guiDrives()
                 {
                     ImGui::TableSetColumnIndex(columnId++);
                     ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                    bool selected = deviceSelectionRange.isSelected(line_no);
+                    bool selected = driveSelectionRange.isSelected(line_no);
                     ImGui::Selectable(drive.volumeName.c_str(), &selected, selectable_flags);
                     if (ImGui::IsItemClicked(0))
                     {
-                        deviceSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+                        driveSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                         setViewDirty();
                     }
                     if (BeginTooltip())
                     {
                         ImGui::Text("UniqueName: %s.csv", drive.csvName.c_str());
-                        ImGui::Text("DeviceId: %d", drive.deviceId);
+                        ImGui::Text("DriveId: %d", drive.driveId);
                         EndTooltip();
                     }
 
                     if (ImGui::BeginPopupContextItem())
                     {
-                        if (!deviceSelectionRange.isSelected(line_no))
+                        if (!driveSelectionRange.isSelected(line_no))
                         {
-                            deviceSelectionRange.reset();
-                            deviceSelectionRange.onClick(line_no, false, false);
+                            driveSelectionRange.reset();
+                            driveSelectionRange.onClick(line_no, false, false);
                         }
 
-                        if (deviceSelectionRange.count() == 1)
+                        if (driveSelectionRange.count() == 1)
                         {
                             if (ImGui::MenuItem("Delete .csv File"))
                             {

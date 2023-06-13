@@ -222,13 +222,13 @@ int Gui::test()
         guiDrives();
         
 
-        for (auto it = everyHere.deviceData.begin(); it != everyHere.deviceData.end(); ++it)
+        for (auto it = everyHere.driveData.begin(); it != everyHere.driveData.end(); ++it)
         {
             if(it->markedForDelete)
             {
-               everyHere.deviceData.erase(it);
-               it = everyHere.deviceData.begin();
-               deviceSelectionRange.reset();
+               everyHere.driveData.erase(it);
+               it = everyHere.driveData.begin();
+               driveSelectionRange.reset();
                setViewDirty();
             }
         }

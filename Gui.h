@@ -26,7 +26,7 @@ private:
     //
     int32 redundancyFilter = 0;
     // into everyHere.driveView[]
-    SelectionRange deviceSelectionRange;
+    SelectionRange driveSelectionRange;
     // into everyHere.fileView[]
     SelectionRangeWithDriveUpdate  fileSelectionRange;
     // number of frame until it triggers

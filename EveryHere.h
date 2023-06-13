@@ -55,7 +55,7 @@ struct FileValue
     __time64_t time_create = -1;    // -1 for FAT file systems
     __time64_t time_access = -1;    // -1 for FAT file systems
     std::string path;
-    int deviceId = -1;
+    int driveId = -1;
 };
 
 struct FileEntry
@@ -69,7 +69,7 @@ enum FileColumnID
     FCID_Name,
     FCID_Size,
     FCID_Redundancy,
-    FCID_DeviceId,
+    FCID_DriveId,
     FCID_Path,
 };
 
@@ -79,7 +79,7 @@ enum DriveColumnID
     DCID_VolumeName,
     DCID_UniqueName,
     DCID_Path,
-    DCID_DeviceId,
+    DCID_DriveId,
     DCID_Size,
     DCID_Files,
     DCID_Directories,
@@ -100,7 +100,7 @@ inline const char* getDriveColumnName(DriveColumnID e)
         "VolumeName",
         "UniqueName",
         "Path",
-        "DeviceId",
+        "DriveId",
         "Size",
         "Files",
         "Directories",
@@ -116,12 +116,12 @@ inline const char* getDriveColumnName(DriveColumnID e)
     return names[e];
 };
 
-struct DeviceData {
+struct DriveData {
     DriveInfo driveInfo;
 
     std::vector<FileEntry> entries;
-    // index in EveryHere.deviceData
-    int deviceId = -1;
+    // index in EveryHere.driveData
+    int driveId = -1;
     // generated with generateKeyName() without .csv
     std::string csvName;
     // e.g. "First Drive"
@@ -155,7 +155,7 @@ struct DeviceData {
     // call computeStats() to update, number of directories
     uint64 statsDirs = 0;
 
-    DeviceData();
+    DriveData();
 
     // uses driveInfo
     // fast, done on startup for all local drives
@@ -183,9 +183,9 @@ struct DeviceData {
 
 struct ViewEntry
 {
-    // index in deviceData[]
-    int32 deviceId = -1;
-    // index in deviceData[deviceId].entries
+    // index in driveData[]
+    int32 driveId = -1;
+    // index in driveData[driveId].entries
     int64 fileEntryId = -1;
 };
 
@@ -193,10 +193,10 @@ struct ImGuiTableSortSpecs;
 
 struct EveryHere
 {
-    // [deviceId] = DeviceData
-    std::vector<DeviceData> deviceData;
+    // [driveId] = driveData
+    std::vector<DriveData> driveData;
 
-    // [line_no] = index into deviceData[]
+    // [line_no] = index into driveData[]
     std::vector<uint32> driveView;
     // [line_no] = ViewEntry, built by buildView()
     std::vector<ViewEntry> fileView;
@@ -214,13 +214,13 @@ struct EveryHere
     bool loadCSV(const wchar_t* internalName);
 
     void buildDriveView(ImGuiTableSortSpecs* sorts_specs);
-    // @param deviceSelectionRange into driveView[]
-    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& deviceSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders);
+    // @param driveSelectionRange into driveView[]
+    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders);
 
-    void removeDevice(const char* cleanName);
+    void removeDrive(const char* cleanName);
 
     // @return 0 if not found
-    DeviceData* findDrive(const char* cleanName);
+    DriveData* findDrive(const char* cleanName);
 
     void updateLocalDriveState();
 

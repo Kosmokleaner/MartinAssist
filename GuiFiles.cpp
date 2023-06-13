@@ -98,7 +98,7 @@ void Gui::guiFiles()
                 ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Redundancy);
             }
             ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Path);
-            ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_DeviceId);
+            ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_DriveId);
             //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
 //                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
@@ -118,7 +118,7 @@ void Gui::guiFiles()
                 // do this before changes to the fileView
                 fileSelectionRange.reset();
                 int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, deviceSelectionRange, fileSortCriteria, filesTabId == 1);
+                everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, driveSelectionRange, fileSortCriteria, filesTabId == 1);
                 whenToRebuildView = -1;
                 fileSortCriteria = {};
             }
@@ -135,7 +135,7 @@ void Gui::guiFiles()
                         break;
 
                     ViewEntry& viewEntry = everyHere.fileView[line_no];
-                    const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
+                    const DriveData& deviceData = everyHere.driveData[viewEntry.driveId];
                     const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
 
                     line = entry.key.fileName;
@@ -192,7 +192,7 @@ void Gui::guiFiles()
 
                             fileSelectionRange.foreach([&](int64 line_no) {
                                 ViewEntry& viewEntry = everyHere.fileView[line_no];
-                                const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
+                                const DriveData& deviceData = everyHere.driveData[viewEntry.driveId];
                                 const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
                                 if (entry.key.sizeOrFolder >= 0)
                                 {
@@ -227,7 +227,7 @@ void Gui::guiFiles()
                     ImGui::TextUnformatted(entry.value.path.c_str());
 
                     ImGui::TableSetColumnIndex(columnId++);
-                    ImGui::Text("%d", entry.value.deviceId);
+                    ImGui::Text("%d", entry.value.driveId);
                 }
             }
             clipper.End();
@@ -256,7 +256,7 @@ void Gui::guiFiles()
             uint64 selectedSize = 0;
             fileSelectionRange.foreach([&](int64 line_no) {
                 ViewEntry& viewEntry = everyHere.fileView[line_no];
-                const DeviceData& deviceData = everyHere.deviceData[viewEntry.deviceId];
+                const DriveData& deviceData = everyHere.driveData[viewEntry.driveId];
                 const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
                 if (entry.key.sizeOrFolder >= 0)
                     selectedSize += entry.key.sizeOrFolder;
