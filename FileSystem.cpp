@@ -4,6 +4,7 @@
 #include <io.h>	// _A_SUBDIR, _findclose()
 #include <windows.h>    // GetVolumePathNamesForVolumeNameW()
 #include <algorithm>
+#include <list>
 
 
 FilePath::FilePath(const wchar_t* in) {
@@ -137,6 +138,7 @@ bool FilePath::IsValid() const {
 
 // ---------------------------------------------------------------------------
 
+// depth first
 static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
 	assert(pattern);
 
@@ -165,13 +167,12 @@ static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePat
 			}
 		}
 		else {
-			sink.OnFile(filePath, c_file.name, c_file);
+			sink.OnFile(filePath, c_file.name, c_file, 0.0f);
 		}
 	} while (_wfindnext(hFile, &c_file) == 0);
 
 	_findclose(hFile);
 }
-
 
 std::wstring DriveInfo::generateKeyName() const
 {
@@ -188,13 +189,63 @@ std::wstring DriveInfo::generateKeyName() const
 	return cleanName;
 }
 
-
 void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
 	assert(pattern);
 	sink.OnStart();
 
 	_directoryTraverse(sink, filePath, pattern);
 
+	sink.OnEnd();
+}
+
+void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, const wchar_t* pattern) {
+	assert(pattern);
+	sink.OnStart();
+
+	std::list<FilePath> workItems;
+	workItems.push_back(inFilePath);
+
+	float doneUnits = 0;
+	float totalUnits = 1;
+
+	while (!workItems.empty())
+	{
+		// https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/findfirst-functions?view=vs-2019
+		struct _wfinddata_t c_file;
+		intptr_t hFile = 0;
+
+		const FilePath& filePath = workItems.front();
+		FilePath pathWithPattern = filePath;
+		pathWithPattern.Append(pattern);
+
+		if ((hFile = _wfindfirst(pathWithPattern.path.c_str(), &c_file)) != -1L)
+		{
+			do
+			{
+				if (wcscmp(c_file.name, L".") == 0 || wcscmp(c_file.name, L"..") == 0)
+					continue;
+
+				if (c_file.attrib & _A_SUBDIR) {
+
+					if (sink.OnDirectory(filePath, c_file.name, c_file)) {
+						FilePath pathWithDirectory = filePath;
+						pathWithDirectory.Append(c_file.name);
+						workItems.push_back(std::move(pathWithDirectory));
+						++totalUnits;
+					}
+				}
+				else {
+					float progress = doneUnits / totalUnits;
+					sink.OnFile(filePath, c_file.name, c_file, progress);
+				}
+			} while (_wfindnext(hFile, &c_file) == 0);
+
+			_findclose(hFile);
+		}
+
+		++doneUnits;
+		workItems.pop_front();
+	}
 	sink.OnEnd();
 }
 

@@ -27,9 +27,9 @@ public:
         filePath;directory;findData;
         return false;
     }
-    void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData)
+    void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData, float progress)
     {
-        findData;
+        findData; progress;
 
         FilePath combined = path;
         combined.Append(file);

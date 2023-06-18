@@ -38,9 +38,9 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
         return true;
     }
 
-    virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData) {
+    virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData, float progress) {
         // to prevent compiler warning
-        findData;
+        findData; progress;
 
         // todo: static to avoid heap allocations, prevents multithreading use
         static FilePath local; local.path.clear();

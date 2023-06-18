@@ -137,6 +137,8 @@ struct EveryHereDirectory : public IDirectoryTraverse {
     // ever increasing during traversal
     int64 fileEntryCount = 0;
     int driveId = -1;
+    // 0..100
+    int percent = 0;
 
     EveryHereDirectory(DriveData& inDriveData, int inDriveId, const wchar_t* inPath)
         : driveData(inDriveData), path(inPath), driveId(inDriveId)
@@ -161,10 +163,11 @@ struct EveryHereDirectory : public IDirectoryTraverse {
     void logState()
     {
         // a few spaces in the end to overwrite the line that was there before
-        wprintf(L"%s %lld files  %.0f sec           \r",
+        wprintf(L"%s %lld files  %.0f sec    %d%%       \r",
             path,
             fileEntryCount,
-            g_Timer.GetAbsoluteTime() - startTime);
+            g_Timer.GetAbsoluteTime() - startTime,
+            percent);
     }
 
     virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) {
@@ -195,7 +198,9 @@ struct EveryHereDirectory : public IDirectoryTraverse {
         return true;
     }
 
-    virtual void OnFile(const FilePath& filePath, const wchar_t* file, const _wfinddata_t& findData) {
+    virtual void OnFile(const FilePath& filePath, const wchar_t* file, const _wfinddata_t& findData, float progress) {
+        percent = (int)(100.0f * progress);
+
         // todo: static to avoid heap allocations, prevents multithreading use
         static FilePath local; local.path.clear();
 
@@ -334,7 +339,8 @@ void DriveData::rebuild()
 
     EveryHereDirectory traverse(*this, driveId, wDrivePath.c_str());
 
-    directoryTraverse(traverse, wDrivePath.c_str());
+//    directoryTraverse(traverse, wDrivePath.c_str());
+    directoryTraverse2(traverse, wDrivePath.c_str());
 
 //    if (traverse.fileEntryCount)
     saveCSV();
@@ -909,7 +915,7 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                             data.computerName = valueName;
                         if (keyName == "userName")
                             data.userName = valueName;
-                        if (keyName == "date")
+                        if (keyName == "dateGatheredString")
                         {
                             data.dateGatheredString = valueName;
                             data.dateGatheredValue = timeStringToValue(valueName.c_str());

@@ -81,7 +81,6 @@ struct IDriveTraverse {
     virtual void OnEnd() {}
 };
 
-
 // implement for directoryTraverse()
 struct IDirectoryTraverse {
   virtual void OnStart() {}
@@ -91,13 +90,17 @@ struct IDirectoryTraverse {
   virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) = 0;
   // @param path without file
   // @param file with extension
-  virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData) = 0;
+  // @param progress 0:unknown or just started .. 1:done
+  virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData, float progress) = 0;
   virtual void OnEnd() {}
 };
 
+// depth first (memory efficient)
 // @param filePath e.g. L"c:\\temp" L"relative/Path" L""
 // @param pattern e.g. L"*.cpp" L"*.*", must not be 0
 void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern = L"*.*");
+// breadth first (wastes memory but better prediction on the progress)
+void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern = L"*.*");
 
 // in error case sink might not even get OnStart() call
 void driveTraverse(IDriveTraverse& sink);

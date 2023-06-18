@@ -138,7 +138,7 @@ struct DriveData {
     std::string userName;
     // when this data was gathered, saved
     std::string dateGatheredString;
-    // computed from dateGathered
+    // computed from dateGatheredString, not saved
     int64 dateGatheredValue = 0;
     // in bytes
     uint64 freeSpace = 0;
