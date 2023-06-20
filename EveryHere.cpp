@@ -340,7 +340,10 @@ void DriveData::rebuild()
     EveryHereDirectory traverse(*this, driveId, wDrivePath.c_str());
 
 //    directoryTraverse(traverse, wDrivePath.c_str());
-    directoryTraverse2(traverse, wDrivePath.c_str());
+
+    uint64 totalExpectedFileSize = totalSpace - freeSpace;
+
+    directoryTraverse2(traverse, wDrivePath.c_str(), totalExpectedFileSize);
 
 //    if (traverse.fileEntryCount)
     saveCSV();

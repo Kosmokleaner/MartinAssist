@@ -100,7 +100,8 @@ struct IDirectoryTraverse {
 // @param pattern e.g. L"*.cpp" L"*.*", must not be 0
 void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern = L"*.*");
 // breadth first (wastes memory but better prediction on the progress)
-void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern = L"*.*");
+// @param totalExpectedFileSize for better progress, 0 it uses non linear method
+void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& filePath, uint64 totalExpectedFileSize, const wchar_t* pattern = L"*.*");
 
 // in error case sink might not even get OnStart() call
 void driveTraverse(IDriveTraverse& sink);

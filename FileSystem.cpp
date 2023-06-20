@@ -198,7 +198,7 @@ void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const
 	sink.OnEnd();
 }
 
-void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, const wchar_t* pattern) {
+void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, uint64 totalExpectedFileSize, const wchar_t* pattern) {
 	assert(pattern);
 	sink.OnStart();
 
@@ -207,6 +207,10 @@ void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, co
 
 	float doneUnits = 0;
 	float totalUnits = 1;
+
+	uint64 totalFileSize = 0;
+
+	double invTotalExpectedFileSize = 1.0 / totalExpectedFileSize;
 
 	while (!workItems.empty())
 	{
@@ -235,7 +239,16 @@ void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, co
 					}
 				}
 				else {
-					float progress = doneUnits / totalUnits;
+					float progress = doneUnits / totalUnits;	// this prediction can be improved with some non linear curve assuming an average drive depth, maybe based on former depth
+
+					totalFileSize += c_file.size;
+
+					if(totalExpectedFileSize)
+						progress = (float)(totalFileSize * invTotalExpectedFileSize);
+
+					if(progress > 1)
+						progress = 1;
+
 					sink.OnFile(filePath, c_file.name, c_file, progress);
 				}
 			} while (_wfindnext(hFile, &c_file) == 0);

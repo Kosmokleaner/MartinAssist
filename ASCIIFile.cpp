@@ -38,10 +38,10 @@
 
 
 
-uint32 IO_GetFileSize( const char *Name )
+size_t IO_GetFileSize( const char *Name )
 {
 	assert(Name);
-	int handle,size;	// test2
+	int handle;
 
 	handle = open(Name,O_RDONLY);
 	if(handle==-1)
@@ -49,7 +49,7 @@ uint32 IO_GetFileSize( const char *Name )
 		return 0;
 	}
 
-	size=filelength(handle);
+	size_t size = _filelengthi64(handle);
 	close(handle);
 
 	return size;
@@ -192,19 +192,19 @@ bool CASCIIFile::IO_LoadASCIIFile( const char *pathname )
 	if(*pathname==0)
 		return false;
 
-	uint32 size=IO_GetFileSize(pathname);
+	size_t size = IO_GetFileSize(pathname);
 	char *ret=0;
 
-	ret=(char *)malloc(size+1);
+	ret = (char *)malloc(size + 1);
 
-	if(ret==0)
+	if(ret == 0)
 		return false;	// no memory
 	
 	FILE *file;
 
 	if((file = fopen(pathname,"rb")) != NULL)
 	{
-		fread(ret,size, 1, file);
+		fread(ret, size, 1, file);
 		ret[size] = 0;				// 0 terminate
 
 		m_Size = size + 1;
