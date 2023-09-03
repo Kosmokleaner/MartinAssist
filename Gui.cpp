@@ -223,6 +223,8 @@ int Gui::test()
         {
             if (ImGui::BeginMenu("File"))
             {
+                ImGui::MenuItem("ImGui Demo", 0, &show_demo_window);
+                ImGui::Separator();
                 if (ImGui::MenuItem("Quit"))
                 {
                     quitApp = true;
