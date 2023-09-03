@@ -10,10 +10,13 @@
 
 
 
-void Gui::guiFiles()
+void Gui::guiFiles(bool &show)
 {
+    if(!show)
+        return;
+
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("EveryHere Files", 0, ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("EveryHere Files", &show, ImGuiWindowFlags_NoCollapse);
 
     // todo: filter button
     if (ImGui::InputText("filter", &filter))

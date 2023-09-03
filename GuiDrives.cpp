@@ -40,8 +40,11 @@ public:
 
 
 
-void Gui::guiDrives()
+void Gui::guiDrives(bool &show)
 {
+    if(!show)
+        return;
+
     static bool localDrivesColumns[DCID_MAX] = { false };
     localDrivesColumns[DCID_VolumeName] = true;
     localDrivesColumns[DCID_Path] = true;
@@ -66,7 +69,7 @@ void Gui::guiDrives()
     historicalDataColumns[DCID_selectedFiles] = true;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("EveryHere Drives", 0, ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("EveryHere Drives", &show, ImGuiWindowFlags_NoCollapse);
 
     // 0:Local Drives, 1: Historical Data
     int driveTabId = 0;

@@ -9,8 +9,8 @@ public:
 
     int test();
     
-    void guiDrives();
-    void guiFiles();
+    void guiDrives(bool &show);
+    void guiFiles(bool &show);
 
     EveryHere everyHere;
 

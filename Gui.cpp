@@ -196,10 +196,14 @@ int Gui::test()
         //IM_ASSERT(font != NULL);
     }
 
-    bool show_demo_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     bool quitApp = false;
+
+    // todo: serialize
+    bool showDrives = true;
+    bool showFiles = true;
+    bool show_demo_window = false;
 
     // Main loop
     while (!glfwWindowShouldClose(window) && !quitApp)
@@ -223,6 +227,9 @@ int Gui::test()
         {
             if (ImGui::BeginMenu("File"))
             {
+                ImGui::MenuItem("EveryHere Drives", 0, &showDrives);
+                ImGui::MenuItem("EveryHere Files", 0, &showFiles);
+                ImGui::Separator();
                 ImGui::MenuItem("ImGui Demo", 0, &show_demo_window);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit"))
@@ -235,7 +242,7 @@ int Gui::test()
             ImGui::EndMainMenuBar();
         }
 
-        guiDrives();
+        guiDrives(showDrives);
         
 
         for (auto it = everyHere.driveData.begin(); it != everyHere.driveData.end(); ++it)
@@ -249,7 +256,7 @@ int Gui::test()
             }
         }
 
-        guiFiles();
+        guiFiles(showFiles);
 
 
         // Rendering
