@@ -38,8 +38,16 @@ private:
 
 void pushTableStyle3();
 
-bool BeginTooltip();
-
+// e.g.
+// if(BeginTooltipPaused())
+// {
+//   ..
+//   EndTooltip();
+// }
+bool BeginTooltipPaused();
+// yellow tooltip background
+void BeginTooltip();
+// to end BeginTooltip()
 void EndTooltip();
 
 

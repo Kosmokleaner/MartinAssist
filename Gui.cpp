@@ -54,6 +54,91 @@ Gui::Gui()
 {
 }
 
+void showFonts(ImFont *font)
+{
+    static std::string characterToShow;
+    static std::string literalToShow;
+
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    const ImU32 glyph_col = ImGui::GetColorU32(ImGuiCol_Text);
+    const float cell_size = font->FontSize * 1;
+    const float cell_spacing = ImGui::GetStyle().ItemSpacing.y;
+
+//    if(ImGui::BeginChild("ScrollReg", ImVec2(0,500), true))
+    {
+        for (unsigned int base = 0; base <= IM_UNICODE_CODEPOINT_MAX; base += 256)
+        {
+            // Skip ahead if a large bunch of glyphs are not present in the font (test in chunks of 4k)
+            // This is only a small optimization to reduce the number of iterations when IM_UNICODE_MAX_CODEPOINT
+            // is large // (if ImWchar==ImWchar32 we will do at least about 272 queries here)
+            if (!(base & 4095) && font->IsGlyphRangeUnused(base, base + 4095))
+            {
+                base += 4096 - 256;
+                continue;
+            }
+
+            int count = 0;
+            for (unsigned int n = 0; n < 256; n++)
+                if (font->FindGlyphNoFallback((ImWchar)(base + n)))
+                    count++;
+            if (count <= 0)
+                continue;
+    //        if (!ImGui::TreeNode((void*)(intptr_t)base, "U+%04X..U+%04X (%d %s)", base, base + 255, count, count > 1 ? "glyphs" : "glyph"))
+     //           continue;
+
+            // Draw a 16x16 grid of glyphs
+            ImVec2 base_pos = ImGui::GetCursorScreenPos();
+            for (unsigned int n = 0; n < 256; n++)
+            {
+                // We use ImFont::RenderChar as a shortcut because we don't have UTF-8 conversion functions
+                // available here and thus cannot easily generate a zero-terminated UTF-8 encoded string.
+                ImVec2 cell_p1(base_pos.x + (n % 16) * (cell_size + cell_spacing), base_pos.y + (n / 16) * (cell_size + cell_spacing));
+                ImVec2 cell_p2(cell_p1.x + cell_size, cell_p1.y + cell_size);
+                const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
+                draw_list->AddRect(cell_p1, cell_p2, glyph ? IM_COL32(255, 255, 255, 10) : IM_COL32(255, 255, 255, 50));
+                if (glyph)
+                {
+                    font->RenderChar(draw_list, cell_size, cell_p1, glyph_col, (ImWchar)(base + n));
+                    if (ImGui::IsMouseHoveringRect(cell_p1, cell_p2))
+                    {
+                        BeginTooltip();
+                        ImGui::Text("Codepoint: U+%04X", base + n);
+                        EndTooltip();
+
+                        if(ImGui::IsMouseClicked(0))
+                        {
+                            literalToShow.clear();
+                            // e.g. "\xef\x80\x81" = U+f001
+                            std::wstring wstr;
+                            wstr.push_back((TCHAR)(base + n));
+                            characterToShow = to_string(wstr);
+                            const char* p = characterToShow.c_str();
+                            literalToShow += "\"";
+                            while(*p)
+                            {
+                                char str[8];
+                                sprintf_s(str, sizeof(str), "\\x%hhx", *p++);
+                                literalToShow += str;
+                            }
+                            literalToShow += "\"";
+
+                            ImGui::LogToClipboard();
+                            ImGui::LogText("%s", literalToShow.c_str());
+                            ImGui::LogFinish();
+                        }
+                    }
+                }
+            }
+            ImGui::Dummy(ImVec2((cell_size + cell_spacing) * 16, (cell_size + cell_spacing) * 16));
+    //        ImGui::TreePop();
+        }
+//        ImGui::EndChild();
+    }
+    ImGui::Separator();
+    if(!characterToShow.empty())
+        ImGui::Text("%s %s", characterToShow.c_str(), literalToShow.c_str());
+}
+
 
 int Gui::test()
 {
@@ -189,10 +274,20 @@ int Gui::test()
     char fonts[MAX_PATH];
     HRESULT result = SHGetFolderPathA(NULL, CSIDL_FONTS, NULL, SHGFP_TYPE_CURRENT, fonts);
 
+    ImFont* fontAwesome = nullptr;
     if(result == S_OK)
     {
         ImFont* font = io.Fonts->AddFontFromFileTTF((std::string(fonts) +  "\\Arial.ttf").c_str(), 21.0f);
         font;
+
+        // https://pixtur.github.io/mkdocs-for-imgui/site/FONTS
+        // https://github.com/beakerbrowser/beakerbrowser.com/blob/master/fonts/fontawesome-webfont.ttf
+        static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // Will not be copied by AddFont* so keep in scope.
+        ImFontConfig config;
+        config.MergeMode = true;
+        fontAwesome = io.Fonts->AddFontFromFileTTF("fontawesome-webfont.ttf", 18.0f, &config, icons_ranges);
+        io.Fonts->Build();
+
         //IM_ASSERT(font != NULL);
     }
 
@@ -202,7 +297,7 @@ int Gui::test()
 
     // todo: serialize
     bool showDrives = true;
-    bool showFiles = true;
+    bool showFiles = false;
     bool show_demo_window = false;
 
     // Main loop
@@ -222,6 +317,10 @@ int Gui::test()
 
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
+
+        {
+            showFonts(fontAwesome);
+        }
 
         if (ImGui::BeginMainMenuBar())
         {
@@ -290,19 +389,24 @@ void pushTableStyle3()
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
 }
 
-bool BeginTooltip()
+bool BeginTooltipPaused()
 {
     bool ret = ImGui::IsItemHovered() && GImGui->HoveredIdTimer > 1.0f;
 
     if (ret)
     {
-        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.9f, 0.9f, 0.4f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
-        ImGui::BeginTooltip();
+        BeginTooltip();
     }
 
     return ret;
+}
+
+void BeginTooltip()
+{
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.9f, 0.9f, 0.4f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
+    ImGui::BeginTooltip();
 }
 
 void EndTooltip()
