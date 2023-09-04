@@ -863,9 +863,15 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 {
     assert(internalName);
 
+
     CASCIIFile file;
-    if(!file.IO_LoadASCIIFile(internalName))
-        return false;
+
+    {
+        CScopedCPUTimerLog scope("loadFile");
+
+        if(!file.IO_LoadASCIIFile(internalName))
+            return false;
+    }
 
     const Char* p = (const Char *)file.GetDataPtr();
 
@@ -884,106 +890,110 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
     std::string valueName;
     std::string cleanName;
 
-    while(*p)
     {
-        // example line:
-        // 8192,"BOOTSECT.BAK",1612980750,#-1,1558230967,1612980750
+        CScopedCPUTimerLog scope("parse");
 
-        parseWhiteSpaceOrLF(p);
-
-        if (parseStartsWith(p, "#"))
+        while(*p)
         {
-            const Char *backup = p;
-            // e.g.
-            // # drivePath = E:
-            // # volumeName = RyzenE
-            // # cleanName = Volume{ca72ef4c-0000-0000-0000-100000000000}
-            // # version = 2
+            // example line:
+            // 8192,"BOOTSECT.BAK",1612980750,#-1,1558230967,1612980750
+
             parseWhiteSpaceOrLF(p);
-            if(parseName(p, keyName))
+
+            if (parseStartsWith(p, "#"))
             {
+                const Char *backup = p;
+                // e.g.
+                // # drivePath = E:
+                // # volumeName = RyzenE
+                // # cleanName = Volume{ca72ef4c-0000-0000-0000-100000000000}
+                // # version = 2
                 parseWhiteSpaceOrLF(p);
-                if (parseStartsWith(p, "="))
+                if(parseName(p, keyName))
                 {
                     parseWhiteSpaceOrLF(p);
-                    if (parseLine(p, valueName))
+                    if (parseStartsWith(p, "="))
                     {
-                        if (keyName == "drivePath")
-                            data.setDrivePath(valueName.c_str());
-                        if (keyName == "volumeName")
-                            data.volumeName = valueName;
-                        if (keyName == "cleanName")
-                            cleanName = valueName;
-                        if (keyName == "computerName")
-                            data.computerName = valueName;
-                        if (keyName == "userName")
-                            data.userName = valueName;
-                        if (keyName == "dateGatheredString")
+                        parseWhiteSpaceOrLF(p);
+                        if (parseLine(p, valueName))
                         {
-                            data.dateGatheredString = valueName;
-                            data.dateGatheredValue = timeStringToValue(valueName.c_str());
-                        }
-                        if (keyName == "freeSpace")
-                            data.freeSpace = stringToInt64(valueName.c_str());
-                        if (keyName == "totalSpace")
-                            data.totalSpace = stringToInt64(valueName.c_str());
-                        if (keyName == "type")
-                            data.driveType = (uint32)stringToInt64(valueName.c_str());
-                        if (keyName == "flags")
-                            data.driveFlags = (uint32)stringToInt64(valueName.c_str());
-                        if (keyName == "serialNumber")
-                            data.driveInfo.serialNumber = (uint32)stringToInt64(valueName.c_str());
-                        if (keyName == "version" && valueName != SERIALIZE_VERSION)
-                        {
-                            error = true;
-                            break;
+                            if (keyName == "drivePath")
+                                data.setDrivePath(valueName.c_str());
+                            if (keyName == "volumeName")
+                                data.volumeName = valueName;
+                            if (keyName == "cleanName")
+                                cleanName = valueName;
+                            if (keyName == "computerName")
+                                data.computerName = valueName;
+                            if (keyName == "userName")
+                                data.userName = valueName;
+                            if (keyName == "dateGatheredString")
+                            {
+                                data.dateGatheredString = valueName;
+                                data.dateGatheredValue = timeStringToValue(valueName.c_str());
+                            }
+                            if (keyName == "freeSpace")
+                                data.freeSpace = stringToInt64(valueName.c_str());
+                            if (keyName == "totalSpace")
+                                data.totalSpace = stringToInt64(valueName.c_str());
+                            if (keyName == "type")
+                                data.driveType = (uint32)stringToInt64(valueName.c_str());
+                            if (keyName == "flags")
+                                data.driveFlags = (uint32)stringToInt64(valueName.c_str());
+                            if (keyName == "serialNumber")
+                                data.driveInfo.serialNumber = (uint32)stringToInt64(valueName.c_str());
+                            if (keyName == "version" && valueName != SERIALIZE_VERSION)
+                            {
+                                error = true;
+                                break;
+                            }
                         }
                     }
                 }
+                p = backup;
+                parseToEndOfLine(p);
+                continue;
             }
-            p = backup;
-            parseToEndOfLine(p);
-            continue;
+
+            data.entries.push_back(FileEntry());
+            FileEntry& entry = data.entries.back();
+
+            if (!parseInt64(p, entry.key.sizeOrFolder) ||
+                !parseStartsWith(p, ",") ||
+                !parseStartsWith(p, "\""))
+            {
+                error = true;
+                assert(0);
+                break;
+            }
+
+            parseLine(p, entry.key.fileName, '\"');
+
+            if (!parseStartsWith(p, ",") ||
+                !parseInt64(p, entry.key.time_write) ||
+                !parseStartsWith(p, ","))
+            {
+                error = true;
+                assert(0);
+                break;
+            }
+
+            if (!parseStartsWith(p, "#") ||
+                !parseInt64(p, entry.value.parent) ||
+                !parseStartsWith(p, ",") ||
+                !parseInt64(p, entry.value.time_create) ||
+                !parseStartsWith(p, ",") ||
+                !parseInt64(p, entry.value.time_access))
+            {
+                error = true;
+                assert(0);
+                break;
+            }
+
+            entry.value.driveId = deviceId;
+
+            parseLineFeed(p);
         }
-
-        data.entries.push_back(FileEntry());
-        FileEntry& entry = data.entries.back();
-
-        if (!parseInt64(p, entry.key.sizeOrFolder) ||
-            !parseStartsWith(p, ",") ||
-            !parseStartsWith(p, "\""))
-        {
-            error = true;
-            assert(0);
-            break;
-        }
-
-        parseLine(p, entry.key.fileName, '\"');
-
-        if (!parseStartsWith(p, ",") ||
-            !parseInt64(p, entry.key.time_write) ||
-            !parseStartsWith(p, ","))
-        {
-            error = true;
-            assert(0);
-            break;
-        }
-
-        if (!parseStartsWith(p, "#") ||
-            !parseInt64(p, entry.value.parent) ||
-            !parseStartsWith(p, ",") ||
-            !parseInt64(p, entry.value.time_create) ||
-            !parseStartsWith(p, ",") ||
-            !parseInt64(p, entry.value.time_access))
-        {
-            error = true;
-            assert(0);
-            break;
-        }
-
-        entry.value.driveId = deviceId;
-
-        parseLineFeed(p);
     }
 
     DriveInfo driveInfo;
@@ -995,9 +1005,15 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
 
     data.csvName = to_string(driveInfo.generateKeyName()).c_str();
 
-    data.computeStats();
+    {
+        CScopedCPUTimerLog scope("computeStats");
+        data.computeStats();
+    }
 
-    data.verify();
+    {
+        CScopedCPUTimerLog scope("verify");
+        data.verify();
+    }
     return !error;
 }
 

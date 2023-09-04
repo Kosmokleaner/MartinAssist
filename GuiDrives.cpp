@@ -34,6 +34,10 @@ public:
         FilePath combined = path;
         combined.Append(file);
 
+        OutputDebugStringA("loadCSV '");
+        OutputDebugStringW(file);
+        OutputDebugStringA("'\n");
+
         everyHere.loadCSV(combined.path.c_str());
     }
 };
@@ -66,7 +70,7 @@ void Gui::guiDrives(bool &show)
     historicalDataColumns[DCID_Files] = true;
     historicalDataColumns[DCID_Directories] = true;
     historicalDataColumns[DCID_Date] = true;
-    historicalDataColumns[DCID_selectedFiles] = true;
+//    historicalDataColumns[DCID_selectedFiles] = true;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("EveryHere Drives", &show, ImGuiWindowFlags_NoCollapse);
@@ -104,6 +108,7 @@ void Gui::guiDrives(bool &show)
     if (triggerLoadOnStartup < -1)
         triggerLoadOnStartup = -1;
 
+/*
 #ifdef _DEBUG
     if (triggerLoadOnStartup == 0)
     {
@@ -146,6 +151,7 @@ void Gui::guiDrives(bool &show)
         triggerLoadOnStartup = -1;
     }
 #endif
+*/
 
     if (ImGui::Button("load") || triggerLoadOnStartup == 0)
     {
@@ -218,10 +224,10 @@ void Gui::guiDrives(bool &show)
             {
                 DriveData& drive = everyHere.driveData[*it];
 
-                if (driveTabId == 0 && !drive.isLocalDrive)
-                    continue;
-                if (driveTabId == 1 && drive.isLocalDrive)
-                    continue;
+//started unify                if (driveTabId == 0 && !drive.isLocalDrive)
+//                    continue;
+//                if (driveTabId == 1 && drive.isLocalDrive)
+//                    continue;
 
                 ImGui::TableNextRow();
 
@@ -242,7 +248,7 @@ void Gui::guiDrives(bool &show)
                         driveSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                         setViewDirty();
                     }
-                    if (BeginTooltip())
+                    if (BeginTooltipPaused())
                     {
                         ImGui::Text("UniqueName: %s.csv", drive.csvName.c_str());
                         ImGui::Text("DriveId: %d", drive.driveId);
@@ -310,8 +316,14 @@ void Gui::guiDrives(bool &show)
                 if (columns[DCID_Computer])
                 {
                     ImGui::TableSetColumnIndex(columnId++);
+                    if (drive.isLocalDrive)
+                        ImGui::TextUnformatted("\xef\x80\x95"); // Home house
+                    else
+                        ImGui::TextUnformatted("\xef\x83\x82"); // Cloud
+                    ImGui::SameLine();
                     ImGui::TextUnformatted(drive.computerName.c_str());
                 }
+
 
                 if (columns[DCID_User])
                 {

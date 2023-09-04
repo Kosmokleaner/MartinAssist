@@ -20,40 +20,12 @@ private: // -------------------------------------------
 
 extern CTimer g_Timer;
 
-/*
 class CScopedCPUTimerLog
 {
 public:
-	CScopedCPUTimerLog(const char* InText, const std::wstring InName)
-		: Text(InText)
-		, Name(InName)
-	{
-		assert(InText);
-		StartTime = g_Timer.GetAbsoluteTime();
-	}
+	CScopedCPUTimerLog(const char* InText);
 
-	~CScopedCPUTimerLog()
-	{
-		double EndTime = g_Timer.GetAbsoluteTime();
-
-		float TimeDelta = (float)(EndTime - StartTime);
-
-		char str[1024];
-
-		sprintf_s(str, sizeof(str) / sizeof(str[0]), " %*.1f ms ", 6, TimeDelta * 1000);		// 6 spaces (see trick here: http://www.cplusplus.com/reference/cstdio/printf/)
-		OutputDebugStringA(str);
-
-		sprintf_s(str, sizeof(str) / sizeof(str[0]), "  SCOPED_CPU_TIMER_LOG %s", Text);
-		OutputDebugStringA(str);
-
-		if(!Name.empty())
-		{
-			OutputDebugStringA(": ");
-			OutputDebugStringW(Name.c_str());
-		}
-
-		OutputDebugStringA("\n");
-	}
+	~CScopedCPUTimerLog();
 
 	// must not be 0
 	const char* Text;
@@ -63,7 +35,7 @@ public:
 	double StartTime;
 };
 
-
+/*
 class CScopedCPUTimer
 {
 public:
