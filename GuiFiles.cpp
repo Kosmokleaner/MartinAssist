@@ -157,7 +157,7 @@ void Gui::guiFiles(bool &show)
                     {
                         fileSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                     }
-                    if (BeginTooltip())
+                    if (BeginTooltipPaused())
                     {
                         // todo: path concat needs to be improved
                         ImGui::Text("FilePath: %s%s/%s", deviceData.drivePath.c_str(), entry.value.path.c_str(), line.c_str());

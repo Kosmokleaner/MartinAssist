@@ -56,26 +56,65 @@ Gui::Gui()
 
 void showIconsWindow(ImFont *font, bool &show)
 {
-    if(!ImGui::Begin("Font", &show))
+    if(!show)
+        return;
+
+    int32 IconsPerLine = 8;
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(500, 300), ImVec2(FLT_MAX, FLT_MAX));
+
+    if(!ImGui::Begin("Icons", &show))
         return;
 
     static std::string characterToShow;
-    static std::string literalToShow;
+    static std::string literalToShow = "click on a character to copy it into the clipboard";
 
     // todo: not perfect, see G+
     float fontWidth = 0;
-    for(int32 i = 0, count = font->IndexAdvanceX.Size; i < count; ++i)
     {
-        fontWidth = std::max(fontWidth, font->IndexAdvanceX[i]);
+        for (unsigned int base = 0; base <= IM_UNICODE_CODEPOINT_MAX; base += 256)
+        {
+            // optimization
+            if (!(base & 4095) && font->IsGlyphRangeUnused(base, base + 4095))
+            {
+                base += 4096 - 256;
+                continue;
+            }
+            for (unsigned int n = 0; n < 256; n++)
+            {
+                const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
+                if (glyph)
+                {
+                    fontWidth = std::max(fontWidth, glyph->X1 - glyph->X0);
+                }
+            }
+        }
+
+//    for(int32 i = 0, count = font->IndexAdvanceX.Size; i < count; ++i)
+//    {
+//        fontWidth = std::max(fontWidth, font->IndexAdvanceX[i]);
+//    }
     }
+
+    {
+        ImGui::PushFont(font);
+        ImGui::Text("%s", characterToShow.c_str());
+        ImGui::PopFont();
+        ImGui::Text("%s", literalToShow.c_str());
+        ImGui::Separator();
+    }
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 2));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+    ImVec2 itemSpacing = ImGui::GetStyle().ItemSpacing;
 
     const ImU32 glyph_col = ImGui::GetColorU32(ImGuiCol_Text);
     const float cell_size = fontWidth; //font->FontSize * 1;
-    const float cell_spacing = ImGui::GetStyle().ItemSpacing.y;
+    const float cell_spacing = itemSpacing.y;
 
-    if (ImGui::BeginChild("ScrollReg", ImVec2((cell_size + cell_spacing) * 16 + cell_spacing * 4, 0), true))
-//    if(ImGui::BeginChild("ScrollReg", ImVec2((cell_size + cell_spacing) * 16 + cell_spacing * 4, 500), true))
+    if (ImGui::BeginChild("ScrollReg", ImVec2((cell_size + itemSpacing.x) * IconsPerLine + ImGui::GetStyle().ScrollbarSize, 0), false))
     {
+        int32 printedCharId = 0;
         for (unsigned int base = 0; base <= IM_UNICODE_CODEPOINT_MAX; base += 256)
         {
             // Skip ahead if a large bunch of glyphs are not present in the font (test in chunks of 4k)
@@ -87,28 +126,26 @@ void showIconsWindow(ImFont *font, bool &show)
                 continue;
             }
 
-            // Draw a 16x16 grid of glyphs
-            int32 printedCharId = 0;
             for (unsigned int n = 0; n < 256; n++)
             {
                 const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
-                if (glyph)
+                if (glyph && glyph->Visible)
                 {
-                    ImGui::SetCursorPosX((printedCharId % 16) * (cell_size + cell_spacing));
+                    ImGui::SetCursorPosX((printedCharId % IconsPerLine) * (cell_size + cell_spacing));
 
                     // static to avoid memory allocations
                     static std::wstring wstr;
                     wstr.clear();
                     wstr.push_back((TCHAR)(base + n));
                     ImGui::PushID(n);
-                    // inefficient (memory allocations) but simple
+                    // inefficient (memory allocation) but simple
                     ImGui::PushFont(font);
                     ImGui::Button(to_string(wstr).c_str(), ImVec2(cell_size, 0));
                     ImGui::PopFont();
                     ImGui::PopID();
 
                     printedCharId++;
-                    if (printedCharId % 16)
+                    if (printedCharId % IconsPerLine)
                         ImGui::SameLine();
 
                     if(ImGui::IsItemHovered())
@@ -144,15 +181,8 @@ void showIconsWindow(ImFont *font, bool &show)
         }
         ImGui::EndChild();
     }
-    if(!characterToShow.empty())
-    {
-        ImGui::SameLine();
-        ImGui::PushFont(font);
-        ImGui::Text("%s", characterToShow.c_str());
-        ImGui::PopFont();
-        ImGui::SameLine();
-        ImGui::Text("%s", literalToShow.c_str());
-    }
+
+    ImGui::PopStyleVar(2);
 
     ImGui::End();
 }
@@ -321,7 +351,7 @@ int Gui::test()
     bool showDrives = true;
     bool showFiles = false;
     bool show_demo_window = false;
-    bool showIcons = true;
+    bool showIcons = false;
 
     // Main loop
     while (!glfwWindowShouldClose(window) && !quitApp)
