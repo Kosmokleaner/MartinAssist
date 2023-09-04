@@ -890,6 +890,10 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
     std::string valueName;
     std::string cleanName;
 
+    keyName.reserve(1000);
+    valueName.reserve(1000);
+    cleanName.reserve(1000);
+
     {
         CScopedCPUTimerLog scope("parse");
 
@@ -954,8 +958,10 @@ bool EveryHere::loadCSV(const wchar_t* internalName)
                 parseToEndOfLine(p);
                 continue;
             }
+            
+            // faster than data.entries.push_back(FileEntry()); 4400ms -> 2400ms
+            data.entries.resize(data.entries.size() + 1);
 
-            data.entries.push_back(FileEntry());
             FileEntry& entry = data.entries.back();
 
             if (!parseInt64(p, entry.key.sizeOrFolder) ||

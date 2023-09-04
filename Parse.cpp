@@ -96,8 +96,6 @@ bool parseLineFeed(const Char*& p)
 
 bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 {
-	Out.clear();
-
 	const Char* start = p;
 	const Char* end = p;
 
@@ -106,15 +104,13 @@ bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 	{
 		if(*p == extraEndCharacter)
 		{
-			end = p;
-			++p;
+			end = p++;
 			break;
 		}
 
 		if(*p == 13)		// CR
 		{
-			end = p;
-			++p;
+			end = p++;
 
 			if (*p == 10)	// CR+LF
 				++p;
@@ -123,16 +119,20 @@ bool parseLine(const Char* &p, std::string &Out, const Char extraEndCharacter)
 		}
 		if(*p == 10)		// LF
 		{
-			end = p;
-			++p;
+			end = p++;
 			break;
 		}
 
 		p++;
 	}
-	Out = std::string((const char*)start, end - start);
 
-	return !Out.empty();
+	size_t size = end - start;
+
+	// 4406ms in DEBUG
+	Out.resize(size);
+	memcpy((void*)Out.data(), (const char*)start, size);
+
+	return size;
 }
 
 // without digits
