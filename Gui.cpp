@@ -54,17 +54,27 @@ Gui::Gui()
 {
 }
 
-void showFonts(ImFont *font)
+void showIconsWindow(ImFont *font, bool &show)
 {
+    if(!ImGui::Begin("Font", &show))
+        return;
+
     static std::string characterToShow;
     static std::string literalToShow;
 
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    // todo: not perfect, see G+
+    float fontWidth = 0;
+    for(int32 i = 0, count = font->IndexAdvanceX.Size; i < count; ++i)
+    {
+        fontWidth = std::max(fontWidth, font->IndexAdvanceX[i]);
+    }
+
     const ImU32 glyph_col = ImGui::GetColorU32(ImGuiCol_Text);
-    const float cell_size = font->FontSize * 1;
+    const float cell_size = fontWidth; //font->FontSize * 1;
     const float cell_spacing = ImGui::GetStyle().ItemSpacing.y;
 
-//    if(ImGui::BeginChild("ScrollReg", ImVec2(0,500), true))
+    if (ImGui::BeginChild("ScrollReg", ImVec2((cell_size + cell_spacing) * 16 + cell_spacing * 4, 0), true))
+//    if(ImGui::BeginChild("ScrollReg", ImVec2((cell_size + cell_spacing) * 16 + cell_spacing * 4, 500), true))
     {
         for (unsigned int base = 0; base <= IM_UNICODE_CODEPOINT_MAX; base += 256)
         {
@@ -77,29 +87,31 @@ void showFonts(ImFont *font)
                 continue;
             }
 
-            int count = 0;
-            for (unsigned int n = 0; n < 256; n++)
-                if (font->FindGlyphNoFallback((ImWchar)(base + n)))
-                    count++;
-            if (count <= 0)
-                continue;
-    //        if (!ImGui::TreeNode((void*)(intptr_t)base, "U+%04X..U+%04X (%d %s)", base, base + 255, count, count > 1 ? "glyphs" : "glyph"))
-     //           continue;
-
             // Draw a 16x16 grid of glyphs
-            ImVec2 base_pos = ImGui::GetCursorScreenPos();
+            int32 printedCharId = 0;
             for (unsigned int n = 0; n < 256; n++)
             {
-                // We use ImFont::RenderChar as a shortcut because we don't have UTF-8 conversion functions
-                // available here and thus cannot easily generate a zero-terminated UTF-8 encoded string.
-                ImVec2 cell_p1(base_pos.x + (n % 16) * (cell_size + cell_spacing), base_pos.y + (n / 16) * (cell_size + cell_spacing));
-                ImVec2 cell_p2(cell_p1.x + cell_size, cell_p1.y + cell_size);
                 const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
-                draw_list->AddRect(cell_p1, cell_p2, glyph ? IM_COL32(255, 255, 255, 10) : IM_COL32(255, 255, 255, 50));
                 if (glyph)
                 {
-                    font->RenderChar(draw_list, cell_size, cell_p1, glyph_col, (ImWchar)(base + n));
-                    if (ImGui::IsMouseHoveringRect(cell_p1, cell_p2))
+                    ImGui::SetCursorPosX((printedCharId % 16) * (cell_size + cell_spacing));
+
+                    // static to avoid memory allocations
+                    static std::wstring wstr;
+                    wstr.clear();
+                    wstr.push_back((TCHAR)(base + n));
+                    ImGui::PushID(n);
+                    // inefficient (memory allocations) but simple
+                    ImGui::PushFont(font);
+                    ImGui::Button(to_string(wstr).c_str(), ImVec2(cell_size, 0));
+                    ImGui::PopFont();
+                    ImGui::PopID();
+
+                    printedCharId++;
+                    if (printedCharId % 16)
+                        ImGui::SameLine();
+
+                    if(ImGui::IsItemHovered())
                     {
                         BeginTooltip();
                         ImGui::Text("Codepoint: U+%04X", base + n);
@@ -109,8 +121,8 @@ void showFonts(ImFont *font)
                         {
                             literalToShow.clear();
                             // e.g. "\xef\x80\x81" = U+f001
-                            std::wstring wstr;
-                            wstr.push_back((TCHAR)(base + n));
+                            //std::wstring wstr;
+                            //wstr.push_back((TCHAR)(base + n));
                             characterToShow = to_string(wstr);
                             const char* p = characterToShow.c_str();
                             literalToShow += "\"";
@@ -129,14 +141,20 @@ void showFonts(ImFont *font)
                     }
                 }
             }
-            ImGui::Dummy(ImVec2((cell_size + cell_spacing) * 16, (cell_size + cell_spacing) * 16));
-    //        ImGui::TreePop();
         }
-//        ImGui::EndChild();
+        ImGui::EndChild();
     }
-    ImGui::Separator();
     if(!characterToShow.empty())
-        ImGui::Text("%s %s", characterToShow.c_str(), literalToShow.c_str());
+    {
+        ImGui::SameLine();
+        ImGui::PushFont(font);
+        ImGui::Text("%s", characterToShow.c_str());
+        ImGui::PopFont();
+        ImGui::SameLine();
+        ImGui::Text("%s", literalToShow.c_str());
+    }
+
+    ImGui::End();
 }
 
 
@@ -275,6 +293,7 @@ int Gui::test()
     HRESULT result = SHGetFolderPathA(NULL, CSIDL_FONTS, NULL, SHGFP_TYPE_CURRENT, fonts);
 
     ImFont* fontAwesome = nullptr;
+    ImFont* fontAwesomeLarge = nullptr;
     if(result == S_OK)
     {
         ImFont* font = io.Fonts->AddFontFromFileTTF((std::string(fonts) +  "\\Arial.ttf").c_str(), 21.0f);
@@ -285,7 +304,10 @@ int Gui::test()
         static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // Will not be copied by AddFont* so keep in scope.
         ImFontConfig config;
         config.MergeMode = true;
+//        fontAwesome = io.Fonts->AddFontFromFileTTF("fontawesome-webfont.ttf", 18.0f, &config, icons_ranges);
         fontAwesome = io.Fonts->AddFontFromFileTTF("fontawesome-webfont.ttf", 18.0f, &config, icons_ranges);
+        config.MergeMode = false;
+        fontAwesomeLarge = io.Fonts->AddFontFromFileTTF("fontawesome-webfont.ttf", 18.0f * 2, &config, icons_ranges);
         io.Fonts->Build();
 
         //IM_ASSERT(font != NULL);
@@ -299,6 +321,7 @@ int Gui::test()
     bool showDrives = true;
     bool showFiles = false;
     bool show_demo_window = false;
+    bool showIcons = true;
 
     // Main loop
     while (!glfwWindowShouldClose(window) && !quitApp)
@@ -318,9 +341,7 @@ int Gui::test()
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
 
-        {
-            showFonts(fontAwesome);
-        }
+        showIconsWindow(fontAwesomeLarge, showIcons);
 
         if (ImGui::BeginMainMenuBar())
         {
@@ -330,6 +351,7 @@ int Gui::test()
                 ImGui::MenuItem("EveryHere Files", 0, &showFiles);
                 ImGui::Separator();
                 ImGui::MenuItem("ImGui Demo", 0, &show_demo_window);
+                ImGui::MenuItem("Icons", 0, &showIcons);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit"))
                 {
