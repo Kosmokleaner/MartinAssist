@@ -1,6 +1,7 @@
 /x64/*
 /.vs
 
+imgui.ini
 
 # Prerequisites
 *.d
