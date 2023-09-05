@@ -73,6 +73,8 @@ void Gui::guiDrives(bool &show)
 //    historicalDataColumns[DCID_selectedFiles] = true;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSize(ImVec2(1050, 580), ImGuiCond_FirstUseEver);
+
     ImGui::Begin("EveryHere Drives", &show, ImGuiWindowFlags_NoCollapse);
 
     // 0:Local Drives, 1: Historical Data
@@ -104,56 +106,8 @@ void Gui::guiDrives(bool &show)
 
     ImGui::SameLine();
 
-    --triggerLoadOnStartup;
-    if (triggerLoadOnStartup < -1)
-        triggerLoadOnStartup = -1;
 
-/*
-#ifdef _DEBUG
-    if (triggerLoadOnStartup == 0)
-    {
-        everyHere.freeData();
-        char str[80];
-        for (int i = 0; i < 5; ++i)
-        {
-            str[0] = 'a' + (rand() % 26);
-            str[1] = 'a' + (rand() % 26);
-            str[2] = 0;
-            everyHere.driveData.push_back(DriveData());
-            DriveData& d = everyHere.driveData.back();
-            d.csvName = str;
-            d.volumeName = str;
-            str[0] = 'A' + (rand() % 26);
-            str[1] = ':';
-            str[2] = 0;
-            d.setDrivePath(str);
-            d.driveId = i;
-        }
-
-        for (int i = 0; i < 200; ++i)
-        {
-            int driveId = rand() % 5;
-            DriveData& r = everyHere.driveData[driveId];
-            r.entries.push_back(FileEntry());
-            FileEntry& e = r.entries.back();
-            str[0] = 'a' + (rand() % 26);
-            str[1] = 'a' + (rand() % 26);
-            str[2] = 0;
-            e.key.fileName = str;
-            e.key.sizeOrFolder = rand() * 1000;
-            e.key.time_write = rand();
-            e.value.parent = -1;
-            e.value.driveId = driveId;
-        }
-        everyHere.updateLocalDriveState();
-        setViewDirty();
-        everyHere.buildUniqueFiles();
-        triggerLoadOnStartup = -1;
-    }
-#endif
-*/
-
-    if (ImGui::Button("load") || triggerLoadOnStartup == 0)
+    if (ImGui::Button("load"))
     {
         LoadCVSFiles loadCVSFiles(everyHere);
         directoryTraverse(loadCVSFiles, FilePath(), L"*.csv");

@@ -28,9 +28,7 @@ private:
     // into everyHere.driveView[]
     SelectionRange driveSelectionRange;
     // into everyHere.fileView[]
-    SelectionRangeWithDriveUpdate  fileSelectionRange;
-    // number of frame until it triggers
-    int triggerLoadOnStartup = 2; 
+    SelectionRangeWithDriveUpdate fileSelectionRange;
 
     ImGuiTableSortSpecs* fileSortCriteria = {};
 };

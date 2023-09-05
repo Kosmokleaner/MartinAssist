@@ -16,6 +16,9 @@ void Gui::guiFiles(bool &show)
         return;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);
+    const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 0, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
     ImGui::Begin("EveryHere Files", &show, ImGuiWindowFlags_NoCollapse);
 
     // todo: filter button
