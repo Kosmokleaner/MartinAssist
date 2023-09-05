@@ -54,6 +54,78 @@ Gui::Gui()
 {
 }
 
+
+// copied from ImGui, the optional endMarker adds a rectangle to the triangle arrow indicating a stop
+// useful to scroll to beginning or end
+bool ArrowButton2(const char* str_id, ImGuiDir dir, bool smallButton, bool endMarker)
+{
+    if (smallButton)
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+
+    ImGuiButtonFlags flags = ImGuiButtonFlags_None;
+    float sz = ImGui::GetFrameHeight();
+    ImVec2 size(sz, sz);
+
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+    const ImGuiID id = window->GetID(str_id);
+    const ImRect bb(window->DC.CursorPos, ImVec2(window->DC.CursorPos.x + size.x, window->DC.CursorPos.y + size.y));
+    const float default_size = ImGui::GetFrameHeight();
+    ImGui::ItemSize(size, (size.y >= default_size) ? g.Style.FramePadding.y : -1.0f);
+
+    if (window->SkipItems || !ImGui::ItemAdd(bb, id))
+    {
+        if (smallButton)
+            ImGui::PopStyleVar();
+
+        return false;
+    }
+
+    if (g.LastItemData.InFlags & ImGuiItemFlags_ButtonRepeat)
+        flags |= ImGuiButtonFlags_Repeat;
+
+    bool hovered, held;
+    bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held, flags);
+
+    // Render
+    const ImU32 bg_col = ImGui::GetColorU32((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+    const ImU32 text_col = ImGui::GetColorU32(ImGuiCol_Text);
+    ImGui::RenderNavHighlight(bb, id);
+    ImGui::RenderFrame(bb.Min, bb.Max, bg_col, true, g.Style.FrameRounding);
+    ImVec2 pos = bb.Min;
+    pos.x += ImMax(0.0f, (size.x - g.FontSize) * 0.5f);
+    pos.y += ImMax(0.0f, (size.y - g.FontSize) * 0.5f);
+    ImGui::RenderArrow(window->DrawList, pos, text_col, dir);
+    if (endMarker)
+    {
+        const float h = roundf(g.FontSize / 8);
+        const float w = roundf(g.FontSize - 2 * h);
+        if(dir == ImGuiDir_Up || dir == ImGuiDir_Down)
+        {
+            pos.x += h;
+            pos.y += h;
+            if (dir == ImGuiDir_Down)
+                pos.y += g.FontSize - 3 * h;
+            window->DrawList->AddRectFilled(pos, ImVec2(pos.x + w, pos.y + h), text_col, 0.0f);
+        }
+        else
+        {
+            pos.x += h;
+            pos.y += h;
+            if (dir == ImGuiDir_Right)
+                pos.x += g.FontSize - 3 * h;
+            window->DrawList->AddRectFilled(pos, ImVec2(pos.x + h, pos.y + w), text_col, 0.0f);
+        }
+    }
+
+    if(smallButton)
+        ImGui::PopStyleVar();
+
+    IMGUI_TEST_ENGINE_ITEM_INFO(id, str_id, g.LastItemData.StatusFlags);
+    return pressed;
+}
+
 void showIconsWindow(ImFont *font, bool &show)
 {
     if(!show)
@@ -66,6 +138,28 @@ void showIconsWindow(ImFont *font, bool &show)
     if(!ImGui::Begin("Icons", &show))
         return;
 
+    // test ArrowButton2(), todo: move
+    for(int i = 0; i < 2; ++i)
+    {
+        bool smallButton = i;
+//        ImGui::Button("X");
+//        ImGui::SameLine();
+        ArrowButton2("1", ImGuiDir_Left, smallButton, false);
+        ImGui::SameLine();
+        ArrowButton2("2", ImGuiDir_Right, smallButton, false);
+        ImGui::SameLine();
+        ArrowButton2("3", ImGuiDir_Up, smallButton, false);
+        ImGui::SameLine();
+        ArrowButton2("4", ImGuiDir_Down, smallButton, false);
+        ImGui::SameLine();
+        ArrowButton2("1b", ImGuiDir_Left, smallButton, true);
+        ImGui::SameLine();
+        ArrowButton2("2b", ImGuiDir_Right, smallButton, true);
+        ImGui::SameLine();
+        ArrowButton2("3b", ImGuiDir_Up, smallButton, true);
+        ImGui::SameLine();
+        ArrowButton2("4b", ImGuiDir_Down, smallButton, true);
+    }
     static std::string characterToShow;
     static std::string literalToShow = "click on a character to copy it into the clipboard";
 
