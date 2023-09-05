@@ -4,14 +4,14 @@
 void SelectionRangeWithDriveUpdate::addRedundancy(int64 line_no, int32 delta)
 {
     const ViewEntry& viewEntry = everyHere.fileView[line_no];
-    const FileKey& key = everyHere.driveData[viewEntry.driveId].entries[viewEntry.fileEntryId].key;
+    const FileKey& key = everyHere.driveData[viewEntry.driveId]->entries[viewEntry.fileEntryId].key;
     std::vector<bool>& set = everyHere.getRedundancy(key);
 
     uint32 id = 0; 
     for(auto it = set.begin(), end = set.end(); it != end; ++it, ++id)
     {
         if(*it)
-            everyHere.driveData[id].selectedKeys += delta;
+            everyHere.driveData[id]->selectedKeys += delta;
     }
 }
 

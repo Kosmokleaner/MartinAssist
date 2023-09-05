@@ -5,13 +5,13 @@
 
 int main()
 {
-    CppParserTest();
+//    CppParserTest();
 
     // experiments:
 
     // OpenGL3 ImGui 
-    //    Gui gui;
-    //    gui.test();
+    Gui gui;
+    gui.test();
 
     // drive / folder iterator to dump directory in a file
 //    EveryHere everyHere;

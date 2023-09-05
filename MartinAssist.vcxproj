@@ -123,6 +123,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <ExceptionHandling>Sync</ExceptionHandling>
       <StringPooling>true</StringPooling>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -177,6 +178,7 @@
     <ClCompile Include="MartinAssist.cpp" />
     <ClCompile Include="Parse.cpp" />
     <ClCompile Include="SelectionRange.cpp" />
+    <ClCompile Include="PooledString.cpp" />
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -205,6 +207,7 @@
     <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="Parse.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="PooledString.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>

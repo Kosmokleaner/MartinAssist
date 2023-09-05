@@ -130,6 +130,9 @@ bool ArrowButton2(const char* str_id, ImGuiDir dir, bool smallButton, bool endMa
 
 void showTestWindow(bool& show)
 {
+    if(!show)
+        return;
+
     ImGui::SetNextWindowSizeConstraints(ImVec2(500, 300), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiCond_FirstUseEver);
 
@@ -503,7 +506,7 @@ int Gui::test()
 
         for (auto it = everyHere.driveData.begin(); it != everyHere.driveData.end(); ++it)
         {
-            if(it->markedForDelete)
+            if((*it)->markedForDelete)
             {
                everyHere.driveData.erase(it);
                it = everyHere.driveData.begin();

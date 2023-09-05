@@ -141,10 +141,11 @@ void Gui::guiFiles(bool &show)
                         break;
 
                     ViewEntry& viewEntry = everyHere.fileView[line_no];
-                    const DriveData& deviceData = everyHere.driveData[viewEntry.driveId];
+                    const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
                     const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
 
-                    line = entry.key.fileName;
+                    // todo: optimize
+                    line = entry.key.fileName.c_str();
 
                     ImGui::TableNextRow();
 
@@ -181,7 +182,7 @@ void Gui::guiFiles(bool &show)
                             {
                                 //                                        const char* path = deviceData.generatePath(entry.value.parent);
                                 const char* path = entry.value.path.c_str();
-                                std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName;
+                                std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName.c_str();
                                 ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
                             }
                             if (ImGui::MenuItem("Open path (in Explorer)"))
@@ -198,7 +199,7 @@ void Gui::guiFiles(bool &show)
 
                             fileSelectionRange.foreach([&](int64 line_no) {
                                 ViewEntry& viewEntry = everyHere.fileView[line_no];
-                                const DriveData& deviceData = everyHere.driveData[viewEntry.driveId];
+                                const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
                                 const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
                                 if (entry.key.sizeOrFolder >= 0)
                                 {
@@ -262,7 +263,7 @@ void Gui::guiFiles(bool &show)
             uint64 selectedSize = 0;
             fileSelectionRange.foreach([&](int64 line_no) {
                 ViewEntry& viewEntry = everyHere.fileView[line_no];
-                const DriveData& deviceData = everyHere.driveData[viewEntry.driveId];
+                const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
                 const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
                 if (entry.key.sizeOrFolder >= 0)
                     selectedSize += entry.key.sizeOrFolder;

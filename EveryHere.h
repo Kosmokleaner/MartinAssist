@@ -6,6 +6,7 @@
 #include <string>
 #include "FileSystem.h"
 #include "SelectionRange.h"
+#include "PooledString.h"
 
 
 // ever increasing integer in quotes, it's actually a string
@@ -15,7 +16,8 @@ struct FileKey
 {
     // without path (:, / and \)
     // UTF8 as IMGUI can print it faster, less conversions during loading and less memory
-    std::string fileName;
+//    std::string fileName;
+    PooledString fileName;
 
     bool operator<(const FileKey& b) const {
         // first by size to find large ones first
@@ -54,7 +56,8 @@ struct FileValue
     int64 parent = -1;
     __time64_t time_create = -1;    // -1 for FAT file systems
     __time64_t time_access = -1;    // -1 for FAT file systems
-    std::string path;
+    //std::string path;
+    PooledString path;
     int driveId = -1;
 };
 
@@ -90,6 +93,7 @@ enum DriveColumnID
     DCID_type,
     DCID_serial,
     DCID_selectedFiles,
+    DCID_Actions,
     //
     DCID_MAX,
 };
@@ -111,6 +115,7 @@ inline const char* getDriveColumnName(DriveColumnID e)
         "type",
         "serial",
         "selectedFiles",
+        "Actions",
     };
     assert(sizeof(names) / sizeof(names[0]) == DCID_MAX);
     return names[e];
@@ -118,6 +123,8 @@ inline const char* getDriveColumnName(DriveColumnID e)
 
 struct DriveData {
     DriveInfo driveInfo;
+
+    StringPool stringPool;
 
     std::vector<FileEntry> entries;
     // index in EveryHere.driveData
@@ -170,7 +177,7 @@ struct DriveData {
 
     // not reentrant, don't use with multithreading
     // https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
-    const char* generatePath(int64 fileEntryIndex) const;
+    PooledString generatePath(int64 fileEntryIndex);
 
     // update statsSize, statsDirs
     void computeStats();
@@ -193,8 +200,8 @@ struct ImGuiTableSortSpecs;
 
 struct EveryHere
 {
-    // [driveId] = driveData
-    std::vector<DriveData> driveData;
+    // [driveId] = driveData, no 0 pointers
+    std::vector<DriveData*> driveData;
 
     // [line_no] = index into driveData[]
     std::vector<uint32> driveView;
@@ -207,7 +214,8 @@ struct EveryHere
 
 
     EveryHere();
-        
+    ~EveryHere();
+
     void gatherData();
     // @param internalName must not be null, e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
     // @return success

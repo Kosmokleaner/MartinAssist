@@ -55,6 +55,7 @@
     <ClCompile Include="SelectionRange.cpp" />
     <ClCompile Include="GuiFiles.cpp" />
     <ClCompile Include="GuiDrives.cpp" />
+    <ClCompile Include="PooledString.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -124,6 +125,7 @@
     <ClInclude Include="CppParserTest.h">
       <Filter>Hidden</Filter>
     </ClInclude>
+    <ClInclude Include="PooledString.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

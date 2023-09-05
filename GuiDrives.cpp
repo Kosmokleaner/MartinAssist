@@ -57,6 +57,7 @@ void Gui::guiDrives(bool &show)
     localDrivesColumns[DCID_totalSpace] = true;
     localDrivesColumns[DCID_type] = true;
     localDrivesColumns[DCID_serial] = true;
+    localDrivesColumns[DCID_Actions] = true;
 
     static bool historicalDataColumns[DCID_MAX] = { false };
     historicalDataColumns[DCID_VolumeName] = true;
@@ -70,6 +71,7 @@ void Gui::guiDrives(bool &show)
     historicalDataColumns[DCID_Files] = true;
     historicalDataColumns[DCID_Directories] = true;
     historicalDataColumns[DCID_Date] = true;
+    historicalDataColumns[DCID_Actions] = true;
 //    historicalDataColumns[DCID_selectedFiles] = true;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
@@ -176,7 +178,7 @@ void Gui::guiDrives(bool &show)
             int line_no = 0;
             for (auto it = everyHere.driveView.begin(), end = everyHere.driveView.end(); it != end; ++it, ++line_no)
             {
-                DriveData& drive = everyHere.driveData[*it];
+                DriveData& drive = *everyHere.driveData[*it];
 
 //started unify                if (driveTabId == 0 && !drive.isLocalDrive)
 //                    continue;
@@ -320,6 +322,15 @@ void Gui::guiDrives(bool &show)
                     ImGui::TableSetColumnIndex(columnId++);
                     ImGui::Text("%llu", drive.selectedKeys);
                 }
+
+                if (columns[DCID_Actions])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::SmallButton("\xef\x83\xa2"); // Refresh icon
+                    ImGui::SameLine();
+                    ImGui::ProgressBar((rand()%100)*0.01f, ImVec2(0.0f, 0.0f));
+                }
+                
 
                 ImGui::PopStyleColor();
                 ImGui::PopID();
