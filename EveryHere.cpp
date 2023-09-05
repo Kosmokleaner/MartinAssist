@@ -1046,6 +1046,8 @@ const char* DriveData::generatePath(int64 fileEntryIndex) const
 
 void EveryHere::buildUniqueFiles()
 {
+    CScopedCPUTimerLog scope("buildUniqueFiles");
+
     uniqueFiles.clear();
 
     uint32 driveId = 0;
