@@ -128,20 +128,16 @@ bool ArrowButton2(const char* str_id, ImGuiDir dir, bool smallButton, bool endMa
     return pressed;
 }
 
-void showIconsWindow(ImFont *font, bool &show)
+void showTestWindow(bool& show)
 {
-    if(!show)
-        return;
-
-    int32 IconsPerLine = 8;
-
     ImGui::SetNextWindowSizeConstraints(ImVec2(500, 300), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiCond_FirstUseEver);
 
-    if(!ImGui::Begin("Icons", &show))
+    if (!ImGui::Begin("Test", &show))
         return;
 
     // test ArrowButton2(), todo: move
-    for(int i = 0; i < 2; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         bool smallButton = i;
         ArrowButton2("1", ImGuiDir_Left, smallButton, false);
@@ -160,6 +156,22 @@ void showIconsWindow(ImFont *font, bool &show)
         ImGui::SameLine();
         ArrowButton2("4b", ImGuiDir_Down, smallButton, true);
     }
+
+    ImGui::End();
+}
+
+void showIconsWindow(ImFont *font, bool &show)
+{
+    if(!show)
+        return;
+
+    int32 IconsPerLine = 8;
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(500, 300), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiCond_FirstUseEver);
+
+    if(!ImGui::Begin("Icons", &show))
+        return;
 
     static std::string characterToShow;
     static std::string literalToShow;
@@ -439,8 +451,9 @@ int Gui::test()
     // todo: serialize
     bool showDrives = true;
     bool showFiles = false;
-    bool show_demo_window = false;
+    bool showImGuiDemoWindow = false;
     bool showIcons = false;
+    bool showTest = false;
 
     // Main loop
     while (!glfwWindowShouldClose(window) && !quitApp)
@@ -457,8 +470,10 @@ int Gui::test()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        if (showImGuiDemoWindow)
+            ImGui::ShowDemoWindow(&showImGuiDemoWindow);
+
+        showTestWindow(showTest);
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
@@ -469,8 +484,9 @@ int Gui::test()
                 ImGui::MenuItem("EveryHere Drives", 0, &showDrives);
                 ImGui::MenuItem("EveryHere Files", 0, &showFiles);
                 ImGui::Separator();
-                ImGui::MenuItem("ImGui Demo", 0, &show_demo_window);
+                ImGui::MenuItem("ImGui Demo", 0, &showImGuiDemoWindow);
                 ImGui::MenuItem("Icons", 0, &showIcons);
+                ImGui::MenuItem("Test", 0, &showTest);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit"))
                 {
