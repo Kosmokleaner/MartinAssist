@@ -1,6 +1,9 @@
 /x64/*
 /.vs
 
+/temp
+
+# Dear ImGui artifacts
 imgui.ini
 
 # Prerequisites
