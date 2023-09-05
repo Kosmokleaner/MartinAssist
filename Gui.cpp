@@ -96,6 +96,8 @@ bool ArrowButton2(const char* str_id, ImGuiDir dir, bool smallButton, bool endMa
     ImVec2 pos = bb.Min;
     pos.x += ImMax(0.0f, (size.x - g.FontSize) * 0.5f);
     pos.y += ImMax(0.0f, (size.y - g.FontSize) * 0.5f);
+    pos.x = roundf(pos.x);
+    pos.y = roundf(pos.y);
     ImGui::RenderArrow(window->DrawList, pos, text_col, dir);
     if (endMarker)
     {
@@ -142,8 +144,6 @@ void showIconsWindow(ImFont *font, bool &show)
     for(int i = 0; i < 2; ++i)
     {
         bool smallButton = i;
-//        ImGui::Button("X");
-//        ImGui::SameLine();
         ArrowButton2("1", ImGuiDir_Left, smallButton, false);
         ImGui::SameLine();
         ArrowButton2("2", ImGuiDir_Right, smallButton, false);
@@ -160,10 +160,10 @@ void showIconsWindow(ImFont *font, bool &show)
         ImGui::SameLine();
         ArrowButton2("4b", ImGuiDir_Down, smallButton, true);
     }
-    static std::string characterToShow;
-    static std::string literalToShow = "click on a character to copy it into the clipboard";
 
-    // todo: not perfect, see G+
+    static std::string characterToShow;
+    static std::string literalToShow;
+
     float fontWidth = 0;
     {
         for (unsigned int base = 0; base <= IM_UNICODE_CODEPOINT_MAX; base += 256)
@@ -183,28 +183,25 @@ void showIconsWindow(ImFont *font, bool &show)
                 }
             }
         }
-
-//    for(int32 i = 0, count = font->IndexAdvanceX.Size; i < count; ++i)
-//    {
-//        fontWidth = std::max(fontWidth, font->IndexAdvanceX[i]);
-//    }
     }
 
+    float iconHeight;
     {
         ImGui::PushFont(font);
         ImGui::Text("%s", characterToShow.c_str());
+        iconHeight = ImGui::GetTextLineHeight();
         ImGui::PopFont();
         ImGui::Text("%s", literalToShow.c_str());
         ImGui::Separator();
     }
 
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 2));
+    const float padding = 2;
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, padding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
     ImVec2 itemSpacing = ImGui::GetStyle().ItemSpacing;
 
     const ImU32 glyph_col = ImGui::GetColorU32(ImGuiCol_Text);
     const float cell_size = fontWidth; //font->FontSize * 1;
-    const float cell_spacing = itemSpacing.y;
 
     if (ImGui::BeginChild("ScrollReg", ImVec2((cell_size + itemSpacing.x) * IconsPerLine + ImGui::GetStyle().ScrollbarSize, 0), false))
     {
@@ -225,7 +222,7 @@ void showIconsWindow(ImFont *font, bool &show)
                 const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
                 if (glyph && glyph->Visible)
                 {
-                    ImGui::SetCursorPosX((printedCharId % IconsPerLine) * (cell_size + cell_spacing));
+                    ImGui::SetCursorPosX((printedCharId % IconsPerLine) * (cell_size + itemSpacing.x));
 
                     // static to avoid memory allocations
                     static std::wstring wstr;
@@ -242,41 +239,42 @@ void showIconsWindow(ImFont *font, bool &show)
                     if (printedCharId % IconsPerLine)
                         ImGui::SameLine();
 
-                    if(ImGui::IsItemHovered())
+                    if(ImGui::IsItemActive())
+                    {
+                        literalToShow.clear();
+                        // e.g. "\xef\x80\x81" = U+f001
+                        //std::wstring wstr;
+                        //wstr.push_back((TCHAR)(base + n));
+                        characterToShow = to_string(wstr);
+                        const char* p = characterToShow.c_str();
+                        literalToShow += "\"";
+                        while(*p)
+                        {
+                            char str[8];
+                            sprintf_s(str, sizeof(str), "\\x%hhx", *p++);
+                            literalToShow += str;
+                        }
+                        literalToShow += "\"";
+
+                        ImGui::LogToClipboard();
+                        ImGui::LogText("%s", literalToShow.c_str());
+                        ImGui::LogFinish();
+                    }
+                    if (ImGui::IsItemHovered())
                     {
                         BeginTooltip();
                         ImGui::Text("Codepoint: U+%04X", base + n);
                         EndTooltip();
-
-                        if(ImGui::IsMouseClicked(0))
-                        {
-                            literalToShow.clear();
-                            // e.g. "\xef\x80\x81" = U+f001
-                            //std::wstring wstr;
-                            //wstr.push_back((TCHAR)(base + n));
-                            characterToShow = to_string(wstr);
-                            const char* p = characterToShow.c_str();
-                            literalToShow += "\"";
-                            while(*p)
-                            {
-                                char str[8];
-                                sprintf_s(str, sizeof(str), "\\x%hhx", *p++);
-                                literalToShow += str;
-                            }
-                            literalToShow += "\"";
-
-                            ImGui::LogToClipboard();
-                            ImGui::LogText("%s", literalToShow.c_str());
-                            ImGui::LogFinish();
-                        }
                     }
+
                 }
             }
         }
         ImGui::EndChild();
     }
-
     ImGui::PopStyleVar(2);
+    ImGui::SameLine();
+    ImGui::TextUnformatted("cursor up/down/space or click on a character to copy it into the clipboard");
 
     ImGui::End();
 }
@@ -420,21 +418,18 @@ int Gui::test()
     ImFont* fontAwesomeLarge = nullptr;
     if(result == S_OK)
     {
-        ImFont* font = io.Fonts->AddFontFromFileTTF((std::string(fonts) +  "\\Arial.ttf").c_str(), 21.0f);
-        font;
+        io.Fonts->AddFontFromFileTTF((std::string(fonts) +  "\\Arial.ttf").c_str(), 21.0f);
 
         // https://pixtur.github.io/mkdocs-for-imgui/site/FONTS
         // https://github.com/beakerbrowser/beakerbrowser.com/blob/master/fonts/fontawesome-webfont.ttf
         static const ImWchar icons_ranges[] = { 0xf000, 0xf3ff, 0 }; // Will not be copied by AddFont* so keep in scope.
         ImFontConfig config;
         config.MergeMode = true;
-//        fontAwesome = io.Fonts->AddFontFromFileTTF("fontawesome-webfont.ttf", 18.0f, &config, icons_ranges);
         fontAwesome = io.Fonts->AddFontFromFileTTF("fontawesome-webfont.ttf", 18.0f, &config, icons_ranges);
         config.MergeMode = false;
         fontAwesomeLarge = io.Fonts->AddFontFromFileTTF("fontawesome-webfont.ttf", 18.0f * 2, &config, icons_ranges);
-        io.Fonts->Build();
 
-        //IM_ASSERT(font != NULL);
+        io.Fonts->Build();
     }
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
