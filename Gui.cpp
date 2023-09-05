@@ -54,6 +54,68 @@ Gui::Gui()
 {
 }
 
+
+// copied from ImGui, the optional endMarker adds a rectangle to the triangle arrow indicating a stop
+// useful to scroll to beginning or end
+bool ArrowButton2(const char* str_id, ImGuiDir dir, bool endMarker = false)
+{
+    ImGuiButtonFlags flags = ImGuiButtonFlags_None;
+    float sz = ImGui::GetFrameHeight();
+    ImVec2 size(sz, sz);
+
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    const ImGuiID id = window->GetID(str_id);
+    const ImRect bb(window->DC.CursorPos, ImVec2(window->DC.CursorPos.x + size.x, window->DC.CursorPos.y + size.y));
+    const float default_size = ImGui::GetFrameHeight();
+    ImGui::ItemSize(size, (size.y >= default_size) ? g.Style.FramePadding.y : -1.0f);
+    if (!ImGui::ItemAdd(bb, id))
+        return false;
+
+    if (g.LastItemData.InFlags & ImGuiItemFlags_ButtonRepeat)
+        flags |= ImGuiButtonFlags_Repeat;
+
+    bool hovered, held;
+    bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held, flags);
+
+    // Render
+    const ImU32 bg_col = ImGui::GetColorU32((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+    const ImU32 text_col = ImGui::GetColorU32(ImGuiCol_Text);
+    ImGui::RenderNavHighlight(bb, id);
+    ImGui::RenderFrame(bb.Min, bb.Max, bg_col, true, g.Style.FrameRounding);
+    ImVec2 pos = bb.Min;
+    pos.x += ImMax(0.0f, (size.x - g.FontSize) * 0.5f);
+    pos.y += ImMax(0.0f, (size.y - g.FontSize) * 0.5f);
+    ImGui::RenderArrow(window->DrawList, pos, text_col, dir);
+    if (endMarker)
+    {
+        const float h = roundf(g.FontSize / 8);
+        const float w = roundf(g.FontSize - 2 * h);
+        if(dir == ImGuiDir_Up || dir == ImGuiDir_Down)
+        {
+            pos.x += h;
+            pos.y += h;
+            if (dir == ImGuiDir_Down)
+                pos.y += g.FontSize - 3 * h;
+            window->DrawList->AddRectFilled(pos, ImVec2(pos.x + w, pos.y + h), text_col, 0.0f);
+        }
+        else
+        {
+            pos.x += h;
+            pos.y += h;
+            if (dir == ImGuiDir_Right)
+                pos.x += g.FontSize - 3 * h;
+            window->DrawList->AddRectFilled(pos, ImVec2(pos.x + h, pos.y + w), text_col, 0.0f);
+        }
+    }
+
+    IMGUI_TEST_ENGINE_ITEM_INFO(id, str_id, g.LastItemData.StatusFlags);
+    return pressed;
+}
+
 void showIconsWindow(ImFont *font, bool &show)
 {
     if(!show)
