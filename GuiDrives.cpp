@@ -326,9 +326,12 @@ void Gui::guiDrives(bool &show)
                 if (columns[DCID_Actions])
                 {
                     ImGui::TableSetColumnIndex(columnId++);
-                    ImGui::SmallButton("\xef\x83\xa2"); // Refresh icon
+//                    if(ImGui::SmallButton("\xef\x83\xa2"))    // Refresh
+//                        drive.rebuild();
+//doesn't work                    TooltipPaused("Refresh / Rebuild");
+
                     ImGui::SameLine();
-                    ImGui::ProgressBar((rand()%100)*0.01f, ImVec2(0.0f, 0.0f));
+//                    ImGui::ProgressBar((rand()%100)*0.01f, ImVec2(0.0f, 0.0f));
                 }
                 
 

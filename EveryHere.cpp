@@ -123,8 +123,8 @@ private:
 };
 
 
-struct EveryHereDirectory : public IDirectoryTraverse {
-
+struct EveryHereDirectory : public IDirectoryTraverse
+{
     // e.g. L"C:"
     const wchar_t* path = nullptr;
     DriveData& driveData;
@@ -198,7 +198,8 @@ struct EveryHereDirectory : public IDirectoryTraverse {
         return true;
     }
 
-    virtual void OnFile(const FilePath& filePath, const wchar_t* file, const _wfinddata_t& findData, float progress) {
+    virtual void OnFile(const FilePath& filePath, const wchar_t* file, const _wfinddata_t& findData, float progress) 
+    {
         percent = (int)(100.0f * progress);
 
         // todo: static to avoid heap allocations, prevents multithreading use
@@ -241,7 +242,8 @@ struct DriveGatherTraverse : public IDriveTraverse {
     {
     }
 
-    virtual void OnDrive(const DriveInfo& driveInfo) {
+    virtual void OnDrive(const DriveInfo& driveInfo) 
+    {
         std::wstring csvName = driveInfo.generateKeyName();
         everyHere.removeDrive(to_string(csvName).c_str());
 
@@ -255,7 +257,8 @@ struct DriveGatherTraverse : public IDriveTraverse {
     }
 };
 
-struct LocalDriveStateTraverse : public IDriveTraverse {
+struct LocalDriveStateTraverse : public IDriveTraverse 
+{
     EveryHere& everyHere;
 
     LocalDriveStateTraverse(EveryHere& inEveryHere) : everyHere(inEveryHere)
@@ -265,7 +268,8 @@ struct LocalDriveStateTraverse : public IDriveTraverse {
             drive->isLocalDrive = false;
     }
 
-    virtual void OnDrive(const DriveInfo& driveInfo) {
+    virtual void OnDrive(const DriveInfo& driveInfo) 
+    {
         std::wstring csvName = driveInfo.generateKeyName();
 
         // todo: google drive is changing it's internalName so we cannot key by this

@@ -144,8 +144,10 @@ void showTestWindow(bool& show)
     {
         bool smallButton = i;
         ArrowButton2("1", ImGuiDir_Left, smallButton, false);
+        TooltipPaused("Left");
         ImGui::SameLine();
         ArrowButton2("2", ImGuiDir_Right, smallButton, false);
+        TooltipPaused("Right");
         ImGui::SameLine();
         ArrowButton2("3", ImGuiDir_Up, smallButton, false);
         ImGui::SameLine();
@@ -548,6 +550,17 @@ void pushTableStyle3()
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
 }
+
+void TooltipPaused(const char* text)
+{
+    assert(text);
+    if(BeginTooltipPaused())
+    {
+        ImGui::TextUnformatted(text);
+        EndTooltip();
+    }
+}
+
 
 bool BeginTooltipPaused()
 {

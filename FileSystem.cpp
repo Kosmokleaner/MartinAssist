@@ -1,6 +1,7 @@
 //#include "StdAfx.h"
 #include "global.h"
 #include "FileSystem.h"
+#include "Timer.h"
 #include <io.h>	// _A_SUBDIR, _findclose()
 #include <windows.h>    // GetVolumePathNamesForVolumeNameW()
 #include <algorithm>
@@ -198,7 +199,11 @@ void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const
 	sink.OnEnd();
 }
 
-void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, uint64 totalExpectedFileSize, const wchar_t* pattern) {
+void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, uint64 totalExpectedFileSize, const wchar_t* pattern) 
+{
+	// 59sec C:
+	CScopedCPUTimerLog timer("directoryTraverse2");
+
 	assert(pattern);
 	sink.OnStart();
 
@@ -229,11 +234,20 @@ void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, ui
 				if (wcscmp(c_file.name, L".") == 0 || wcscmp(c_file.name, L"..") == 0)
 					continue;
 
-				if (c_file.attrib & _A_SUBDIR) {
-
+				if (c_file.attrib & _A_SUBDIR) 
+				{
 					if (sink.OnDirectory(filePath, c_file.name, c_file)) {
 						FilePath pathWithDirectory = filePath;
+
 						pathWithDirectory.Append(c_file.name);
+
+						static int stepper = 0; ++stepper;
+						if((stepper % 1000) == 0)
+						{
+							OutputDebugStringW(pathWithDirectory.path.c_str());
+							OutputDebugStringA("\n");
+						}
+
 						workItems.push_back(std::move(pathWithDirectory));
 						++totalUnits;
 					}

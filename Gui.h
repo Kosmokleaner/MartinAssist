@@ -36,6 +36,9 @@ private:
 
 void pushTableStyle3();
 
+// @param must not be 0 
+void TooltipPaused(const char* text);
+
 // e.g.
 // if(BeginTooltipPaused())
 // {
