@@ -286,23 +286,38 @@ void directoryTraverseMT(ThreadPool& pool, IDirectoryTraverse& sink, const FileP
 
 }
 
+#include <filesystem>
+#include <iostream>
+namespace fs = std::filesystem;
 
 int main()
 {
 //    CppParserTest();
 
-/*
     // experiments:
     {
         CScopedCPUTimerLog log("directoryTraverseMT");
 
-//        DirectoryTraverseTest sink;
-//        directoryTraverse(sink, L"D:");
+//        int debug = 0;
+//        for (const auto& entry : fs::recursive_directory_iterator("d:/", fs::directory_options::skip_permission_denied)) 
+//        {
+//            if(!entry.is_directory())
+//                ++debug;
+//        }
+//        printf("debug: %d\n", debug); // 1193413
+
+        // MainThread D: Debug 40066ms
+        // MainThread D: Debug 32450ms consistent
+
+        // _wfindfirst, _findclose
+        DirectoryTraverseTest sink;
+        directoryTraverse(sink, L"D:");
+        printf("fileEntryCount: %d\n", sink.fileEntryCount); // 1194171
         // MainThread D: release 39807ms
 
-        ThreadPool pool;
-        DirectoryTraverseTest directoryTraverseTest;
-        directoryTraverseMT(pool, directoryTraverseTest, L"D:");
+//        ThreadPool pool;
+//        DirectoryTraverseTest directoryTraverseTest;
+//        directoryTraverseMT(pool, directoryTraverseTest, L"D:");
         // MultiThread D: release, 128 threads 68424ms consistent
         // MultiThread D: release, 64 threads 64615ms, variable Utilization >40%
         // MultiThread D: release, 32 threads 62675ms
@@ -315,6 +330,7 @@ int main()
     }
     return 0;
 */
+
 
     // OpenGL3 ImGui 
     Gui gui;
