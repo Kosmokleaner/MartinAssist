@@ -304,9 +304,6 @@ DriveData::DriveData()
 
 void DriveData::rebuild()
 {
-    // set this before
-    assert(driveId >= 0);
-
     gatherInfo();
 
     // cleaned up e.g. L"C:"

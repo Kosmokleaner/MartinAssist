@@ -482,6 +482,9 @@ int Gui::test()
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
+        // while UI is rendered, this lock is protecting changes to everyHere
+        std::unique_lock<std::mutex> lock(everyHere_mutex);
+
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))

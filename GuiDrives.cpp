@@ -4,7 +4,7 @@
 #include "FileSystem.h"
 #include "ImGui/imgui_internal.h"
 #include <shlobj.h> // DeleteFile()
-
+#include <thread>
 
 
 class LoadCVSFiles : public IDirectoryTraverse
@@ -42,7 +42,30 @@ public:
     }
 };
 
+void asyncDriveBuild(EveryHere& everyHere, std::mutex& everyHere_mutex, const DriveData& formerDrive)
+{
+    const DriveInfo &info = formerDrive.driveInfo;
+    auto ret = new std::thread([&everyHere, &everyHere_mutex, info]
+    {
+        DriveData *tempDrive = new DriveData;
+        tempDrive->driveInfo = info;
 
+        tempDrive->rebuild();
+
+        {
+            std::unique_lock<std::mutex> lock(everyHere_mutex);
+
+            const uint32 driveId = (uint32)everyHere.driveData.size();
+
+            // adjust driveId on all entries
+            for(auto& entry : tempDrive->entries)
+                entry.value.driveId = driveId;
+
+            everyHere.driveData.push_back(tempDrive);
+        }
+    });
+    // todo: free ret ?
+}
 
 void Gui::guiDrives(bool &show)
 {
@@ -326,8 +349,8 @@ void Gui::guiDrives(bool &show)
                 if (columns[DCID_Actions])
                 {
                     ImGui::TableSetColumnIndex(columnId++);
-//                    if(ImGui::SmallButton("\xef\x83\xa2"))    // Refresh
-//                        drive.rebuild();
+                    if(ImGui::SmallButton("\xef\x83\xa2"))    // Refresh
+                        asyncDriveBuild(everyHere, everyHere_mutex, drive);
 //doesn't work                    TooltipPaused("Refresh / Rebuild");
 
                     ImGui::SameLine();

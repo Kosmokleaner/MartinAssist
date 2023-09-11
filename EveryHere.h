@@ -127,7 +127,7 @@ struct DriveData {
     StringPool stringPool;
 
     std::vector<FileEntry> entries;
-    // index in EveryHere.driveData
+    // index in EveryHere.driveData or -1 if not in EveryHere yet
     int driveId = -1;
     // generated with generateKeyName() without .csv
     std::string csvName;

@@ -1,6 +1,7 @@
 #pragma once
 #include "EveryHere.h"
 #include "SelectionRange.h"
+#include <mutex>
 
 class Gui
 {
@@ -13,6 +14,7 @@ public:
     void guiFiles(bool &show);
 
     EveryHere everyHere;
+    std::mutex everyHere_mutex;
 
     void setViewDirty();
 
