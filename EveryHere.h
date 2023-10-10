@@ -76,7 +76,7 @@ enum FileColumnID
     FCID_Path,
 };
 
-// need to match DriveColumnNames
+// need to match getDriveColumnName
 enum DriveColumnID
 {
     DCID_VolumeName,
@@ -89,6 +89,7 @@ enum DriveColumnID
     DCID_Computer,
     DCID_User,
     DCID_Date,
+    DCID_freeSpace,
     DCID_totalSpace,
     DCID_type,
     DCID_serial,
@@ -111,6 +112,7 @@ inline const char* getDriveColumnName(DriveColumnID e)
         "Computer",
         "User",
         "Date",
+        "freeSpace",
         "totalSpace",
         "type",
         "serial",

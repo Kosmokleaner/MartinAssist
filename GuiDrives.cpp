@@ -74,6 +74,24 @@ void asyncDriveBuild(EveryHere& everyHere, std::mutex& everyHere_mutex, DriveDat
     // todo: free ret ?
 }
 
+void printRightAlignedSize(uint64 bytes)
+{
+    if(!bytes)
+        return;
+
+    double printSize = 0;
+    const char* printUnit = computeReadableSize(bytes, printSize);
+
+    // right aligned
+    char str[256];
+    sprintf_s(str, sizeof(str), printUnit, printSize);
+    // https://stackoverflow.com/questions/58044749/how-to-right-align-text-in-imgui-columns
+    float posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(str).x - ImGui::GetScrollX());
+    if (posX > ImGui::GetCursorPosX())
+        ImGui::SetCursorPosX(posX);
+    ImGui::TextUnformatted(str);
+}
+
 void Gui::guiDrives(bool &show)
 {
     if(!show)
@@ -84,6 +102,7 @@ void Gui::guiDrives(bool &show)
     localDrivesColumns[DCID_Path] = true;
     localDrivesColumns[DCID_Computer] = true;
     localDrivesColumns[DCID_User] = true;
+    localDrivesColumns[DCID_freeSpace] = true;
     localDrivesColumns[DCID_totalSpace] = true;
     localDrivesColumns[DCID_type] = true;
     localDrivesColumns[DCID_serial] = true;
@@ -94,6 +113,7 @@ void Gui::guiDrives(bool &show)
     historicalDataColumns[DCID_Path] = true;
     historicalDataColumns[DCID_Computer] = true;
     historicalDataColumns[DCID_User] = true;
+    historicalDataColumns[DCID_freeSpace] = true;
     historicalDataColumns[DCID_totalSpace] = true;
     historicalDataColumns[DCID_type] = true;
     historicalDataColumns[DCID_serial] = true;
@@ -155,7 +175,7 @@ void Gui::guiDrives(bool &show)
             ImGuiTableFlags_BordersV |
             ImGuiTableFlags_SizingFixedFit |
             ImGuiTableFlags_Resizable |
-            ImGuiTableFlags_Reorderable |
+//            ImGuiTableFlags_Reorderable |
             ImGuiTableFlags_Hideable |
             ImGuiTableFlags_Sortable |
             ImGuiTableFlags_SortMulti;
@@ -174,6 +194,9 @@ void Gui::guiDrives(bool &show)
 
             pushTableStyle3();
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+
+            const char* s0 = getDriveColumnName(DCID_freeSpace);
+            const char* s1 = getDriveColumnName(DCID_totalSpace);
 
             for(uint32 column = 0; column < DCID_MAX; ++column)
             {
@@ -323,23 +346,16 @@ void Gui::guiDrives(bool &show)
                     ImGui::TextUnformatted(drive.dateGatheredString.c_str());
                 }
 
+                if (columns[DCID_freeSpace])
+                {
+                    ImGui::TableSetColumnIndex(columnId++);
+                    printRightAlignedSize(drive.freeSpace);
+                }
+
                 if (columns[DCID_totalSpace])
                 {
                     ImGui::TableSetColumnIndex(columnId++);
-                    if (drive.totalSpace)
-                    {
-                        double printSize = 0;
-                        const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
-
-                        // right aligned
-                        char str[256];
-                        sprintf_s(str, sizeof(str), printUnit, printSize);
-                        // https://stackoverflow.com/questions/58044749/how-to-right-align-text-in-imgui-columns
-                        float posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(str).x - ImGui::GetScrollX());
-                        if (posX > ImGui::GetCursorPosX())
-                            ImGui::SetCursorPosX(posX);
-                        ImGui::TextUnformatted(str);
-                    }
+                    printRightAlignedSize(drive.totalSpace);
                 }
 
                 if (columns[DCID_type])

@@ -311,7 +311,6 @@ void DriveData::OnProgressThreadCallback(float inProgress, uint64 fileCount)
     // todo threading !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     progressPercent = inProgress;
     progressFileCount = fileCount;
-//todo
 }
 
 void DriveData::rebuild(IProgressThreadCallback* progressThreadCallback)
@@ -856,6 +855,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_Computer:   delta = strcmp(A.computerName.c_str(), B.computerName.c_str()); break;
                     case DCID_User:   delta = strcmp(A.userName.c_str(), B.userName.c_str()); break;
                     case DCID_Date:   delta = A.dateGatheredValue - B.dateGatheredValue; break;
+                    case DCID_freeSpace:   delta = A.freeSpace - B.freeSpace; break;
                     case DCID_totalSpace:   delta = A.totalSpace - B.totalSpace; break;
                     case DCID_type:   delta = (int64)A.driveType - (int64)B.driveType; break;
                     case DCID_serial:   delta = (int64)A.driveInfo.serialNumber - (int64)B.driveInfo.serialNumber; break;
