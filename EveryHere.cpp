@@ -137,11 +137,13 @@ struct EveryHereDirectory : public IDirectoryTraverse
     // ever increasing during traversal
     int64 fileEntryCount = 0;
     int driveId = -1;
-    // 0..100
-    int percent = 0;
+    // 0..1 (100%
+    float fraction = 0.0f;
 
-    EveryHereDirectory(DriveData& inDriveData, int inDriveId, const wchar_t* inPath)
-        : driveData(inDriveData), path(inPath), driveId(inDriveId)
+    IProgressThreadCallback* progressThreadCallback = nullptr;
+
+    EveryHereDirectory(DriveData& inDriveData, int inDriveId, const wchar_t* inPath, IProgressThreadCallback* inProgressThreadCallback)
+        : driveData(inDriveData), path(inPath), driveId(inDriveId), progressThreadCallback(inProgressThreadCallback)
     {
         assert(inPath);
     }
@@ -162,12 +164,15 @@ struct EveryHereDirectory : public IDirectoryTraverse
 
     void logState()
     {
+        if(progressThreadCallback)
+            progressThreadCallback->OnProgressThreadCallback(fraction, fileEntryCount);
+
         // a few spaces in the end to overwrite the line that was there before
-        wprintf(L"%s %lld files  %.0f sec    %d%%       \r",
+        wprintf(L"%s %lld files  %.0f sec    %.0f%%       \r",
             path,
             fileEntryCount,
             g_Timer.GetAbsoluteTime() - startTime,
-            percent);
+            fraction * 100.0f);
     }
 
     virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) {
@@ -198,9 +203,9 @@ struct EveryHereDirectory : public IDirectoryTraverse
         return true;
     }
 
-    virtual void OnFile(const FilePath& filePath, const wchar_t* file, const _wfinddata_t& findData, float progress) 
+    virtual void OnFile(const FilePath& filePath, const wchar_t* file, const _wfinddata_t& findData, float inProgress) 
     {
-        percent = (int)(100.0f * progress);
+        fraction = inProgress;
 
         // todo: static to avoid heap allocations, prevents multithreading use
         static FilePath local; local.path.clear();
@@ -301,8 +306,15 @@ DriveData::DriveData()
     entries.reserve(10 * 1024 * 1024);
 }
 
+void DriveData::OnProgressThreadCallback(float inProgress, uint64 fileCount)
+{
+    // todo threading !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    progressPercent = inProgress;
+    progressFileCount = fileCount;
+//todo
+}
 
-void DriveData::rebuild()
+void DriveData::rebuild(IProgressThreadCallback* progressThreadCallback)
 {
     gatherInfo();
 
@@ -338,7 +350,7 @@ void DriveData::rebuild()
         dateGatheredValue = timeStringToValue(str);
     }
 
-    EveryHereDirectory traverse(*this, driveId, wDrivePath.c_str());
+    EveryHereDirectory traverse(*this, driveId, wDrivePath.c_str(), progressThreadCallback);
 
 //    directoryTraverse(traverse, wDrivePath.c_str());
 

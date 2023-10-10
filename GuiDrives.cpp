@@ -42,15 +42,22 @@ public:
     }
 };
 
-void asyncDriveBuild(EveryHere& everyHere, std::mutex& everyHere_mutex, const DriveData& formerDrive)
+void asyncDriveBuild(EveryHere& everyHere, std::mutex& everyHere_mutex, DriveData& formerDrive)
 {
+    formerDrive.progressPercent = 0.0f;
+    formerDrive.progressFileCount = 0;
+
     const DriveInfo &info = formerDrive.driveInfo;
-    auto ret = new std::thread([&everyHere, &everyHere_mutex, info]
+
+    IProgressThreadCallback* progressThreadCallback = &formerDrive;
+
+//    auto ret = 
+    new std::thread([&everyHere, &everyHere_mutex, info, progressThreadCallback]
     {
         DriveData *tempDrive = new DriveData;
         tempDrive->driveInfo = info;
 
-        tempDrive->rebuild();
+        tempDrive->rebuild(progressThreadCallback);
 
         {
             std::unique_lock<std::mutex> lock(everyHere_mutex);
@@ -362,7 +369,18 @@ void Gui::guiDrives(bool &show)
 //doesn't work                    TooltipPaused("Refresh / Rebuild");
 
                     ImGui::SameLine();
-//                    ImGui::ProgressBar((rand()%100)*0.01f, ImVec2(0.0f, 0.0f));
+                    if(drive.progressPercent >= 0)
+                    {
+                        float fraction = drive.progressPercent * 0.01f;
+                        char overlay_buf[32];
+                        ImFormatString(overlay_buf, IM_ARRAYSIZE(overlay_buf), "%.1f %%", fraction * 100 + 0.01f);
+                        ImGui::ProgressBar(fraction, ImVec2(0.0f, ImGui::GetFontSize()), overlay_buf);
+                        if(BeginTooltipPaused())
+                        {
+                            ImGui::Text("%llu files", drive.progressFileCount);
+                            EndTooltip();
+                        }
+                    }
                 }
                 
 

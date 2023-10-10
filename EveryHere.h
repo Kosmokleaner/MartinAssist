@@ -121,7 +121,13 @@ inline const char* getDriveColumnName(DriveColumnID e)
     return names[e];
 };
 
-struct DriveData {
+struct IProgressThreadCallback
+{
+    virtual void OnProgressThreadCallback(float inProgress, uint64 fileCount) = 0;
+};
+
+struct DriveData : public IProgressThreadCallback
+{
     DriveInfo driveInfo;
 
     StringPool stringPool;
@@ -154,6 +160,10 @@ struct DriveData {
     // is constantly updated
     uint64 selectedKeys = 0;
 
+    // progress bar is shows when in 0..100 range
+    float progressPercent = -1;
+    int64 progressFileCount = -1;
+
     bool markedForDelete = false;
     bool isLocalDrive = false;
 
@@ -164,12 +174,19 @@ struct DriveData {
 
     DriveData();
 
+    // interface IProgressThreadCallback ----------
+
+    virtual void OnProgressThreadCallback(float inProgress, uint64 fileCount);
+
+    // --------------------------------------------
+
     // uses driveInfo
     // fast, done on startup for all local drives
     void gatherInfo();
     // setup driveInfo before
     // slow, gather all info and update .csv file
-    void rebuild();
+    // @param progressThreadCallback may be 0
+    void rebuild(IProgressThreadCallback* progressThreadCallback = nullptr);
 
     void sort();
 
