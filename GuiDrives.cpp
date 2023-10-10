@@ -323,7 +323,15 @@ void Gui::guiDrives(bool &show)
                     {
                         double printSize = 0;
                         const char* printUnit = computeReadableSize(drive.totalSpace, printSize);
-                        ImGui::Text(printUnit, printSize);
+
+                        // right aligned
+                        char str[256];
+                        sprintf_s(str, sizeof(str), printUnit, printSize);
+                        // https://stackoverflow.com/questions/58044749/how-to-right-align-text-in-imgui-columns
+                        float posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(str).x - ImGui::GetScrollX());
+                        if (posX > ImGui::GetCursorPosX())
+                            ImGui::SetCursorPosX(posX);
+                        ImGui::TextUnformatted(str);
                     }
                 }
 
