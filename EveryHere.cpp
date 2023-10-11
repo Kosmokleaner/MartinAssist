@@ -407,6 +407,30 @@ void DriveData::gatherInfo()
     }
 }
 
+void DriveData::buildChildLists()
+{
+    // clear out old data
+    for (auto& el : entries)
+    {
+        el.value.nextList = -1;
+        el.value.childList = -1;
+    }
+
+    int64 id = 0;
+    for (auto& el : entries)
+    {
+        if(el.value.parent != -1)
+        {
+            assert(it.value.parent < (int64)entries.size());
+            
+            auto &elParent = entries[el.value.parent];
+
+            elParent.value.childList = elParent.value.nextList;
+            elParent.value.childList = id;
+        }
+        ++id;
+    }
+}
 
 void DriveData::sort()
 {
@@ -453,6 +477,8 @@ void DriveData::sort()
     }
  
     std::swap(newFiles, entries);
+
+    buildChildLists();
 
     verify();
 }

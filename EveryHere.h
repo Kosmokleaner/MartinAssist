@@ -55,13 +55,22 @@ struct FileKey
 
 struct FileValue
 {
-    // -1 is used for root
+    // -1 is used for root, otherwise fileEntryIndex
     int64 parent = -1;
-    __time64_t time_create = -1;    // -1 for FAT file systems
-    __time64_t time_access = -1;    // -1 for FAT file systems
-    //std::string path;
+    // -1 for FAT file systems
+    __time64_t time_create = -1;
+    // -1 for FAT file systems
+    __time64_t time_access = -1;
     PooledString path;
+    // -1 means not part of a drive yet
     int driveId = -1;
+
+    // the next 2 members are redundant, the are derived from parent in buildChildLists()
+
+    // -1 if has no children, otherwise fileEntryIndex to the first child
+    int64 childList = -1;
+    // -1 if this is the last child, otherwise fileEntryIndex to the next child
+    int64 nextList = -1;
 };
 
 struct FileEntry
@@ -208,6 +217,11 @@ struct DriveData : public IProgressThreadCallback
 
     // @param value must not be 0
     void setDrivePath(const char* value);
+
+private:
+
+    // called by sort()
+    void buildChildLists();
 };
 
 struct ViewEntry
