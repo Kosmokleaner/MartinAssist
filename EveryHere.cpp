@@ -658,7 +658,7 @@ void EveryHere::removeDrive(const char* csvName)
     }
 }
 
-void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders)
+void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, EFilesMode mode)
 {
     assert(minSize >= 0);
     assert(filter);
@@ -689,15 +689,21 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
             if(fileEntry.value.parent >= 0 && fileEntry.value.path.empty())
                 fileEntry.value.path = itD.generatePath(fileEntry.value.parent);
 
-            if(folders)
+            if(mode == eFM_Files)
             {
-                if (fileEntry.key.sizeOrFolder >= 0)
-                    continue;
+                if (fileEntry.key.sizeOrFolder < minSize)
+                    continue;   // hide folders and files that are filtered out
             }
             else
             {
-                if(fileEntry.key.sizeOrFolder < minSize)
-                    continue;
+                if (fileEntry.key.isFile())
+                    continue;   // hide files
+            }
+
+            if (mode == eFM_TreeView)
+            {
+                if(fileEntry.value.parent != -1)
+                    continue;   // hide non root folder
             }
 
             if(redundancyFilter)
@@ -852,7 +858,13 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_Size:   delta = A.statsSize - B.statsSize; break;
                     case DCID_Files:   delta = A.entries.size() - B.entries.size(); break;
                     case DCID_Directories:   delta = A.statsDirs - B.statsDirs; break;
-                    case DCID_Computer:   delta = strcmp(A.computerName.c_str(), B.computerName.c_str()); break;
+                    case DCID_Computer:                     
+                        if (A.isLocalDrive != B.isLocalDrive)
+                        {
+                            delta = (int)A.isLocalDrive != (int)B.isLocalDrive;
+                            break;
+                        }
+                        delta = strcmp(A.computerName.c_str(), B.computerName.c_str()); break;
                     case DCID_User:   delta = strcmp(A.userName.c_str(), B.userName.c_str()); break;
                     case DCID_Date:   delta = A.dateGatheredValue - B.dateGatheredValue; break;
                     case DCID_freeSpace:   delta = A.freeSpace - B.freeSpace; break;

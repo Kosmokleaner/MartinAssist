@@ -28,19 +28,24 @@ void Gui::guiFiles(bool &show)
     }
 
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-    // 0: files, 1:folders
-    int filesTabId = 0;
-    static int oldFilesTabId = 0;
+
+    EFilesMode filesTabId = eFM_Files;
+    static int oldFilesTabId = eFM_Files;
     if (ImGui::BeginTabBar("FilesOrDir", tab_bar_flags))
     {
         if (ImGui::BeginTabItem("Files"))
         {
-            filesTabId = 0;
+            filesTabId = eFM_Files;
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Folders"))
         {
-            filesTabId = 1;
+            filesTabId = eFM_Folders;
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("TreeView"))
+        {
+            filesTabId = eFM_TreeView;
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -51,7 +56,7 @@ void Gui::guiFiles(bool &show)
         setViewDirty();
     }
 
-    if (filesTabId == 0)
+    if (filesTabId == eFM_Files)
     {
         {
             int step = 1;
@@ -91,14 +96,14 @@ void Gui::guiFiles(bool &show)
         // safe space for info line
         ImVec2 outerSize = ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() - ImGui::GetStyle().ItemSpacing.y);
         uint32 numberOfColumns = 3;
-        if (filesTabId == 0)
+        if (filesTabId == eFM_Files)
             numberOfColumns += 2;
 
         if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
         {
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Name);
-            if (filesTabId == 0)
+            if (filesTabId == eFM_Files)
             {
                 ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Size);
                 ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Redundancy);
@@ -124,121 +129,124 @@ void Gui::guiFiles(bool &show)
                 // do this before changes to the fileView
                 fileSelectionRange.reset();
                 int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
-                everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, driveSelectionRange, fileSortCriteria, filesTabId == 1);
+                everyHere.buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, driveSelectionRange, fileSortCriteria, filesTabId);
                 whenToRebuildView = -1;
                 fileSortCriteria = {};
             }
 
-            ImGuiListClipper clipper;
-            clipper.Begin((int)everyHere.fileView.size());
-            std::string line;
-            pushTableStyle3();
-            while (clipper.Step())
             {
-                for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+                // list view
+                ImGuiListClipper clipper;
+                clipper.Begin((int)everyHere.fileView.size());
+                std::string line;
+                pushTableStyle3();
+                while (clipper.Step())
                 {
-                    if (line_no >= everyHere.fileView.size())
-                        break;
-
-                    ViewEntry& viewEntry = everyHere.fileView[line_no];
-                    const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
-                    const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
-
-                    // todo: optimize
-                    line = entry.key.fileName.c_str();
-
-                    ImGui::TableNextRow();
-
-                    ImGui::PushID(line_no);
-
-                    int columnId = 0;
-
-                    ImGui::TableSetColumnIndex(columnId++);
-                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-                    bool selected = fileSelectionRange.isSelected(line_no);
-                    ImGui::Selectable(line.c_str(), &selected, selectable_flags);
-                    if (ImGui::IsItemClicked(0))
+                    for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
                     {
-                        fileSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
-                    }
-                    if (BeginTooltipPaused())
-                    {
-                        // todo: path concat needs to be improved
-                        ImGui::Text("FilePath: %s%s/%s", deviceData.drivePath.c_str(), entry.value.path.c_str(), line.c_str());
-                        ImGui::Text("Size: %llu Bytes", entry.key.sizeOrFolder);
-                        EndTooltip();
-                    }
-                    if (ImGui::BeginPopupContextItem())
-                    {
-                        if (!fileSelectionRange.isSelected(line_no))
+                        if (line_no >= everyHere.fileView.size())
+                            break;
+
+                        ViewEntry& viewEntry = everyHere.fileView[line_no];
+                        const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
+                        const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
+
+                        // todo: optimize
+                        line = entry.key.fileName.c_str();
+
+                        ImGui::TableNextRow();
+
+                        ImGui::PushID(line_no);
+
+                        int columnId = 0;
+
+                        ImGui::TableSetColumnIndex(columnId++);
+                        ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                        bool selected = fileSelectionRange.isSelected(line_no);
+                        ImGui::Selectable(line.c_str(), &selected, selectable_flags);
+                        if (ImGui::IsItemClicked(0))
                         {
-                            fileSelectionRange.reset();
-                            fileSelectionRange.onClick(line_no, false, false);
+                            fileSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
                         }
-
-                        if (fileSelectionRange.count() == 1)
+                        if (BeginTooltipPaused())
                         {
-                            if (ImGui::MenuItem("Open (with default program)"))
-                            {
-                                //                                        const char* path = deviceData.generatePath(entry.value.parent);
-                                const char* path = entry.value.path.c_str();
-                                std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName.c_str();
-                                ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
-                            }
-                            if (ImGui::MenuItem("Open path (in Explorer)"))
-                            {
-                                //                                        const char* path = deviceData.generatePath(entry.value.parent);
-                                const char* path = entry.value.path.c_str();
-                                std::string fullPath = deviceData.drivePath + "/" + path;
-                                ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
-                            }
+                            // todo: path concat needs to be improved
+                            ImGui::Text("FilePath: %s%s/%s", deviceData.drivePath.c_str(), entry.value.path.c_str(), line.c_str());
+                            ImGui::Text("Size: %llu Bytes", entry.key.sizeOrFolder);
+                            EndTooltip();
                         }
-                        if (ImGui::MenuItem("Copy selection as path (to clipboard)"))
+                        if (ImGui::BeginPopupContextItem())
                         {
-                            ImGui::LogToClipboard();
+                            if (!fileSelectionRange.isSelected(line_no))
+                            {
+                                fileSelectionRange.reset();
+                                fileSelectionRange.onClick(line_no, false, false);
+                            }
 
-                            fileSelectionRange.foreach([&](int64 line_no) {
-                                ViewEntry& viewEntry = everyHere.fileView[line_no];
-                                const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
-                                const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
-                                if (entry.key.sizeOrFolder >= 0)
+                            if (fileSelectionRange.count() == 1)
+                            {
+                                if (ImGui::MenuItem("Open (with default program)"))
                                 {
-                                    //                                            const char* path = deviceData.generatePath(entry.value.parent);
+                                    //                                        const char* path = deviceData.generatePath(entry.value.parent);
                                     const char* path = entry.value.path.c_str();
-                                    if (*path)
-                                        ImGui::LogText("%s/%s/%s\n", deviceData.drivePath.c_str(), path, entry.key.fileName.c_str());
-                                    else
-                                        ImGui::LogText("%s/%s\n", deviceData.drivePath.c_str(), entry.key.fileName.c_str());
+                                    std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName.c_str();
+                                    ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
                                 }
-                                });
+                                if (ImGui::MenuItem("Open path (in Explorer)"))
+                                {
+                                    //                                        const char* path = deviceData.generatePath(entry.value.parent);
+                                    const char* path = entry.value.path.c_str();
+                                    std::string fullPath = deviceData.drivePath + "/" + path;
+                                    ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
+                                }
+                            }
+                            if (ImGui::MenuItem("Copy selection as path (to clipboard)"))
+                            {
+                                ImGui::LogToClipboard();
 
-                            ImGui::LogFinish();
+                                fileSelectionRange.foreach([&](int64 line_no) {
+                                    ViewEntry& viewEntry = everyHere.fileView[line_no];
+                                    const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
+                                    const FileEntry& entry = deviceData.entries[viewEntry.fileEntryId];
+                                    if (entry.key.sizeOrFolder >= 0)
+                                    {
+                                        //                                            const char* path = deviceData.generatePath(entry.value.parent);
+                                        const char* path = entry.value.path.c_str();
+                                        if (*path)
+                                            ImGui::LogText("%s/%s/%s\n", deviceData.drivePath.c_str(), path, entry.key.fileName.c_str());
+                                        else
+                                            ImGui::LogText("%s/%s\n", deviceData.drivePath.c_str(), entry.key.fileName.c_str());
+                                    }
+                                    });
+
+                                ImGui::LogFinish();
+                            }
+                            ImGui::EndPopup();
                         }
-                        ImGui::EndPopup();
-                    }
 
-                    ImGui::PopID();
+                        ImGui::PopID();
 
-                    if (filesTabId == 0)
-                    {
+                        if (filesTabId == eFM_Files)
+                        {
+                            ImGui::TableSetColumnIndex(columnId++);
+                            double printSize = 0;
+                            const char* printUnit = computeReadableSize(entry.key.sizeOrFolder, printSize);
+                            ImGui::Text(printUnit, printSize);
+
+                            ImGui::TableSetColumnIndex(columnId++);
+                            ImGui::Text("%d", everyHere.findRedundancy(entry.key));
+                        }
+
                         ImGui::TableSetColumnIndex(columnId++);
-                        double printSize = 0;
-                        const char* printUnit = computeReadableSize(entry.key.sizeOrFolder, printSize);
-                        ImGui::Text(printUnit, printSize);
+                        ImGui::TextUnformatted(entry.value.path.c_str());
 
                         ImGui::TableSetColumnIndex(columnId++);
-                        ImGui::Text("%d", everyHere.findRedundancy(entry.key));
+                        ImGui::Text("%d", entry.value.driveId);
                     }
-
-                    ImGui::TableSetColumnIndex(columnId++);
-                    ImGui::TextUnformatted(entry.value.path.c_str());
-
-                    ImGui::TableSetColumnIndex(columnId++);
-                    ImGui::Text("%d", entry.value.driveId);
                 }
+                clipper.End();
+                ImGui::PopStyleColor(3);
             }
-            clipper.End();
-            ImGui::PopStyleColor(3);
 
             ImGui::EndTable();
         }

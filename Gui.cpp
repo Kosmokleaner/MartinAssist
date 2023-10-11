@@ -455,7 +455,7 @@ int Gui::test()
 
     // todo: serialize
     bool showDrives = true;
-    bool showFiles = false;
+    bool showFiles = true;
     bool showImGuiDemoWindow = false;
     bool showIcons = false;
     bool showTest = false;

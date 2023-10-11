@@ -48,6 +48,9 @@ struct FileKey
     __time64_t time_write = -1;  // modified
     // file size in bytes, -1 for folder
     int64 sizeOrFolder = 0;
+
+    bool isFolder() const { return sizeOrFolder < 0; } 
+    bool isFile() const { return sizeOrFolder >= 0; }
 };
 
 struct FileValue
@@ -217,6 +220,14 @@ struct ViewEntry
 
 struct ImGuiTableSortSpecs;
 
+// same order and number as in UI
+enum EFilesMode
+{
+    eFM_Files = 0,
+    eFM_Folders = 1,
+    eFM_TreeView = 2
+};
+
 struct EveryHere
 {
     // [driveId] = driveData, no 0 pointers
@@ -242,7 +253,7 @@ struct EveryHere
 
     void buildDriveView(ImGuiTableSortSpecs* sorts_specs);
     // @param driveSelectionRange into driveView[]
-    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folders);
+    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, EFilesMode mode);
 
     void removeDrive(const char* cleanName);
 

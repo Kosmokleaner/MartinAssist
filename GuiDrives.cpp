@@ -108,7 +108,7 @@ void Gui::guiDrives(bool &show)
     localDrivesColumns[DCID_serial] = true;
     localDrivesColumns[DCID_Actions] = true;
 
-/*
+
     static bool historicalDataColumns[DCID_MAX] = { false };
     historicalDataColumns[DCID_VolumeName] = true;
     historicalDataColumns[DCID_Path] = true;
@@ -125,7 +125,7 @@ void Gui::guiDrives(bool &show)
     historicalDataColumns[DCID_Directories] = true;
     historicalDataColumns[DCID_Date] = true;
 //    historicalDataColumns[DCID_selectedFiles] = true;
-*/
+
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(1050, 580), ImGuiCond_FirstUseEver);
 
@@ -137,7 +137,8 @@ void Gui::guiDrives(bool &show)
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
     if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
     {
-        if (ImGui::BeginTabItem("Local Drives"))
+        if (ImGui::BeginTabItem("All Drives"))
+//        if (ImGui::BeginTabItem("Local Drives"))
         {
             driveTabId = 0;
             ImGui::EndTabItem();
@@ -150,13 +151,17 @@ void Gui::guiDrives(bool &show)
         ImGui::EndTabBar();
     }
 
-//    bool* columns = (bool*)((driveTabId == 1) ? &historicalDataColumns : &localDrivesColumns);
-    bool* columns = localDrivesColumns;
+    bool* columns = (bool*)((driveTabId == 1) ? &historicalDataColumns : &localDrivesColumns);
 
-    if (ImGui::Button("build"))
+    if (ImGui::Button("\xef\x83\xa2")) // Refresh icon
     {
         everyHere.gatherData();
         setViewDirty();
+    }
+    if (BeginTooltipPaused())
+    {
+        ImGui::TextUnformatted("Build all drives");
+        EndTooltip();
     }
 
     ImGui::SameLine();
@@ -198,8 +203,8 @@ void Gui::guiDrives(bool &show)
             pushTableStyle3();
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
 
-            const char* s0 = getDriveColumnName(DCID_freeSpace);
-            const char* s1 = getDriveColumnName(DCID_totalSpace);
+//            const char* s0 = getDriveColumnName(DCID_freeSpace);
+//            const char* s1 = getDriveColumnName(DCID_totalSpace);
 
             for(uint32 column = 0; column < DCID_MAX; ++column)
             {
@@ -245,7 +250,8 @@ void Gui::guiDrives(bool &show)
 
                 ImGui::PushID(line_no);
 
-                ImGui::PushStyleColor(ImGuiCol_Text, drive.isLocalDrive ? ImVec4(0.5f, 0.5f, 1.0f, 1) : ImVec4(0.8f, 0.8f, 0.8f, 1));
+                // blue if local, grey if not
+                ImGui::PushStyleColor(ImGuiCol_Text, drive.isLocalDrive ? ImVec4(0.5f, 0.5f, 1.0f, 1) : ImVec4(0.6f, 0.6f, 0.6f, 1));
 
                 int columnId = 0;
 
@@ -383,9 +389,13 @@ void Gui::guiDrives(bool &show)
                 if (columns[DCID_Actions])
                 {
                     ImGui::TableSetColumnIndex(columnId++);
-                    if(ImGui::SmallButton("\xef\x83\xa2"))    // Refresh
+                    if(ImGui::SmallButton("\xef\x83\xa2"))    // Refresh icon
                         asyncDriveBuild(everyHere, everyHere_mutex, drive);
-//doesn't work                    TooltipPaused("Refresh / Rebuild");
+                    if (BeginTooltipPaused())
+                    {
+                        ImGui::TextUnformatted("build this drive");
+                        EndTooltip();
+                    }
 
                     ImGui::SameLine();
                     if(drive.progressPercent >= 0)
