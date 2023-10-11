@@ -108,6 +108,7 @@ void Gui::guiDrives(bool &show)
     localDrivesColumns[DCID_serial] = true;
     localDrivesColumns[DCID_Actions] = true;
 
+/*
     static bool historicalDataColumns[DCID_MAX] = { false };
     historicalDataColumns[DCID_VolumeName] = true;
     historicalDataColumns[DCID_Path] = true;
@@ -117,13 +118,14 @@ void Gui::guiDrives(bool &show)
     historicalDataColumns[DCID_totalSpace] = true;
     historicalDataColumns[DCID_type] = true;
     historicalDataColumns[DCID_serial] = true;
+    historicalDataColumns[DCID_Actions] = true;
+
     historicalDataColumns[DCID_Size] = true;
     historicalDataColumns[DCID_Files] = true;
     historicalDataColumns[DCID_Directories] = true;
     historicalDataColumns[DCID_Date] = true;
-    historicalDataColumns[DCID_Actions] = true;
 //    historicalDataColumns[DCID_selectedFiles] = true;
-
+*/
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 100), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(1050, 580), ImGuiCond_FirstUseEver);
 
@@ -140,15 +142,16 @@ void Gui::guiDrives(bool &show)
             driveTabId = 0;
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Historical Data"))
-        {
-            driveTabId = 1;
-            ImGui::EndTabItem();
-        }
+//        if (ImGui::BeginTabItem("Historical Data"))
+//        {
+//            driveTabId = 1;
+//            ImGui::EndTabItem();
+//        }
         ImGui::EndTabBar();
     }
 
-    bool* columns = (bool*)((driveTabId == 1) ? &historicalDataColumns : &localDrivesColumns);
+//    bool* columns = (bool*)((driveTabId == 1) ? &historicalDataColumns : &localDrivesColumns);
+    bool* columns = localDrivesColumns;
 
     if (ImGui::Button("build"))
     {
