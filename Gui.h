@@ -33,6 +33,9 @@ private:
     SelectionRangeWithDriveUpdate fileSelectionRange;
 
     ImGuiTableSortSpecs* fileSortCriteria = {};
+
+    void fileLineUI(int32 line_no, const DriveData& deviceData, const FileEntry& entry, std::string& line);
+    void treeNodeUI(FileViewId id, std::string& line);
 };
 
 

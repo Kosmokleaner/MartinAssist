@@ -407,28 +407,60 @@ void DriveData::gatherInfo()
     }
 }
 
-void DriveData::buildChildLists()
+void EveryHere::buildFileViewChildLists()
 {
-    // clear out old data
-    for (auto& el : entries)
+    if(fileView.empty())
+        return;
+
+    std::vector<FileViewId> fileEntryIdToFileViewId;
+
+    const int32 driveId = fileView[0].driveId;
+    const auto& drive = driveData[driveId];
+
+    fileEntryIdToFileViewId.resize(drive->entries.size());    
+
     {
-        el.value.nextList = -1;
-        el.value.childList = -1;
+        uint64 index = 0;
+        for (auto& it : fileView)
+        {
+            // we only support one drive here
+            assert(it.driveId == driveId);
+
+            FileViewId fileViewId;
+            fileViewId.index = index;
+            fileEntryIdToFileViewId[it.fileEntryId] = fileViewId;
+        }
     }
 
-    int64 id = 0;
-    for (auto& el : entries)
+    // clear out old data
+    rootFileId = {};
+    for (auto& el : fileView)
     {
+        el.nextList = {};
+        el.childList = {};
+    }
+
+    int64 index = 0;
+    for (auto& it : fileView)
+    {
+        const auto& el = drive->entries[it.fileEntryId];
+
+        FileViewId child;
+        child.index = index;
+
         if(el.value.parent != -1)
         {
-            assert(it.value.parent < (int64)entries.size());
+            // link in child at parent
+            auto& itParent = fileView[fileEntryIdToFileViewId[el.value.parent].index];
             
-            auto &elParent = entries[el.value.parent];
-
-            elParent.value.childList = elParent.value.nextList;
-            elParent.value.childList = id;
+            itParent.insertChild(fileView.data(), child);
         }
-        ++id;
+        else
+        {
+            // link in new child at root
+            it.nextList = rootFileId;
+            rootFileId = child;
+        }
     }
 }
 
@@ -477,8 +509,6 @@ void DriveData::sort()
     }
  
     std::swap(newFiles, entries);
-
-    buildChildLists();
 
     verify();
 }
@@ -649,6 +679,20 @@ EveryHere::~EveryHere()
     freeData();
 }
 
+ViewEntry& EveryHere::get(FileViewId id)
+{
+    assert(id.isValid());
+    return fileView[id.index];
+}
+
+FileEntry& EveryHere::get(const ViewEntry& viewEntry)
+{
+    DriveData *drive = driveData[viewEntry.driveId];
+    assert(drive);
+    return drive->entries[viewEntry.fileEntryId];
+}
+
+
 void EveryHere::gatherData() 
 {
     DriveGatherTraverse drives(*this);
@@ -684,7 +728,7 @@ void EveryHere::removeDrive(const char* csvName)
     }
 }
 
-void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, EFilesMode mode)
+void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folder)
 {
     assert(minSize >= 0);
     assert(filter);
@@ -715,21 +759,15 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
             if(fileEntry.value.parent >= 0 && fileEntry.value.path.empty())
                 fileEntry.value.path = itD.generatePath(fileEntry.value.parent);
 
-            if(mode == eFM_Files)
-            {
-                if (fileEntry.key.sizeOrFolder < minSize)
-                    continue;   // hide folders and files that are filtered out
-            }
-            else
+            if(folder)
             {
                 if (fileEntry.key.isFile())
                     continue;   // hide files
             }
-
-            if (mode == eFM_TreeView)
+            else
             {
-                if(fileEntry.value.parent != -1)
-                    continue;   // hide non root folder
+                if (fileEntry.key.sizeOrFolder < minSize)
+                    continue;   // hide folders and files that are filtered out
             }
 
             if(redundancyFilter)
@@ -804,6 +842,9 @@ void EveryHere::buildFileView(const char* filter, int64 minSize, int redundancyF
     CustomLessFile customLess = { *this, sorts_specs };
 
     std::sort(fileView.begin(), fileView.end(), customLess);
+
+    // todo: only needed for TreeView
+    buildFileViewChildLists();
 }
 
 std::vector<bool>& EveryHere::getRedundancy(const FileKey& fileKey)
@@ -1104,6 +1145,8 @@ PooledString DriveData::generatePath(int64 fileEntryIndex)
 
 void EveryHere::buildUniqueFiles()
 {
+    OutputDebugStringA("buildUniqueFiles() ... this can take a while\n");
+
     CScopedCPUTimerLog scope("buildUniqueFiles");
 
     uniqueFiles.clear();
@@ -1111,6 +1154,8 @@ void EveryHere::buildUniqueFiles()
     uint32 driveId = 0;
     for (auto& drive : driveData)
     {
+        CScopedCPUTimerLog scope2(drive->csvName.c_str());
+
         for(auto& entry : drive->entries)
         {
             addRedundancy(entry.key, driveId, 1);

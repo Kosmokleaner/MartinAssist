@@ -64,13 +64,6 @@ struct FileValue
     PooledString path;
     // -1 means not part of a drive yet
     int driveId = -1;
-
-    // the next 2 members are redundant, the are derived from parent in buildChildLists()
-
-    // -1 if has no children, otherwise fileEntryIndex to the first child
-    int64 childList = -1;
-    // -1 if this is the last child, otherwise fileEntryIndex to the next child
-    int64 nextList = -1;
 };
 
 struct FileEntry
@@ -217,12 +210,17 @@ struct DriveData : public IProgressThreadCallback
 
     // @param value must not be 0
     void setDrivePath(const char* value);
-
-private:
-
-    // called by sort()
-    void buildChildLists();
 };
+
+
+struct FileViewId
+{
+    bool isValid() const { return index >= 0; }
+
+    // index into EveryHere::fileView
+    int64 index = -1;
+};
+
 
 struct ViewEntry
 {
@@ -230,6 +228,23 @@ struct ViewEntry
     int32 driveId = -1;
     // index in driveData[driveId].entries
     int64 fileEntryId = -1;
+
+    // the next 2 members are redundant, the are derived from parent in buildChildLists()
+
+    // !isValid() if has no children, otherwise fileEntryIndex to the first child
+    FileViewId childList;
+    // !isValid() if this is the last child, otherwise fileEntryIndex to the next child
+    FileViewId nextList;
+
+    // call on the parent to add a child
+    // @param fileViewArray pointer to EveryHere::fileView
+    void insertChild(ViewEntry* fileViewArray, FileViewId id)
+    {
+        if(childList.isValid())
+            fileViewArray[id.index].nextList = childList;
+
+        childList = id;
+    }
 };
 
 struct ImGuiTableSortSpecs;
@@ -255,10 +270,14 @@ struct EveryHere
     std::map<FileKey, std::vector<bool> > uniqueFiles;
     //
     int64 viewSumSize = 0;
-
+    // for TreeView, set in buildChildLists()
+    FileViewId rootFileId;
 
     EveryHere();
     ~EveryHere();
+
+    ViewEntry& get(FileViewId id);
+    FileEntry& get(const ViewEntry& viewEntry);
 
     void gatherData();
     // @param internalName must not be null, e.g. L"Volume{41122dbf-6011-11ed-1232-04d4121124bd}"
@@ -267,7 +286,7 @@ struct EveryHere
 
     void buildDriveView(ImGuiTableSortSpecs* sorts_specs);
     // @param driveSelectionRange into driveView[]
-    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, EFilesMode mode);
+    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs, bool folder);
 
     void removeDrive(const char* cleanName);
 
@@ -285,4 +304,9 @@ struct EveryHere
     void addRedundancy(const FileKey& fileKey, uint32 driveId, int delta);
 
     uint32 findRedundancy(const FileKey& fileKey) const;
+
+private:
+
+    // called by buildFileView()
+    void buildFileViewChildLists();
 };
