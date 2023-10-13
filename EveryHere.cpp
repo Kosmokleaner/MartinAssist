@@ -887,7 +887,7 @@ void EveryHere::buildDriveView(ImGuiTableSortSpecs* sorts_specs)
                     case DCID_Computer:                     
                         if (A.isLocalDrive != B.isLocalDrive)
                         {
-                            delta = (int)A.isLocalDrive != (int)B.isLocalDrive;
+                            delta = (int)A.isLocalDrive - (int)B.isLocalDrive;
                             break;
                         }
                         delta = strcmp(A.computerName.c_str(), B.computerName.c_str()); break;
