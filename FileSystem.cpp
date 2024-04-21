@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <list>
 
+#pragma warning( disable : 4996 )
 
 FilePath::FilePath(const wchar_t* in) {
 	assert(in);

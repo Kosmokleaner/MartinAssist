@@ -1,10 +1,13 @@
 #include <iostream>
 #include "CppParserTest.h"
-//#include "Gui.h"
+#include "Gui.h"
+#include "EFileList.h"
 
 int main()
 {
-    CppParserTest();
+//    CppParserTest();
+
+    EFileList::test();
 
     // OpenGL3 ImGui
 //    Gui gui;
