@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "types.h"
 
 // we use wchar_t instead of TCHAR, see here: https://social.msdn.microsoft.com/Forums/sqlserver/en-US/c7ea5d5b-453e-4326-9b97-0a133d3fef36/what-exactly-is-the-difference-between-tchar-and-wchart?forum=vcgeneral
 
