@@ -1,5 +1,4 @@
 #include "SelectionRange.h"
-#include "EveryHere.h"
 
 void SelectionRangeWithDriveUpdate::addRedundancy(int64 line_no, int32 delta)
 {

@@ -1,7 +1,6 @@
 #include <iostream>
 #include "CppParserTest.h"
-#include "EveryHere.h"
-#include "Gui.h"
+//#include "Gui.h"
 
 int main()
 {

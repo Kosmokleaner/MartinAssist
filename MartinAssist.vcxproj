@@ -157,15 +157,11 @@
     <ClCompile Include="ASCIIFile.cpp" />
     <ClCompile Include="CppParser.cpp" />
     <ClCompile Include="CppParserTest.cpp" />
-    <ClCompile Include="EveryHere.cpp" />
     <ClCompile Include="example0.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
-    <ClCompile Include="Gui.cpp" />
-    <ClCompile Include="GuiDrives.cpp" />
-    <ClCompile Include="GuiFiles.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
     <ClCompile Include="ImGui\imgui_demo.cpp" />
     <ClCompile Include="ImGui\imgui_draw.cpp" />
@@ -179,7 +175,6 @@
     <ClCompile Include="LiterateProcessor.cpp" />
     <ClCompile Include="MartinAssist.cpp" />
     <ClCompile Include="Parse.cpp" />
-    <ClCompile Include="SelectionRange.cpp" />
     <ClCompile Include="PooledString.cpp" />
     <ClCompile Include="Timer.cpp" />
   </ItemGroup>
@@ -191,10 +186,8 @@
     <ClInclude Include="ASCIIFile.h" />
     <ClInclude Include="CppParser.h" />
     <ClInclude Include="CppParserTest.h" />
-    <ClInclude Include="EveryHere.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="global.h" />
-    <ClInclude Include="Gui.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />
     <ClInclude Include="ImGui\imgui_impl_glfw.h" />
