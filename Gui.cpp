@@ -1,4 +1,7 @@
 #include <windows.h> // HICON
+#undef max
+#undef min
+
 #include "Gui.h"
 
 
@@ -25,6 +28,7 @@
 #include <vector>
 #include <algorithm> // std::max()
 
+
 #include <shlobj.h> // _wfinddata_t
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
@@ -44,10 +48,6 @@ static void glfw_error_callback(int error, const char* description)
 }
 unsigned int RGBSwizzle(unsigned int c) {
     return (c >> 16) | (c & 0xff00) | ((c & 0xff) << 16);
-}
-
-Gui::Gui()
-{
 }
 
 
@@ -192,7 +192,7 @@ void showIconsWindow(ImFont *font, bool &show)
                 const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
                 if (glyph)
                 {
-                    fontWidth = max(fontWidth, glyph->X1 - glyph->X0);
+                    fontWidth = std::max(fontWidth, glyph->X1 - glyph->X0);
                 }
             }
         }
@@ -404,6 +404,7 @@ int Gui::test()
         colors[ImGuiCol_Tab].w = 0.5f;
 
         ImGui::GetStyle().GrabMinSize = 20;
+        ImGui::GetStyle().ScrollbarSize = 20;
     }
 
     // Setup Platform/Renderer backends
@@ -450,11 +451,10 @@ int Gui::test()
     bool quitApp = false;
 
     // todo: serialize
-    bool showDrives = true;
-    bool showFiles = true;
     bool showImGuiDemoWindow = false;
     bool showIcons = false;
     bool showTest = false;
+    bool showFiles = true;
 
     // Main loop
     while (!glfwWindowShouldClose(window) && !quitApp)
@@ -478,16 +478,18 @@ int Gui::test()
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
-/*        if (ImGui::BeginMainMenuBar())
+        files.guiFiles(showFiles);
+
+        if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))
             {
-                ImGui::MenuItem("EveryHere Drives", 0, &showDrives);
+//                ImGui::MenuItem("EveryHere Drives", 0, &showDrives);
                 ImGui::MenuItem("EveryHere Files", 0, &showFiles);
                 ImGui::Separator();
                 ImGui::MenuItem("ImGui Demo", 0, &showImGuiDemoWindow);
-                ImGui::MenuItem("Icons", 0, &showIcons);
-                ImGui::MenuItem("Test", 0, &showTest);
+//                ImGui::MenuItem("Icons", 0, &showIcons);
+//                ImGui::MenuItem("Test", 0, &showTest);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit"))
                 {
@@ -498,7 +500,6 @@ int Gui::test()
             }
             ImGui::EndMainMenuBar();
         }
-*/
 
         // Rendering
         ImGui::Render();
@@ -523,14 +524,6 @@ int Gui::test()
     return 0;
 }
 
-void pushTableStyle3()
-{
-    // top to bottom priority, the colors do not blend
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
-    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
-}
-
 void TooltipPaused(const char* text)
 {
     assert(text);
@@ -541,6 +534,13 @@ void TooltipPaused(const char* text)
     }
 }
 
+void pushTableStyle3()
+{
+    // top to bottom priority, the colors do not blend
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.961f, 0.514f, 0.000f, 0.600f));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.961f, 0.514f, 0.000f, 0.400f));
+}
 
 bool BeginTooltipPaused()
 {

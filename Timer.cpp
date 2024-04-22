@@ -3,6 +3,8 @@
 #include "Timer.h"
 #include <assert.h>
 #include <windows.h>	// OutputDebugString()
+#undef max
+#undef min
 
 CTimer g_Timer;
 

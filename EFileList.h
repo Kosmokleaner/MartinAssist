@@ -60,10 +60,20 @@ struct FileEntry
     FileValue value;
 };
 
+enum FileColumnID
+{
+    FCID_Name,
+    FCID_Size,
+    FCID_Redundancy,
+    FCID_DriveId,
+    FCID_Path,
+};
+
 class EFileList
 {
-    StringPool stringPool;
+public: // todo: remove
 
+    StringPool stringPool;
     std::vector<FileEntry> entries;
 public:
 
@@ -75,3 +85,36 @@ public:
     static void test();
 };
 
+struct FileViewId
+{
+    bool isValid() const { return index >= 0; }
+
+    // index into EveryHere::fileView
+    int64 index = -1;
+};
+
+
+struct ViewEntry
+{
+    // index in driveData[]
+    int32 driveId = -1;
+    // index in driveData[driveId].entries
+    int64 fileEntryId = -1;
+
+    // the next 2 members are redundant, the are derived from parent in buildChildLists()
+
+    // !isValid() if has no children, otherwise fileEntryIndex to the first child
+    FileViewId childList;
+    // !isValid() if this is the last child, otherwise fileEntryIndex to the next child
+    FileViewId nextList;
+
+    // call on the parent to add a child
+    // @param fileViewArray pointer to EveryHere::fileView
+    void insertChild(ViewEntry* fileViewArray, FileViewId id)
+    {
+        if (childList.isValid())
+            fileViewArray[id.index].nextList = childList;
+
+        childList = id;
+    }
+};

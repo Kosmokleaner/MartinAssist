@@ -4,6 +4,9 @@
 #include "Timer.h"
 #include <io.h>	// _A_SUBDIR, _findclose()
 #include <windows.h>    // GetVolumePathNamesForVolumeNameW()
+#undef max
+#undef min
+
 #include <algorithm>
 #include <list>
 

@@ -8,6 +8,8 @@
 #include <string.h>														// strlen
 #include <assert.h>													  // assert
 #include <windows.h>	// GetFileSize()
+#undef max
+#undef min
 
 #include "ASCIIFile.h"
 

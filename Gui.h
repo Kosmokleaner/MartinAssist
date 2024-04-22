@@ -1,13 +1,16 @@
 #pragma once
 
+#include "WindowFiles.h"
+
 class Gui
 {
 public:
-    Gui();
 
     int test();
     
 private:
+
+    WindowFiles files;
 };
 
 
@@ -27,3 +30,8 @@ void BeginTooltip();
 void EndTooltip();
 
 
+
+// @return printUnit e.g. "%.3f GB" or "%.3f MB" 
+const char* computeReadableSize(uint64 inputSize, double& outPrintSize);
+
+void pushTableStyle3();

@@ -35,16 +35,24 @@ bool EFileList::load(const wchar_t* fileName)
         // Everything EFU file format
         // https://www.voidtools.com/support/everything/file_lists/#:~:text=Everything%20File%20List%20(EFU)%20are,%2C%20sizes%2C%20dates%20and%20attributes
         //
+        // EFU files are comma-separated values (CSV) files.
+        // A header is required to define the columns in the file list.
+        // The Filename column is required.
+        // The Size, Date Modified, Date Created and Attributes columns are optional.
+        // File size is specified in bytes.
+        // Dates are FILETIMEs(100 - nanosecond intervals since January 1, 1601.) in decimal or ISO 8601 dates.
+        // Attributes can be zero or more of the Windows File Attributes in decimal(or hexidecimal with 0x prefix).
+        // EFU files are encoded with UTF - 8.
+        //
         // Example:
         // Filename,Size,Date Modified,Date Created,Attributes
         // "C:\Program Files\Image-Line\FL Studio 20\Data\Patches\Misc\Used by demo projects\!step on stage.wav", 22482, 132198419340000000, 132198419340000000, 32
-        //
 
         std::string firstLine;
         if(!parseLine(p, firstLine))
             error = true;
 
-        // this is the only format we support at the moment
+        // this is the only format we support at the moment, todo: see above, some data is optional
         // we assume the file was written by Everything and not modified by a human (that might use whitespace)
         if(!error)
         if(firstLine != "Filename,Size,Date Modified,Date Created,Attributes")
@@ -61,6 +69,9 @@ bool EFileList::load(const wchar_t* fileName)
 
             if (!parseStartsWith(p, "\""))
             {
+                int32_t errLine, errCol;
+                computeLocationInFile((const Char *)file.GetDataPtr(), p, errLine, errCol, 4);
+
                 error = true;
                 assert(0);
                 break;
@@ -113,8 +124,25 @@ bool EFileList::load(const wchar_t* fileName)
                 break;
             }
 
+            if(parseStartsWith(p, ","))
+            {
+                entry.value.time_create = -1;
+            }
+            else
             if (!parseInt64(p, entry.value.time_create) ||
                 !parseStartsWith(p, ","))
+            {
+                int32_t errLine, errCol;
+                computeLocationInFile((const Char*)file.GetDataPtr(), p, errLine, errCol, 4);
+
+
+                error = true;
+                assert(0);
+                break;
+            }
+
+            int flags = 0;
+            if (!parseInt(p, flags))
             {
                 error = true;
                 assert(0);
@@ -143,3 +171,7 @@ void EFileList::test()
 
     l.load(L"E:\\EverythingEFUs\\Ryzen4202024.efu");
 }
+
+
+// todo
+// * file list UI
