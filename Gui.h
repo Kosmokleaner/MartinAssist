@@ -1,6 +1,7 @@
 #pragma once
 
 #include "WindowFiles.h"
+#include "WindowDrives.h"
 
 class Gui
 {
@@ -11,6 +12,7 @@ public:
 private:
 
     WindowFiles files;
+    WindowDrives drives;
 };
 
 

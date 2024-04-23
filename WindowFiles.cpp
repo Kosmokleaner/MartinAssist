@@ -204,7 +204,7 @@ void WindowFiles::buildFileView(const char* filter, int64 minSize, int redundanc
 }
 
 
-void WindowFiles::guiFiles(bool &show)
+void WindowFiles::gui(bool &show)
 {
     static bool first = true;
     if(first)
@@ -224,7 +224,7 @@ void WindowFiles::guiFiles(bool &show)
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);
     const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 0, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 200, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
     ImGui::Begin("Files", &show, ImGuiWindowFlags_NoCollapse);
 
     ImGuiTableFlags flags = ImGuiTableFlags_Borders |

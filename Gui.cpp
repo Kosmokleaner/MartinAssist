@@ -455,6 +455,7 @@ int Gui::test()
     bool showIcons = false;
     bool showTest = false;
     bool showFiles = true;
+    bool showDrives = true;
 
     // Main loop
     while (!glfwWindowShouldClose(window) && !quitApp)
@@ -478,14 +479,15 @@ int Gui::test()
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
-        files.guiFiles(showFiles);
+        files.gui(showFiles);
+        drives.gui(showDrives);
 
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))
             {
-//                ImGui::MenuItem("EveryHere Drives", 0, &showDrives);
-                ImGui::MenuItem("EveryHere Files", 0, &showFiles);
+                ImGui::MenuItem("Drives Window", 0, &showDrives);
+                ImGui::MenuItem("Files Window", 0, &showFiles);
                 ImGui::Separator();
                 ImGui::MenuItem("ImGui Demo", 0, &showImGuiDemoWindow);
 //                ImGui::MenuItem("Icons", 0, &showIcons);

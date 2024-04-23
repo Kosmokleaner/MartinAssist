@@ -8,13 +8,9 @@
     <ClCompile Include="Parse.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
-    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Timer.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
-    <ClCompile Include="example0.cpp" />
-    <ClCompile Include="LiterateProcessor.cpp" />
-    <ClCompile Include="EveryHere.cpp" />
     <ClCompile Include="ImGui\imgui.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
@@ -52,10 +48,21 @@
     <ClCompile Include="CppParserTest.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
-    <ClCompile Include="SelectionRange.cpp" />
-    <ClCompile Include="GuiFiles.cpp" />
-    <ClCompile Include="GuiDrives.cpp" />
-    <ClCompile Include="PooledString.cpp" />
+    <ClCompile Include="EFileList.cpp" />
+    <ClCompile Include="WindowFiles.cpp" />
+    <ClCompile Include="LiterateProcessor.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
+    <ClCompile Include="example0.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
+    <ClCompile Include="PooledString.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowDrives.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -73,12 +80,9 @@
     <ClInclude Include="Parse.h">
       <Filter>Hidden</Filter>
     </ClInclude>
-    <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Timer.h">
       <Filter>Hidden</Filter>
     </ClInclude>
-    <ClInclude Include="LiterateProcessor.h" />
-    <ClInclude Include="EveryHere.h" />
     <ClInclude Include="ImGui\imconfig.h">
       <Filter>ImGui</Filter>
     </ClInclude>
@@ -125,7 +129,18 @@
     <ClInclude Include="CppParserTest.h">
       <Filter>Hidden</Filter>
     </ClInclude>
-    <ClInclude Include="PooledString.h" />
+    <ClInclude Include="EFileList.h" />
+    <ClInclude Include="WindowFiles.h" />
+    <ClInclude Include="LiterateProcessor.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
+    <ClInclude Include="PooledString.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowDrives.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

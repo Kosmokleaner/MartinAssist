@@ -164,6 +164,7 @@
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="WindowDrives.cpp" />
     <ClCompile Include="WindowFiles.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
     <ClCompile Include="ImGui\imgui_demo.cpp" />
@@ -210,6 +211,7 @@
     <ClInclude Include="PooledString.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="WindowDrives.h" />
     <ClInclude Include="WindowFiles.h" />
   </ItemGroup>
   <ItemGroup>

@@ -13,7 +13,7 @@ public:
     std::vector<ViewEntry> fileView;
 
 
-    void guiFiles(bool& show);
+    void gui(bool& show);
 
 private:
     //
