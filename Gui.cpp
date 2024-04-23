@@ -405,6 +405,9 @@ int Gui::test()
 
         ImGui::GetStyle().GrabMinSize = 20;
         ImGui::GetStyle().ScrollbarSize = 20;
+        // docs say >1 is dangerous
+        ImGui::GetStyle().WindowBorderSize = 2;
+        ImGui::GetStyle().WindowPadding = ImVec2(4, 4);
     }
 
     // Setup Platform/Renderer backends
@@ -481,6 +484,7 @@ int Gui::test()
 
         files.gui(showFiles);
         drives.gui(showDrives);
+        showIconsWindow(fontAwesomeLarge, showIcons);
 
         if (ImGui::BeginMainMenuBar())
         {
@@ -490,7 +494,7 @@ int Gui::test()
                 ImGui::MenuItem("Files Window", 0, &showFiles);
                 ImGui::Separator();
                 ImGui::MenuItem("ImGui Demo", 0, &showImGuiDemoWindow);
-//                ImGui::MenuItem("Icons", 0, &showIcons);
+                ImGui::MenuItem("Icons", 0, &showIcons);
 //                ImGui::MenuItem("Test", 0, &showTest);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit"))
