@@ -1,0 +1,9 @@
+ES is a command line interface to search Everything from a command prompt.
+
+es.exe (x64) and cli.c is from https://www.voidtools.com/downloads/#cli
+
+and described here: https://www.voidtools.com/support/everything/command_line_interface
+
+Everything must be installed and running.
+
+

@@ -2,6 +2,7 @@
 /.vs
 
 /temp
+/EFUs
 
 # Dear ImGui artifacts
 imgui.ini
@@ -35,6 +36,5 @@ imgui.ini
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app

@@ -1,23 +1,175 @@
 #include "WindowDrives.h"
 #include "ImGui/imgui.h"
 #include "FileSystem.h"
+#include "ASCIIFile.h"
+#include "Timer.h"
 #include "Gui.h"
 #include <windows.h>  // GetDiskFreeSpaceW()
 #undef min
 #undef max
 
+#pragma warning(disable: 4996) // open and close depreacted
+
+
+
+#define SERIALIZE_VERSION "2"
+
+#include <io.h>															// open
+#include <fcntl.h>														// O_RDONLY
+
+bool IO_FileExists(const char* Name)
+{
+    assert(Name);
+    int handle;
+
+    handle = open(Name, O_RDONLY);
+    if (handle == -1)
+        return false;
+
+    close(handle);
+
+    return true;
+}
+
+
+// from https://stackoverflow.com/questions/5878775/how-to-find-and-replace-string
+void replace_all(
+    std::string& s,
+    std::string const& toReplace,
+    std::string const& replaceWith
+) {
+    std::string buf;
+    std::size_t pos = 0;
+    std::size_t prevPos;
+
+    // Reserves rough estimate of final size of string.
+    buf.reserve(s.size());
+
+    while (true) {
+        prevPos = pos;
+        pos = s.find(toReplace, pos);
+        if (pos == std::string::npos)
+            break;
+        buf.append(s, prevPos, pos - prevPos);
+        buf += replaceWith;
+        pos += toReplace.size();
+    }
+
+    buf.append(s, prevPos, s.size() - prevPos);
+    s.swap(buf);
+}
+
+// managed all .EFU files in the EFUs directory
+class EFUManager
+{
+public:
+
+    void generateNewFileName(DriveInfo2& drive, std::string &out)
+    {
+        std::string volumeName = drive.volumeName;
+
+        replace_all(volumeName, " ", "_");
+        replace_all(volumeName, "\\", "");
+        replace_all(volumeName, "/", "");
+        replace_all(volumeName, "?", "");
+
+        static int counter = 0;
+        for(;;)
+        {
+            ++counter;
+            char filename[256];
+            sprintf_s(filename, 256, "EFUs\\%s_%d", volumeName.c_str(), counter);
+
+            if(!IO_FileExists(filename))
+            {
+                out = filename;
+                return;
+            }
+        }
+    }
+};
+
+void build(DriveInfo2 & drive)
+{
+    std::string cmdLine;
+    std::string fileName;
+
+    EFUManager manager;
+
+    manager.generateNewFileName(drive, fileName);
+
+    cmdLine = std::string("-export-efu \"") + fileName.c_str() + ".efu\" \"" + drive.drivePath + "\"";
+
+    const char* command = "Everything\\es.exe";
+
+    printf("%s %s\n", command, cmdLine.c_str());
+
+//    HINSTANCE inst = 
+    ShellExecuteA(0, 0, command, cmdLine.c_str(), 0, SW_HIDE);
+
+    CASCIIFile file;
+    std::string fileData;
+    // to avoid reallocations
+    fileData.reserve(10 * 1024 * 1024);
+
+#define HEADER_STRING(name) \
+    if (!drive.name.empty()) \
+    {\
+        fileData += "# " #name "="; \
+        fileData += drive.name; \
+        fileData += "\n"; \
+    }
+
+    HEADER_STRING(drivePath)
+    HEADER_STRING(volumeName)
+//    HEADER_STRING(computerName)
+//    HEADER_STRING(userName)
+//    HEADER_STRING(dateGatheredString)
+
+#undef HEADER_STRING
+
+    char str[1024];
+    sprintf_s(str, sizeof(str), "# freeSpace=%llu\n", drive.freeSpace);
+    fileData += str;
+    sprintf_s(str, sizeof(str), "# totalSpace=%llu\n", drive.totalSpace);
+    fileData += str;
+//    sprintf_s(str, sizeof(str), "# type=%u\n", drive.driveType);
+//    fileData += str;
+    sprintf_s(str, sizeof(str), "# flags=%u\n", drive.driveFlags);
+    fileData += str;
+    sprintf_s(str, sizeof(str), "# serialNumber=%u\n", drive.serialNumber);
+    fileData += str;
+
+    fileData += "# version=" SERIALIZE_VERSION "\n";
+    fileData += "#\n";
+
+    // does not include 0 termination
+    size_t len = fileData.length();
+    // wasteful
+    const char* cpy = (const char*)malloc(len + 1);
+    memcpy((void*)cpy, fileData.c_str(), len + 1);
+    file.CoverThisData(cpy, len);
+
+    file.IO_SaveASCIIFile((fileName + ".txt").c_str());
+}
+
 void WindowDrives::gui(bool& show)
 {
+    if (!show)
+        return;
+
     static bool first = true;
     if (first)
     {
         first = false;
+        whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.1f;
+    }
+
+    if (whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
+    {
         rescan();
     }
 
-
-    if (!show)
-        return;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);
@@ -58,7 +210,7 @@ void WindowDrives::gui(bool& show)
 
         char item[1024];
         // hard drive symbol
-        sprintf_s(item, sizeof(item) / sizeof(*item), "\xef\x87\x80  '%s'", drive.volumeName.c_str());
+        sprintf_s(item, sizeof(item) / sizeof(*item), "\xef\x87\x80  %s  %s", drive.drivePath.c_str(), drive.volumeName.c_str());
 
         bool selected = driveSelectionRange.isSelected(line_no);
         ImGui::Selectable(item, selected);
@@ -77,19 +229,8 @@ void WindowDrives::gui(bool& show)
                 driveSelectionRange.onClick(line_no, false, false);
             }
 
-            if (driveSelectionRange.count() == 1)
-            {
-                if (ImGui::MenuItem("Scan"))
-                {
-//todo                    drive.rebuild();
-                }
-//                if (ImGui::MenuItem("Open path (in Explorer)"))
-//                {
-//                    FilePath filePath(to_wstring(drive.csvName + ".csv").c_str());
-//
-//                    ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
- //               }
-            }
+            popup();
+
             ImGui::EndPopup();
         }
         if(ImGui::IsMouseDoubleClicked(0))
@@ -97,7 +238,8 @@ void WindowDrives::gui(bool& show)
             // todo
         }
         if (BeginTooltipPaused())
-        {
+        {    
+            ImGui::Text("drivePath: '%s'", drive.drivePath.c_str());
             ImGui::Text("deviceName: '%s'", drive.deviceName.c_str());
             ImGui::Text("internalName: '%s'", drive.internalName.c_str());
             ImGui::Text("volumeName: '%s'", drive.volumeName.c_str());
@@ -122,12 +264,54 @@ void WindowDrives::gui(bool& show)
             EndTooltip();
         }
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(1,1,1,0.5f), " %.0f / %.0f GB", free, total);
+        ImGui::TextColored(ImVec4(1,1,1,0.5f), " %.1f / %.1f GB", free, total);
     }
     ImGui::PopStyleVar(1);
+
+    if (ImGui::BeginPopupContextWindow())
+    {
+        popup();
+
+        ImGui::EndPopup();
+    }
     ImGui::EndChild();
 
     ImGui::End();
+}
+
+void WindowDrives::popup()
+{
+    if (driveSelectionRange.count() >= 1)
+    {
+        if (ImGui::MenuItem("Build selection"))
+        {
+            driveSelectionRange.foreach([&](int64 index) {
+                DriveInfo2& ref = drives[index];
+                build(ref);
+                });
+        }
+        //                if (ImGui::MenuItem("Open path (in Explorer)"))
+        //                {
+        //                    FilePath filePath(to_wstring(drive.csvName + ".csv").c_str());
+        //
+        //                    ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
+            //               }
+        
+    }
+    if (ImGui::MenuItem("Build all"))
+    {
+        for (auto& ref : drives)
+        {
+            build(ref);
+        }
+    }
+    ImGui::Separator();
+    if (ImGui::MenuItem("Rescan"))
+    {
+        drives.clear();
+        driveSelectionRange = {};
+        whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.1f;
+    }
 }
 
 class DriveScan : public IDriveTraverse
@@ -137,6 +321,7 @@ public:
     DriveScan(std::vector<DriveInfo2> &inDrives)
         : drives(inDrives)
     {
+        inDrives.clear();
     }
     virtual void OnDrive(const DriveInfo& driveInfo)
     {

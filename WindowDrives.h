@@ -33,7 +33,10 @@ private:
     std::vector<DriveInfo2> drives;
     // into everyHere.driveView[]
     SelectionRange driveSelectionRange;
+    //
+    double whenToRebuildView = -1;
 
     void rescan();
+    void popup();
 };
 
