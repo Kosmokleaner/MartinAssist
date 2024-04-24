@@ -233,9 +233,11 @@ void WindowDrives::gui(bool& show)
 
             ImGui::EndPopup();
         }
-        if(ImGui::IsMouseDoubleClicked(0))
+        if(ImGui::IsItemFocused() && ImGui::IsMouseDoubleClicked(0))
         {
-            // todo
+            driveSelectionRange.reset();
+            driveSelectionRange.onClick(line_no, false, false);
+            openDrive();
         }
         if (BeginTooltipPaused())
         {    
@@ -279,8 +281,26 @@ void WindowDrives::gui(bool& show)
     ImGui::End();
 }
 
+void WindowDrives::openDrive()
+{
+    driveSelectionRange.foreach([&](int64 index) {
+        auto& drive = drives[index];
+        FilePath filePath(to_wstring(drive.drivePath).c_str());
+        ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
+        });
+
+}
+
 void WindowDrives::popup()
 {
+    if (driveSelectionRange.count() == 1)
+    {
+        if (ImGui::MenuItem("Open drive (in Explorer)"))
+        {
+            openDrive();
+        }
+        ImGui::Separator();
+    }
     if (driveSelectionRange.count() >= 1)
     {
         if (ImGui::MenuItem("Build selection"))
@@ -290,13 +310,6 @@ void WindowDrives::popup()
                 build(ref);
                 });
         }
-        //                if (ImGui::MenuItem("Open path (in Explorer)"))
-        //                {
-        //                    FilePath filePath(to_wstring(drive.csvName + ".csv").c_str());
-        //
-        //                    ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
-            //               }
-        
     }
     if (ImGui::MenuItem("Build all"))
     {

@@ -38,5 +38,6 @@ private:
 
     void rescan();
     void popup();
+    void openDrive();
 };
 
