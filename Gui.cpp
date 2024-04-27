@@ -50,6 +50,10 @@ unsigned int RGBSwizzle(unsigned int c) {
     return (c >> 16) | (c & 0xff00) | ((c & 0xff) << 16);
 }
 
+void openEFUsFolder()
+{
+    ShellExecuteA(0, 0, EFU_FOLDER, 0, 0, SW_SHOW);
+}
 
 // copied from ImGui, the optional endMarker adds a rectangle to the triangle arrow indicating a stop
 // useful to scroll to beginning or end
@@ -492,6 +496,9 @@ int Gui::test()
             {
                 ImGui::MenuItem("Drives Window", 0, &showDrives);
                 ImGui::MenuItem("Files Window", 0, &showFiles);
+                ImGui::Separator();
+                if (ImGui::MenuItem("Open EFUs folder"))
+                    openEFUsFolder();
                 ImGui::Separator();
                 ImGui::MenuItem("ImGui Demo", 0, &showImGuiDemoWindow);
                 ImGui::MenuItem("Icons", 0, &showIcons);

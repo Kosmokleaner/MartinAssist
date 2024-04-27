@@ -78,7 +78,7 @@ public:
         {
             ++counter;
             char filename[256];
-            sprintf_s(filename, 256, "EFUs\\%s_%d", volumeName.c_str(), counter);
+            sprintf_s(filename, 256, EFU_FOLDER "\\%s_%d", volumeName.c_str(), counter);
 
             if(!IO_FileExists(filename))
             {
@@ -303,7 +303,7 @@ void WindowDrives::popup()
     }
     if (driveSelectionRange.count() >= 1)
     {
-        if (ImGui::MenuItem("Build selection"))
+        if (ImGui::MenuItem("Build EFU for selected drive(s)"))
         {
             driveSelectionRange.foreach([&](int64 index) {
                 DriveInfo2& ref = drives[index];
@@ -311,7 +311,7 @@ void WindowDrives::popup()
                 });
         }
     }
-    if (ImGui::MenuItem("Build all"))
+    if (ImGui::MenuItem("Build EFU for all drives"))
     {
         for (auto& ref : drives)
         {

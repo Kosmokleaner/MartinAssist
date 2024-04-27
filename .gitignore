@@ -2,6 +2,8 @@
 /.vs
 
 /temp
+/Backup
+/EFUs/Backup
 /EFUs
 
 # Dear ImGui artifacts

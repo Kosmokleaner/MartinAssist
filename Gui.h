@@ -3,6 +3,8 @@
 #include "WindowFiles.h"
 #include "WindowDrives.h"
 
+#define EFU_FOLDER "EFUs"
+
 class Gui
 {
 public:
