@@ -181,94 +181,96 @@ void WindowDrives::gui(bool& show)
     const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 0)); // Tighten spacing
-//    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0)); // Tighten spacing
-    for (int line_no = 0; line_no < drives.size(); line_no++)
     {
-        DriveInfo2& drive = drives[line_no];
-
-        double gb = 1024 * 1024 * 1024;
-        double free = drive.freeSpace / gb;
-        double total = drive.totalSpace / gb;
-
-        float fraction = total ? (float)(free / total) : 1.0f;
-        char overlay_buf[32];
-        sprintf_s(overlay_buf, IM_ARRAYSIZE(overlay_buf), "%.0f%%", fraction * 100 + 0.01f);
-        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.5f, 0.5f, 1.0f, 1));
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.8f, 0.8f, 0.8f, 1));
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1));
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y);
-        ImGui::ProgressBar(fraction, ImVec2(ImGui::GetFontSize() * 3, ImGui::GetFontSize()), overlay_buf);
-        ImGui::PopStyleColor(3);
-//        if (BeginTooltipPaused())
-//        {
-//            ImGui::Text("%llu files", drive.progressFileCount);
-//            EndTooltip();
-//        }
-        ImGui::SameLine();
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().FramePadding.y);
-
-        char item[1024];
-        // hard drive symbol
-        sprintf_s(item, sizeof(item) / sizeof(*item), "\xef\x87\x80  %s  %s", drive.drivePath.c_str(), drive.volumeName.c_str());
-
-        bool selected = driveSelectionRange.isSelected(line_no);
-        ImGui::Selectable(item, selected);
-
-
-        if (ImGui::IsItemClicked(0))
+        ImStyleVar_RAII styleVar(2);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 0)); // Tighten spacing
+        // no gaps between Selectables for better experience
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0)); // Tighten spacing
+        for (int line_no = 0; line_no < drives.size(); line_no++)
         {
-            driveSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
-//            setViewDirty();
-        }
-        if (ImGui::BeginPopupContextItem())
-        {
-            if (!driveSelectionRange.isSelected(line_no))
+            DriveInfo2& drive = drives[line_no];
+
+            double gb = 1024 * 1024 * 1024;
+            double free = drive.freeSpace / gb;
+            double total = drive.totalSpace / gb;
+
+            float fraction = total ? (float)(free / total) : 1.0f;
+            char overlay_buf[32];
+            sprintf_s(overlay_buf, IM_ARRAYSIZE(overlay_buf), "%.0f%%", fraction * 100 + 0.01f);
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.5f, 0.5f, 1.0f, 1));
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.8f, 0.8f, 0.8f, 1));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1));
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y);
+            ImGui::ProgressBar(fraction, ImVec2(ImGui::GetFontSize() * 3, ImGui::GetFontSize()), overlay_buf);
+            ImGui::PopStyleColor(3);
+    //        if (BeginTooltipPaused())
+    //        {
+    //            ImGui::Text("%llu files", drive.progressFileCount);
+    //            EndTooltip();
+    //        }
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().FramePadding.y);
+
+            char item[1024];
+            // hard drive symbol
+            sprintf_s(item, sizeof(item) / sizeof(*item), "\xef\x87\x80  %s  %s", drive.drivePath.c_str(), drive.volumeName.c_str());
+
+            bool selected = driveSelectionRange.isSelected(line_no);
+            ImGuiSelectable(item, &selected);
+
+            if (ImGui::IsItemClicked(0))
+            {
+                driveSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+    //            setViewDirty();
+            }
+            if (ImGui::BeginPopupContextItem())
+            {
+                if (!driveSelectionRange.isSelected(line_no))
+                {
+                    driveSelectionRange.reset();
+                    driveSelectionRange.onClick(line_no, false, false);
+                }
+
+                popup();
+
+                ImGui::EndPopup();
+            }
+            if(ImGui::IsItemFocused() && ImGui::IsMouseDoubleClicked(0))
             {
                 driveSelectionRange.reset();
                 driveSelectionRange.onClick(line_no, false, false);
+                openDrive();
             }
+            if (BeginTooltipPaused())
+            {    
+                ImGui::Text("drivePath: '%s'", drive.drivePath.c_str());
+                ImGui::Text("deviceName: '%s'", drive.deviceName.c_str());
+                ImGui::Text("internalName: '%s'", drive.internalName.c_str());
+                ImGui::Text("volumeName: '%s'", drive.volumeName.c_str());
+                ImGui::Text("driveFlags: %x", drive.driveFlags);
+                ImGui::Text("serialNumber: %x", drive.serialNumber);
+                {
+                    double value;
+                    const char *unit = computeReadableSize(drive.freeSpace, value);
+                    ImGui::Text("freeSpace: ");
+                    ImGui::SameLine();
+                    ImGui::Text(unit, value);
+                }
+                {
+                    double value;
+                    const char* unit = computeReadableSize(drive.totalSpace, value);
+                    ImGui::Text("totalSpace: ");
+                    ImGui::SameLine();
+                    ImGui::Text(unit, value);
+                }
+                //            bool supportsRemoteStorage = drive.driveFlags & 0x100;
 
-            popup();
-
-            ImGui::EndPopup();
-        }
-        if(ImGui::IsItemFocused() && ImGui::IsMouseDoubleClicked(0))
-        {
-            driveSelectionRange.reset();
-            driveSelectionRange.onClick(line_no, false, false);
-            openDrive();
-        }
-        if (BeginTooltipPaused())
-        {    
-            ImGui::Text("drivePath: '%s'", drive.drivePath.c_str());
-            ImGui::Text("deviceName: '%s'", drive.deviceName.c_str());
-            ImGui::Text("internalName: '%s'", drive.internalName.c_str());
-            ImGui::Text("volumeName: '%s'", drive.volumeName.c_str());
-            ImGui::Text("driveFlags: %x", drive.driveFlags);
-            ImGui::Text("serialNumber: %x", drive.serialNumber);
-            {
-                double value;
-                const char *unit = computeReadableSize(drive.freeSpace, value);
-                ImGui::Text("freeSpace: ");
-                ImGui::SameLine();
-                ImGui::Text(unit, value);
+                EndTooltip();
             }
-            {
-                double value;
-                const char* unit = computeReadableSize(drive.totalSpace, value);
-                ImGui::Text("totalSpace: ");
-                ImGui::SameLine();
-                ImGui::Text(unit, value);
-            }
-            //            bool supportsRemoteStorage = drive.driveFlags & 0x100;
-
-            EndTooltip();
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1,1,1,0.5f), " %.1f / %.1f GB", free, total);
         }
-        ImGui::SameLine();
-        ImGui::TextColored(ImVec4(1,1,1,0.5f), " %.1f / %.1f GB", free, total);
     }
-    ImGui::PopStyleVar(1);
 
     if (ImGui::BeginPopupContextWindow())
     {

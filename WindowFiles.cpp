@@ -283,7 +283,7 @@ void WindowFiles::gui(bool &show)
 //                bool selected = fileSelectionRange.isSelected(line_no);
                 bool selected = false; // todo
 
-                ImGui::Selectable(line.c_str(), &selected, selectable_flags);
+                ImGuiSelectable(line.c_str(), &selected, selectable_flags);
 
                 fileLineUI(line_no, entry, line);
 

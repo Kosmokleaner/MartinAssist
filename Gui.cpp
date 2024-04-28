@@ -406,6 +406,10 @@ int Gui::test()
         colors[ImGuiCol_PopupBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
         // not selected tab more distinct
         colors[ImGuiCol_Tab].w = 0.5f;
+        // this affects Selectable(), was (0.260f, 0.590f, 0.980f, 0.8f)
+        colors[ImGuiCol_Header] = ImVec4(0.260f, 0.590f, 0.980f, 0.8f);
+        // this affects Selectable(), make hovered less strong and no color, was (0.260f, 0.590f, 0.980f, 0.800f)
+        colors[ImGuiCol_HeaderHovered] = ImVec4(0.4f, 0.4f, 0.4f, 0.400f);
 
         ImGui::GetStyle().GrabMinSize = 20;
         ImGui::GetStyle().ScrollbarSize = 20;
@@ -582,6 +586,30 @@ void EndTooltip()
     ImGui::PopStyleColor(2);
 }
 
+bool ImGuiSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags, const ImVec2& size_arg)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+ 
+    bool isSelected = p_selected ? *p_selected : false;
+
+    ImStyleColor_RAII active;
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, style.Colors[ImGuiCol_Header]);
+
+    ImStyleColor_RAII hover(isSelected);
+    if(isSelected)
+    {
+        ImVec4 sel = style.Colors[ImGuiCol_Header];
+
+        sel.w = 1.0f;
+
+        // hover on selected items should combine up
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, sel);
+    }
+
+    bool ret = ImGui::Selectable(label, p_selected, flags, size_arg);
+
+    return ret;
+}
 
 // @return printUnit e.g. "%.3f GB" or "%.3f MB" 
 const char* computeReadableSize(uint64 inputSize, double& outPrintSize)
