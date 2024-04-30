@@ -9,6 +9,7 @@
 #undef max
 
 #pragma warning(disable: 4996) // open and close depreacted
+#pragma warning(disable: 4100) // unreferenced formal parameter
 
 
 
@@ -177,18 +178,63 @@ void WindowDrives::gui(bool& show)
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 100, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
     ImGui::Begin("Drives", &show, ImGuiWindowFlags_NoCollapse);
 
+    // 0:Local Drives, 1: Historical Data
+    int driveTabId = 0;
+
+    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+    if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
+    {
+        if (ImGui::BeginTabItem("Local Drives"))
+        {
+            driveTabId = 0;
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Latest EFUs"))
+        {
+            driveTabId = 1;
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("All EFUs"))
+        {
+            driveTabId = 1;
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+/*
+    const char* refreshIcon = "\xef\x83\xa2";
+
+//    ImGui::SameLine();
+//    ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - ImGui::CalcTextSize(refreshIcon).x - 2 * ImGui::GetStyle().ItemSpacing.x);
+
+    if (ImGui::Button("\xef\x83\xa2")) // Refresh icon
+    {
+        drives.clear();
+        driveSelectionRange = {};
+        whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.1f;
+
+//        everyHere.gatherData();
+//        setViewDirty();
+    }
+    if (BeginTooltipPaused())
+    {
+        ImGui::TextUnformatted("Rescan");
+        EndTooltip();
+    }
+*/
     // Reserve enough left-over height for 1 separator + 1 input text
     const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
 
     {
-        ImStyleVar_RAII styleVar(2);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 0)); // Tighten spacing
-        // no gaps between Selectables for better experience
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 0)); // Tighten spacing
         for (int line_no = 0; line_no < drives.size(); line_no++)
         {
             DriveInfo2& drive = drives[line_no];
+
+            if(driveTabId == 0 && !drive.localDrive)
+                continue;
+            if (driveTabId != 0 && drive.localDrive)
+                continue;
 
             double gb = 1024 * 1024 * 1024;
             double free = drive.freeSpace / gb;
@@ -200,8 +246,10 @@ void WindowDrives::gui(bool& show)
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.5f, 0.5f, 1.0f, 1));
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.8f, 0.8f, 0.8f, 1));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1));
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().FramePadding.y);
+            float oldY = ImGui::GetCursorPosY();
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY());
             ImGui::ProgressBar(fraction, ImVec2(ImGui::GetFontSize() * 3, ImGui::GetFontSize()), overlay_buf);
+
             ImGui::PopStyleColor(3);
     //        if (BeginTooltipPaused())
     //        {
@@ -209,7 +257,7 @@ void WindowDrives::gui(bool& show)
     //            EndTooltip();
     //        }
             ImGui::SameLine();
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().FramePadding.y);
+            ImGui::SetCursorPosY(oldY - ImGui::GetStyle().FramePadding.y);
 
             char item[1024];
             // hard drive symbol
@@ -332,11 +380,24 @@ void WindowDrives::popup()
 class DriveScan : public IDriveTraverse
 {
     std::vector<DriveInfo2>& drives;
+    std::string computerName;
+    std::string userName;
 public:
     DriveScan(std::vector<DriveInfo2> &inDrives)
         : drives(inDrives)
     {
-        inDrives.clear();
+        char name[256];
+        DWORD size = sizeof(name);
+        if (GetComputerNameA(name, &size))
+        {
+            // e.g. "RYZEN"
+            computerName = name;
+        }
+        if (GetUserNameA(name, &size))
+        {
+            // e.g. "Hans"
+            userName = name;
+        }
     }
     virtual void OnDrive(const DriveInfo& driveInfo)
     {
@@ -348,6 +409,9 @@ public:
         el.volumeName = to_string(driveInfo.volumeName);
         el.driveFlags = driveInfo.driveFlags;
         el.serialNumber = driveInfo.serialNumber;
+        el.localDrive = true;
+        el.computerName = computerName;
+        el.userName = userName;
         DWORD lpSectorsPerCluster;
         DWORD lpBytesPerSector;
         DWORD lpNumberOfFreeClusters;
@@ -362,9 +426,149 @@ public:
     }
 };
 
+class FolderScan : public IDirectoryTraverse
+{
+    std::vector<DriveInfo2>& drives;
+public:
+    FolderScan(std::vector<DriveInfo2>& inDrives)
+        : drives(inDrives)
+    {
+    }
+
+    // @param filePath without directory e.g. L"D:\temp"
+    // @param directory name e.g. L"sub"
+    // @return true to recurse into the folder
+    virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData)
+    {
+        // no sub directories for now
+        return false;
+    }
+    // @param path without file
+    // @param file with extension
+    // @param progress 0:unknown or just started .. 1:done
+    virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData, float progress)
+    {
+        DriveInfo2 el;
+
+        CASCIIFile txtFile;
+
+        FilePath fullPath = path;
+        fullPath.Append(file);
+        if (!txtFile.IO_LoadASCIIFile(fullPath.path.c_str()))
+            return;
+
+        const Char* p = (const Char*)txtFile.GetDataPtr();
+
+        std::string keyName;
+        std::string valueName;
+        bool error = false;
+
+        while (*p)
+        {
+            parseWhiteSpaceOrLF(p);
+
+            const Char* backup = p;
+
+            if (parseStartsWith(p, "#"))
+            {
+                // e.g.
+                // # drivePath = E:
+                // # volumeName = RyzenE
+                // # cleanName = Volume{ca72ef4c-0000-0000-0000-100000000000}
+                // # version = 2
+                parseWhiteSpaceOrLF(p);
+                if (parseName(p, keyName))
+                {
+                    parseWhiteSpaceOrLF(p);
+                    if (parseStartsWith(p, "="))
+                    {
+                        parseWhiteSpaceOrLF(p);
+                        if (parseLine(p, valueName))
+                        {
+                            if (keyName == "drivePath")
+                                el.drivePath = valueName;
+                            if (keyName == "volumeName")
+                                el.volumeName = valueName;
+                            if (keyName == "deviceName")
+                                el.deviceName = valueName;
+                            if (keyName == "internalName")
+                                el.internalName = valueName;
+                            if (keyName == "computerName")
+                                el.computerName = valueName;
+                            if (keyName == "userName")
+                                el.userName = valueName;
+                            if (keyName == "freeSpace")
+                                el.freeSpace = stringToInt64(valueName.c_str());
+                            if (keyName == "totalSpace")
+                                el.totalSpace = stringToInt64(valueName.c_str());
+    //                        if (keyName == "type")
+    //                            data.driveType = (uint32)stringToInt64(valueName.c_str());
+                            if (keyName == "flags")
+                                el.driveFlags = (uint32)stringToInt64(valueName.c_str());
+                            if (keyName == "serialNumber")
+                                el.serialNumber = (uint32)stringToInt64(valueName.c_str());
+                            if (keyName == "version" && valueName != SERIALIZE_VERSION)
+                            {
+                                error = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            p = backup;
+            parseToEndOfLine(p);
+            continue;
+        }
+
+        if (!error)
+        {
+            drives.push_back(el);
+        }
+    }
+};
+
 void WindowDrives::rescan()
 {
-    DriveScan driveScan(drives);
+    drives.clear();
 
-    driveTraverse(driveScan);
+    // local drives
+    {
+       DriveScan scan(drives);
+        driveTraverse(scan);
+    }
+
+    // all EFUs
+    {
+        FolderScan scan(drives);
+        directoryTraverse(scan, L"EFUs", L"*.txt");
+    }
+
+    struct CustomLessFile
+    {
+        bool operator()(const DriveInfo2& A, const DriveInfo2& B) const
+        {
+            int delta;
+
+            delta = strcmp(A.computerName.c_str(), B.computerName.c_str());
+            if (delta != 0) return delta < 0;
+            delta = strcmp(A.drivePath.c_str(), B.drivePath.c_str());
+            if(delta != 0) return delta < 0;
+            delta = strcmp(A.deviceName.c_str(), B.deviceName.c_str());
+            if (delta != 0) return delta < 0;
+            delta = strcmp(A.internalName.c_str(), B.internalName.c_str());
+            if (delta != 0) return delta < 0;
+
+            // qsort() is instable so always return a way to differenciate items.
+            // Your own compare function may want to avoid fallback on implicit sort specs e.g. a Name compare if it wasn't already part of the sort specs.
+            return &A < &B;
+        }
+    };
+
+    CustomLessFile customLess = { };
+
+
+    std::sort(drives.begin(), drives.end(), customLess);
+
+    whenToRebuildView = -1;
 }

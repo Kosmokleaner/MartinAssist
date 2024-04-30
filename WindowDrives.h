@@ -13,6 +13,10 @@ struct DriveInfo2
     std::string internalName;
     // e.g. "First Drive", must not be 0
     std::string volumeName;
+    // e.g. "MainPC"
+    std::string computerName;
+    // e.g. "Hans"
+    std::string userName;
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
     uint32 driveFlags = 0;
     //
@@ -21,6 +25,9 @@ struct DriveInfo2
     int64 freeSpace = -1;
     // -1 means unknown
     int64 totalSpace = -1;
+
+    // 
+    bool localDrive = false;
 };
 
 class WindowDrives
