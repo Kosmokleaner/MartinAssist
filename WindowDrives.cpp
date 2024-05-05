@@ -4,6 +4,7 @@
 #include "ASCIIFile.h"
 #include "Timer.h"
 #include "Gui.h"
+#include <time.h>
 #include <windows.h>  // GetDiskFreeSpaceW()
 #undef min
 #undef max
@@ -11,12 +12,67 @@
 #pragma warning(disable: 4996) // open and close depreacted
 #pragma warning(disable: 4100) // unreferenced formal parameter
 
-
-
 #define SERIALIZE_VERSION "2"
 
 #include <io.h>															// open
 #include <fcntl.h>														// O_RDONLY
+
+#include <time.h>   // _localtime64_s()
+
+void dateToCString(__time64_t t, char outTimeStr[80])
+{
+    struct tm tm;
+    errno_t err = _localtime64_s(&tm, &t);
+    assert(!err);
+    if (err)
+    {
+        *outTimeStr = 0;
+        return;
+    }
+    // https://support.echo360.com/hc/en-us/articles/360035034372-Formatting-Dates-for-CSV-Imports#:~:text=Some%20of%20the%20CSV%20imports,program%20like%20Microsoft%C2%AE%20Excelf
+    strftime(outTimeStr, 80, "%m/%d/%Y %H:%M:%S", &tm);
+}
+
+// @param inTime date in this form: "%02d/%02d/%04d %02d:%02d:%02d"
+int64 timeStringToValue(const char* inTime)
+{
+    assert(inTime);
+
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+
+    SYSTEMTIME a = {};
+
+    if (*inTime)
+    {
+        int cnt = sscanf_s(inTime, "%02d/%02d/%04d %02d:%02d:%02d", &day, &month, &year, &hour, &minute, &second);
+        assert(cnt == 6);
+        if (cnt != 6)
+            return 0;
+
+        a.wYear = (WORD)year;
+        a.wMonth = (WORD)month;
+        a.wDay = (WORD)day;
+        a.wHour = (WORD)hour;
+        a.wMinute = (WORD)minute;
+        a.wSecond = (WORD)second;
+    }
+
+    FILETIME v_ftime;
+    BOOL ok = SystemTimeToFileTime(&a, &v_ftime);
+    assert(ok);
+    if (!ok)
+        return 0;
+    ULARGE_INTEGER v_ui;
+    v_ui.LowPart = v_ftime.dwLowDateTime;
+    v_ui.HighPart = v_ftime.dwHighDateTime;
+    return v_ui.QuadPart;
+}
+
 
 bool IO_FileExists(const char* Name)
 {
@@ -145,6 +201,7 @@ void build(DriveInfo2 & drive)
 // EL_INT64(driveType);
     EL_INT64(driveFlags);
     EL_INT64(serialNumber);
+    EL_INT64(date);
 
 #undef EL_STRING
 #undef EL_INT64
@@ -204,7 +261,7 @@ void WindowDrives::gui(bool& show)
         }
         if (ImGui::BeginTabItem("All EFUs"))
         {
-            driveTabId = 1;
+            driveTabId = 2;
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -242,6 +299,9 @@ void WindowDrives::gui(bool& show)
             if(driveTabId == 0 && !drive.localDrive)
                 continue;
             if (driveTabId != 0 && drive.localDrive)
+                continue;
+
+            if (driveTabId == 1 && !drive.newestEntry)
                 continue;
 
             double gb = 1024 * 1024 * 1024;
@@ -312,6 +372,7 @@ void WindowDrives::gui(bool& show)
                 ImGui::Text("userName: '%s'", drive.userName.c_str());
                 ImGui::Text("driveFlags: %x", drive.driveFlags);
                 ImGui::Text("serialNumber: %x", drive.serialNumber);
+                ImGui::Text("newestEntry: %d", drive.newestEntry);
                 {
                     double value;
                     const char *unit = computeReadableSize(drive.freeSpace, value);
@@ -326,9 +387,27 @@ void WindowDrives::gui(bool& show)
                     ImGui::SameLine();
                     ImGui::Text(unit, value);
                 }
+                if(drive.date)
+                {
+                    char date[80];
+                    dateToCString(drive.date, date);
+                    ImGui::Text("date: %s", date);
+                }
+                if(drive.fileList)
+                    ImGui::Text("fileCount: %llu", (uint64)(drive.fileList->entries.size()));
+                else
+                    ImGui::Text("fileCount: ? (load with left click)");
                 //            bool supportsRemoteStorage = drive.driveFlags & 0x100;
 
                 EndTooltip();
+            }
+            if(drive.date && !drive.localDrive)
+            {
+                char date[80];
+                dateToCString(drive.date, date);
+
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1, 1, 1, 0.5f), " %s", date);
             }
             ImGui::SameLine();
             ImGui::TextColored(ImVec4(1,1,1,0.5f), " %.1f / %.1f GB", free, total);
@@ -366,6 +445,10 @@ void WindowDrives::popup()
         }
         ImGui::Separator();
     }
+
+    // can be optimized
+    bool rescan = false;
+
     if (driveSelectionRange.count() >= 1)
     {
         if (ImGui::MenuItem("Build EFU for selected drive(s)"))
@@ -374,17 +457,18 @@ void WindowDrives::popup()
                 DriveInfo2& ref = drives[index];
                 build(ref);
                 });
+            rescan = true;
         }
     }
     if (ImGui::MenuItem("Build EFU for each local drive"))
     {
         for (auto& ref : drives)
-        {
             build(ref);
-        }
+
+        rescan = true;
     }
     ImGui::Separator();
-    if (ImGui::MenuItem("Rescan"))
+    if (ImGui::MenuItem("Rescan") || rescan)
     {
         drives.clear();
         driveSelectionRange = {};
@@ -397,6 +481,7 @@ class DriveScan : public IDriveTraverse
     std::vector<DriveInfo2>& drives;
     std::string computerName;
     std::string userName;
+    __time64_t date = {};
 public:
     DriveScan(std::vector<DriveInfo2> &inDrives)
         : drives(inDrives)
@@ -413,6 +498,7 @@ public:
             // e.g. "Hans"
             userName = name;
         }
+        date = _time64(0);
     }
     virtual void OnDrive(const DriveInfo& driveInfo)
     {
@@ -427,6 +513,7 @@ public:
         el.localDrive = true;
         el.computerName = computerName;
         el.userName = userName;
+        el.date = date;
         DWORD lpSectorsPerCluster;
         DWORD lpBytesPerSector;
         DWORD lpNumberOfFreeClusters;
@@ -519,6 +606,7 @@ public:
                             // EL_INT64(driveType);
                             EL_INT64(driveFlags);
                             EL_INT64(serialNumber);
+                            EL_INT64(date);
 
 #undef EL_STRING
 #undef EL_INT64
@@ -563,7 +651,7 @@ void WindowDrives::rescan()
     {
         bool operator()(const DriveInfo2& A, const DriveInfo2& B) const
         {
-            int delta;
+            int64 delta;
 
             delta = strcmp(A.computerName.c_str(), B.computerName.c_str());
             if (delta != 0) return delta < 0;
@@ -572,6 +660,8 @@ void WindowDrives::rescan()
             delta = strcmp(A.deviceName.c_str(), B.deviceName.c_str());
             if (delta != 0) return delta < 0;
             delta = strcmp(A.internalName.c_str(), B.internalName.c_str());
+            if (delta != 0) return delta < 0;
+            delta = A.date - B.date;
             if (delta != 0) return delta < 0;
 
             // qsort() is instable so always return a way to differenciate items.
@@ -582,8 +672,22 @@ void WindowDrives::rescan()
 
     CustomLessFile customLess = { };
 
-
     std::sort(drives.begin(), drives.end(), customLess);
+
+    // set newestEntry
+    {
+        std::string internalName;
+        bool first = true;
+        for(auto& el : drives)
+        {
+            if(el.internalName != internalName)
+                first = true;
+
+            el.newestEntry = first;
+            first = false;
+            internalName = el.internalName;
+        }
+    }
 
     whenToRebuildView = -1;
 }

@@ -29,9 +29,13 @@ struct DriveInfo2
     int64 freeSpace = -1;
     // -1 means unknown
     int64 totalSpace = -1;
+    // use dateToCString()
+    __time64_t date = {};
 
     // 
     bool localDrive = false;
+    //
+    bool newestEntry = false;
 
     // data from efuFileName, maybe be 0
     std::shared_ptr<EFileList> fileList;
