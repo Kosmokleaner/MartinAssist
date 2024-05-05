@@ -220,21 +220,19 @@ void WindowFiles::set(DriveInfo2& driveInfo)
     buildFileView("", 0, 0, driveSelectionRange, false);
 }
 
-void WindowFiles::gui(bool &show)
+void WindowFiles::gui()
 {
-    if(!show)
+    if(!showWindow)
         return;
 
-    if (!fileList)
-        return;
-
-    EFileList& l = *fileList;
+    // mayb be 0
+    EFileList* l = fileList.get();
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);
     const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 200, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Files", &show, ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("Files", &showWindow, ImGuiWindowFlags_NoCollapse);
 
     ImGuiTableFlags flags = ImGuiTableFlags_Borders |
         ImGuiTableFlags_ScrollY |
@@ -253,6 +251,7 @@ void WindowFiles::gui(bool &show)
 
     std::string line;
 
+    if(l)
     if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
     {
         ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
@@ -276,7 +275,7 @@ void WindowFiles::gui(bool &show)
 
                 ViewEntry& viewEntry = fileView[line_no];
 //                const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
-                const FileEntry& entry = l.entries[viewEntry.fileEntryId];
+                const FileEntry& entry = l->entries[viewEntry.fileEntryId];
 
                 // todo: optimize
                 line = entry.key.fileName.c_str();

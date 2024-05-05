@@ -219,9 +219,9 @@ void build(DriveInfo2 & drive)
     file.IO_SaveASCIIFile((fileName + ".txt").c_str());
 }
 
-void WindowDrives::gui(bool& show)
+void WindowDrives::gui()
 {
-    if (!show)
+    if (!showWindow)
         return;
 
     static bool first = true;
@@ -241,7 +241,7 @@ void WindowDrives::gui(bool& show)
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);
     const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 100, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Drives", &show, ImGuiWindowFlags_NoCollapse);
+    ImGui::Begin("Drives", &showWindow, ImGuiWindowFlags_NoCollapse);
 
     // 0:Local Drives, 1: Historical Data
     int driveTabId = 0;
@@ -288,13 +288,14 @@ void WindowDrives::gui(bool& show)
     }
 */
     // Reserve enough left-over height for 1 separator + 1 input text
-    const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+//    const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+    const float footer_height_to_reserve = 0;
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
 
     {
-        for (int line_no = 0; line_no < drives.size(); line_no++)
+        for (int driveIndex = 0; driveIndex < drives.size(); driveIndex++)
         {
-            DriveInfo2& drive = drives[line_no];
+            DriveInfo2& drive = drives[driveIndex];
 
             if(driveTabId == 0 && !drive.localDrive)
                 continue;
@@ -331,24 +332,27 @@ void WindowDrives::gui(bool& show)
             // hard drive symbol
             sprintf_s(item, sizeof(item) / sizeof(*item), "\xef\x87\x80  %s  %s", drive.drivePath.c_str(), drive.volumeName.c_str());
 
-            bool selected = driveSelectionRange.isSelected(line_no);
+            bool selected = driveSelectionRange.isSelected(driveIndex);
             ImGuiSelectable(item, &selected);
 
             if (ImGui::IsItemClicked(0))
             {
-                driveSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+                driveSelectionRange.onClick(driveIndex, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
 
-                drive.load();
-                g_gui.files.set(drive);
+                if(g_gui.files.showWindow)
+                {
+                    drive.load();
+                    g_gui.files.set(drive);
+                }
 
-    //            setViewDirty();
+//            setViewDirty();
             }
             if (ImGui::BeginPopupContextItem())
             {
-                if (!driveSelectionRange.isSelected(line_no))
+                if (!driveSelectionRange.isSelected(driveIndex))
                 {
                     driveSelectionRange.reset();
-                    driveSelectionRange.onClick(line_no, false, false);
+                    driveSelectionRange.onClick(driveIndex, false, false);
                 }
 
                 popup();
@@ -358,7 +362,7 @@ void WindowDrives::gui(bool& show)
             if(ImGui::IsItemFocused() && ImGui::IsMouseDoubleClicked(0))
             {
                 driveSelectionRange.reset();
-                driveSelectionRange.onClick(line_no, false, false);
+                driveSelectionRange.onClick(driveIndex, false, false);
                 openDrive();
             }
             if (BeginTooltipPaused())

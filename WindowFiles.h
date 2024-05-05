@@ -17,7 +17,9 @@ public:
 
     void set(DriveInfo2& driveInfo);
 
-    void gui(bool& show);
+    void gui();
+
+    bool showWindow = true;
 
 private:
     //

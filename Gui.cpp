@@ -466,8 +466,6 @@ int Gui::test()
     bool showImGuiDemoWindow = false;
     bool showIcons = false;
     bool showTest = false;
-    bool showFiles = true;
-    bool showDrives = true;
 
     // Main loop
     while (!glfwWindowShouldClose(window) && !quitApp)
@@ -491,16 +489,16 @@ int Gui::test()
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
-        files.gui(showFiles);
-        drives.gui(showDrives);
+        files.gui();
+        drives.gui();
         showIconsWindow(fontAwesomeLarge, showIcons);
 
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))
             {
-                ImGui::MenuItem("Drives Window", 0, &showDrives);
-                ImGui::MenuItem("Files Window", 0, &showFiles);
+                ImGui::MenuItem("Drives Window", 0, &drives.showWindow);
+                ImGui::MenuItem("Files Window", 0, &files.showWindow);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Open EFUs folder"))
                     openEFUsFolder();

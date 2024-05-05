@@ -46,8 +46,9 @@ struct DriveInfo2
 class WindowDrives
 {
 public:
-    void gui(bool& show);
+    void gui();
 
+    bool showWindow = true;
 
 private:
     std::vector<DriveInfo2> drives;
