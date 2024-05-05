@@ -112,34 +112,34 @@ void build(DriveInfo2 & drive)
     std::string fileData;
     // to avoid reallocations
     fileData.reserve(10 * 1024 * 1024);
+    char str[1024];
 
-#define HEADER_STRING(name) \
-    if (!drive.name.empty()) \
+#define EL_STRING(NAME) \
+    if (!drive.NAME.empty()) \
     {\
-        fileData += "# " #name "="; \
-        fileData += drive.name; \
+        fileData += "# " #NAME "="; \
+        fileData += drive.NAME; \
         fileData += "\n"; \
     }
+#define EL_INT64(NAME) \
+    sprintf_s(str, sizeof(str), "# " #NAME "=%llu\n", drive.NAME); \
+    fileData += str;
 
-    HEADER_STRING(drivePath)
-    HEADER_STRING(volumeName)
-//    HEADER_STRING(computerName)
-//    HEADER_STRING(userName)
-//    HEADER_STRING(dateGatheredString)
+    EL_STRING(drivePath);
+    EL_STRING(deviceName);
+    EL_STRING(internalName);
+    EL_STRING(volumeName);
+    EL_STRING(computerName);
+    EL_STRING(userName);
+    EL_STRING(efuFileName);
+    EL_INT64(freeSpace);
+    EL_INT64(totalSpace);
+// EL_INT64(driveType);
+    EL_INT64(driveFlags);
+    EL_INT64(serialNumber);
 
-#undef HEADER_STRING
-
-    char str[1024];
-    sprintf_s(str, sizeof(str), "# freeSpace=%llu\n", drive.freeSpace);
-    fileData += str;
-    sprintf_s(str, sizeof(str), "# totalSpace=%llu\n", drive.totalSpace);
-    fileData += str;
-//    sprintf_s(str, sizeof(str), "# type=%u\n", drive.driveType);
-//    fileData += str;
-    sprintf_s(str, sizeof(str), "# flags=%u\n", drive.driveFlags);
-    fileData += str;
-    sprintf_s(str, sizeof(str), "# serialNumber=%u\n", drive.serialNumber);
-    fileData += str;
+#undef EL_STRING
+#undef EL_INT64
 
     fileData += "# version=" SERIALIZE_VERSION "\n";
     fileData += "#\n";
@@ -295,6 +295,9 @@ void WindowDrives::gui(bool& show)
                 ImGui::Text("deviceName: '%s'", drive.deviceName.c_str());
                 ImGui::Text("internalName: '%s'", drive.internalName.c_str());
                 ImGui::Text("volumeName: '%s'", drive.volumeName.c_str());
+                ImGui::Text("computerName: '%s'", drive.computerName.c_str());
+                ImGui::Text("efuFileName: '%s'", drive.efuFileName.c_str());
+                ImGui::Text("userName: '%s'", drive.userName.c_str());
                 ImGui::Text("driveFlags: %x", drive.driveFlags);
                 ImGui::Text("serialNumber: %x", drive.serialNumber);
                 {
@@ -457,6 +460,8 @@ public:
         if (!txtFile.IO_LoadASCIIFile(fullPath.path.c_str()))
             return;
 
+        el.efuFileName = to_string(fullPath.path);
+
         const Char* p = (const Char*)txtFile.GetDataPtr();
 
         std::string keyName;
@@ -485,28 +490,24 @@ public:
                         parseWhiteSpaceOrLF(p);
                         if (parseLine(p, valueName))
                         {
-                            if (keyName == "drivePath")
-                                el.drivePath = valueName;
-                            if (keyName == "volumeName")
-                                el.volumeName = valueName;
-                            if (keyName == "deviceName")
-                                el.deviceName = valueName;
-                            if (keyName == "internalName")
-                                el.internalName = valueName;
-                            if (keyName == "computerName")
-                                el.computerName = valueName;
-                            if (keyName == "userName")
-                                el.userName = valueName;
-                            if (keyName == "freeSpace")
-                                el.freeSpace = stringToInt64(valueName.c_str());
-                            if (keyName == "totalSpace")
-                                el.totalSpace = stringToInt64(valueName.c_str());
-    //                        if (keyName == "type")
-    //                            data.driveType = (uint32)stringToInt64(valueName.c_str());
-                            if (keyName == "flags")
-                                el.driveFlags = (uint32)stringToInt64(valueName.c_str());
-                            if (keyName == "serialNumber")
-                                el.serialNumber = (uint32)stringToInt64(valueName.c_str());
+#define EL_STRING(NAME) if (keyName == #NAME) el.NAME = valueName
+#define EL_INT64(NAME) if (keyName == #NAME) el.NAME = stringToInt64(valueName.c_str())
+
+                            EL_STRING(drivePath);
+                            EL_STRING(deviceName);
+                            EL_STRING(internalName);
+                            EL_STRING(volumeName);
+                            EL_STRING(computerName);
+                            EL_STRING(userName);
+                            EL_STRING(efuFileName);
+                            EL_INT64(freeSpace);
+                            EL_INT64(totalSpace);
+                            // EL_INT64(driveType);
+                            EL_INT64(driveFlags);
+                            EL_INT64(serialNumber);
+
+#undef EL_STRING
+#undef EL_INT64
                             if (keyName == "version" && valueName != SERIALIZE_VERSION)
                             {
                                 error = true;

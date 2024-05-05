@@ -17,10 +17,12 @@ struct DriveInfo2
     std::string computerName;
     // e.g. "Hans"
     std::string userName;
+    // e.g. "MyPC.efu"
+    std::string efuFileName;
     // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
-    uint32 driveFlags = 0;
+    int64 driveFlags = 0;
     //
-    uint32 serialNumber = 0;
+    int64 serialNumber = 0;
     // -1 means unknown
     int64 freeSpace = -1;
     // -1 means unknown

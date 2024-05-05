@@ -35,7 +35,11 @@ EveryHere app:
 * database can be in one spot e.g. dropbox
 
 todo EFUs
-* 
+* implement Latest EFUs and ALl EFUs
+* display number of files in EFUs
+* filter files, sort
+* show redundancy
+* editable drive description
 
 
 
