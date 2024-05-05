@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
+#include <memory> // std::shared_ptr<>
 #include "FileSystem.h"
+#include "EFileList.h"
 #include "SelectionRange.h"
 
 struct DriveInfo2
@@ -30,6 +32,11 @@ struct DriveInfo2
 
     // 
     bool localDrive = false;
+
+    // data from efuFileName, maybe be 0
+    std::shared_ptr<EFileList> fileList;
+
+    void load();
 };
 
 class WindowDrives

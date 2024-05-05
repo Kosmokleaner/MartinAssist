@@ -108,7 +108,11 @@ bool EFileList::load(const wchar_t* fileName)
                 entry.value.path = stringPool.push(sPath.c_str());
             }
 
-            if (!parseInt64(p, entry.key.size) ||
+            if (parseStartsWith(p, ","))
+            {
+                entry.key.size = -1;
+            }
+            else if (!parseInt64(p, entry.key.size) ||
                 !parseStartsWith(p, ","))
             {
                 error = true;
@@ -128,13 +132,11 @@ bool EFileList::load(const wchar_t* fileName)
             {
                 entry.value.time_create = -1;
             }
-            else
-            if (!parseInt64(p, entry.value.time_create) ||
+            else if (!parseInt64(p, entry.value.time_create) ||
                 !parseStartsWith(p, ","))
             {
                 int32_t errLine, errCol;
                 computeLocationInFile((const Char*)file.GetDataPtr(), p, errLine, errCol, 4);
-
 
                 error = true;
                 assert(0);

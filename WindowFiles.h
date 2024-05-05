@@ -1,17 +1,21 @@
 #pragma once
+#include <memory> // std::shared_ptr<>
 #include "EFileList.h"
 #include "SelectionRange.h"
 
+struct DriveInfo2;
+
 class WindowFiles
 {
-public:
-
     // todo: refactor
-    EFileList l;
+//    EFileList l;
+    std::shared_ptr<EFileList> fileList;
+public:
 
     // [line_no] = ViewEntry, built by buildView()
     std::vector<ViewEntry> fileView;
 
+    void set(DriveInfo2& driveInfo);
 
     void gui(bool& show);
 

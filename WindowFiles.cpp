@@ -86,6 +86,12 @@ void WindowFiles::buildFileView(const char* filter, int64 minSize, int redundanc
     assert(filter);
 
     fileView.clear();
+
+    if(!fileList)
+        return;
+
+    EFileList& l = *fileList;
+
  //   viewSumSize = 0;
     int filterLen = (int)strlen(filter);
 
@@ -203,23 +209,26 @@ void WindowFiles::buildFileView(const char* filter, int64 minSize, int redundanc
  //   buildFileViewChildLists();
 }
 
+void WindowFiles::set(DriveInfo2& driveInfo)
+{
+    // call load before
+    assert(driveInfo.fileList);
+
+    fileList = driveInfo.fileList;
+
+    SelectionRange driveSelectionRange;
+    buildFileView("", 0, 0, driveSelectionRange, false);
+}
 
 void WindowFiles::gui(bool &show)
 {
-    static bool first = true;
-    if(first)
-    {
-        first = false;
-        l.load(L"E:\\EverythingEFUs\\Ryzen4202024.efu");
-        SelectionRange driveSelectionRange;
-        buildFileView("", 0, 0, driveSelectionRange, false);
-    }
-
-
-
-
     if(!show)
         return;
+
+    if (!fileList)
+        return;
+
+    EFileList& l = *fileList;
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);

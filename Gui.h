@@ -12,11 +12,13 @@ public:
 
     int test();
     
-private:
+//private:
 
     WindowFiles files;
     WindowDrives drives;
 };
+extern Gui g_gui;
+
 
 
 // @param must not be 0 

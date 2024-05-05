@@ -41,6 +41,7 @@
 #pragma comment(lib, "ImGui/GLFW/glfw3.lib")        // 64bit
 #pragma comment(lib, "OpenGL32.lib")                // 64bit
 
+Gui g_gui;
 
 static void glfw_error_callback(int error, const char* description)
 {

@@ -90,6 +90,12 @@ public:
     }
 };
 
+void DriveInfo2::load()
+{
+    fileList = std::make_shared<EFileList>();
+    fileList->load(::to_wstring(efuFileName).c_str());
+}
+
 void build(DriveInfo2 & drive)
 {
     std::string cmdLine;
@@ -100,6 +106,8 @@ void build(DriveInfo2 & drive)
     manager.generateNewFileName(drive, fileName);
 
     cmdLine = std::string("-export-efu \"") + fileName.c_str() + ".efu\" \"" + drive.drivePath + "\"";
+
+    // todo: this only works in everything is started
 
     const char* command = "Everything\\es.exe";
 
@@ -269,6 +277,10 @@ void WindowDrives::gui(bool& show)
             if (ImGui::IsItemClicked(0))
             {
                 driveSelectionRange.onClick(line_no, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
+
+                drive.load();
+                g_gui.files.set(drive);
+
     //            setViewDirty();
             }
             if (ImGui::BeginPopupContextItem())
@@ -364,7 +376,7 @@ void WindowDrives::popup()
                 });
         }
     }
-    if (ImGui::MenuItem("Build EFU for all drives"))
+    if (ImGui::MenuItem("Build EFU for each local drive"))
     {
         for (auto& ref : drives)
         {
@@ -460,6 +472,8 @@ public:
         if (!txtFile.IO_LoadASCIIFile(fullPath.path.c_str()))
             return;
 
+        fullPath.RemoveExtension();
+        fullPath.path += (L".efu");
         el.efuFileName = to_string(fullPath.path);
 
         const Char* p = (const Char*)txtFile.GetDataPtr();
