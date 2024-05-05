@@ -298,8 +298,9 @@ void WindowFiles::gui()
                 ImGui::PopID();
 
                 // Size
+                ImGui::TableSetColumnIndex(columnId++);
+                if (entry.key.size >= 0)
                 {
-                    ImGui::TableSetColumnIndex(columnId++);
                     double printSize = 0;
                     const char* printUnit = computeReadableSize(entry.key.size, printSize);
                     ImGui::Text(printUnit, printSize);

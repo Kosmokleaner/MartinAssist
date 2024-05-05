@@ -66,6 +66,7 @@ bool EFileList::load(const wchar_t* fileName)
             // faster than data.entries.push_back(FileEntry()); 4400ms -> 2400ms
             entries.resize(entries.size() + 1);
             FileEntry& entry = entries.back();
+            bool removeEntry = false;
 
             if (!parseStartsWith(p, "\""))
             {
@@ -110,7 +111,9 @@ bool EFileList::load(const wchar_t* fileName)
 
             if (parseStartsWith(p, ","))
             {
+                // does it mean it's a folder?
                 entry.key.size = -1;
+                removeEntry = true;
             }
             else if (!parseInt64(p, entry.key.size) ||
                 !parseStartsWith(p, ","))
@@ -152,6 +155,9 @@ bool EFileList::load(const wchar_t* fileName)
             }
 
             parseLineFeed(p);
+
+            if(removeEntry)
+                entries.pop_back();
         }
     }
 
