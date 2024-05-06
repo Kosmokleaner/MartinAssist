@@ -43,6 +43,8 @@ bool ImGuiSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags f
 // @return printUnit e.g. "%.3f GB" or "%.3f MB" 
 const char* computeReadableSize(uint64 inputSize, double& outPrintSize);
 
+bool ColoredTextButton(ImVec4 color, const char* label);
+
 void pushTableStyle3();
 
 // RAII: https://en.cppreference.com/w/cpp/language/raii

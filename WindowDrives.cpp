@@ -1,5 +1,6 @@
 #include "WindowDrives.h"
 #include "ImGui/imgui.h"
+#include "ImGui/imgui_internal.h"
 #include "FileSystem.h"
 #include "ASCIIFile.h"
 #include "Timer.h"
@@ -18,6 +19,17 @@
 #include <fcntl.h>														// O_RDONLY
 
 #include <time.h>   // _localtime64_s()
+
+void RightAlignedText(const char* txt)
+{
+    // see https://stackoverflow.com/questions/58044749/how-to-right-align-text-in-imgui-columns
+    auto posX = (ImGui::GetCursorPosX() + ImGui::GetColumnWidth() - ImGui::CalcTextSize(txt).x
+        - ImGui::GetScrollX() - 2 * ImGui::GetStyle().ItemSpacing.x);
+    if (posX > ImGui::GetCursorPosX())
+        ImGui::SetCursorPosX(posX);
+    ImGui::TextUnformatted(txt);
+}
+
 
 void dateToCString(__time64_t t, char outTimeStr[80])
 {
@@ -234,6 +246,8 @@ void WindowDrives::gui()
         whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.1f;
     }
 
+    ImGuiStyle& style = ImGui::GetStyle();
+
     if (whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
     {
         rescan();
@@ -246,17 +260,12 @@ void WindowDrives::gui()
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 100, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
     ImGui::Begin("Drives", &showWindow, ImGuiWindowFlags_NoCollapse);
 
-    // 0:Local Drives, 1: Historical Data
-    int driveTabId = 0;
+    // see DriveLocality
+    int driveTabId = 1;
 
     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
     if (ImGui::BeginTabBar("DriveLocality", tab_bar_flags))
     {
-        if (ImGui::BeginTabItem("Local Drives"))
-        {
-            driveTabId = 0;
-            ImGui::EndTabItem();
-        }
         if (ImGui::BeginTabItem("Latest EFUs"))
         {
             driveTabId = 1;
@@ -269,6 +278,7 @@ void WindowDrives::gui()
         }
         ImGui::EndTabBar();
     }
+
 /*
     const char* refreshIcon = "\xef\x83\xa2";
 
@@ -300,13 +310,10 @@ void WindowDrives::gui()
         {
             DriveInfo2& drive = drives[driveIndex];
 
-            if(driveTabId == 0 && !drive.localDrive)
-                continue;
-            if (driveTabId != 0 && drive.localDrive)
+            if (driveTabId == 1 && !drive.newestEntry && !drive.localDrive)
                 continue;
 
-            if (driveTabId == 1 && !drive.newestEntry)
-                continue;
+            ImGui::PushID(driveIndex);
 
             double gb = 1024 * 1024 * 1024;
             double free = drive.freeSpace / gb;
@@ -318,9 +325,53 @@ void WindowDrives::gui()
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.5f, 0.5f, 1.0f, 1));
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.8f, 0.8f, 0.8f, 1));
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1));
+            ImStyleVar_RAII itemspacing;
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, style.ItemSpacing.y));
+
             float oldY = ImGui::GetCursorPosY();
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY());
-            ImGui::ProgressBar(fraction, ImVec2(ImGui::GetFontSize() * 3, ImGui::GetFontSize()), overlay_buf);
+            ImVec2 progressBarSize(ImGui::GetFontSize() * 3, ImGui::GetFontSize());
+            ImGui::InvisibleButton("##ProgressBar", progressBarSize);
+            if (ImGui::IsItemHovered())
+            {
+                BeginTooltip();
+
+                if (ImGui::BeginTable("table1", 2))
+                {
+                    {
+                        double value;
+                        const char* unit = computeReadableSize(drive.freeSpace, value);
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        RightAlignedText("free :");
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Text(unit, value);
+                    }
+                    {
+                        double value;
+                        const char* unit = computeReadableSize(drive.totalSpace, value);
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        RightAlignedText("total :");
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Text(unit, value);
+                    }
+                    {
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        RightAlignedText("file count :");
+                        ImGui::TableSetColumnIndex(1);
+                        if (drive.fileList)
+                            ImGui::Text("%llu", (uint64)(drive.fileList->entries.size()));
+                        else
+                            ImGui::Text("? (load with left click)");
+                    }
+                    ImGui::EndTable();
+                }
+                EndTooltip();
+            }
+            ImGui::SetCursorPosY(oldY);
+            ImGui::ProgressBar(fraction, progressBarSize, overlay_buf);
+
 
             ImGui::PopStyleColor(3);
     //        if (BeginTooltipPaused())
@@ -331,12 +382,31 @@ void WindowDrives::gui()
             ImGui::SameLine();
             ImGui::SetCursorPosY(oldY - ImGui::GetStyle().FramePadding.y);
 
+            const char* symbol = "";
+//
+            if(drive.localDrive)
+                symbol = "\xef\x80\x95"; // home
+            else 
+                symbol = "\xef\x81\xb2"; // plane
+
+//            symbol = "\xef\x87\x80"; // stack of disks
+
+            ImVec4 symbolColor = drive.localDrive ? ImVec4(0, 1, 0, 1) : ImVec4(1, 1, 1, 0.5f);
+            ColoredTextButton(symbolColor, symbol);
+            if (BeginTooltipPaused())
+            {
+                ImGui::Text(drive.localDrive ? "local Drive" : "not local drive (is currently not available)");
+                EndTooltip();
+            }
+
             char item[1024];
-            // hard drive symbol
-            sprintf_s(item, sizeof(item) / sizeof(*item), "\xef\x87\x80  %s  %s", drive.drivePath.c_str(), drive.volumeName.c_str());
+            sprintf_s(item, sizeof(item) / sizeof(*item), " %s  %s", drive.drivePath.c_str(), drive.volumeName.c_str());
 
             bool selected = driveSelectionRange.isSelected(driveIndex);
-            ImGuiSelectable(item, &selected);
+//            ImGuiSelectable(item, &selected);
+            ImGui::SameLine();
+            ImGuiSelectable("##", &selected);
+            ImGui::PopID();
 
             if (ImGui::IsItemClicked(0))
             {
@@ -380,44 +450,28 @@ void WindowDrives::gui()
                 ImGui::Text("driveFlags: %x", drive.driveFlags);
                 ImGui::Text("serialNumber: %x", drive.serialNumber);
                 ImGui::Text("newestEntry: %d", drive.newestEntry);
-                {
-                    double value;
-                    const char *unit = computeReadableSize(drive.freeSpace, value);
-                    ImGui::Text("freeSpace: ");
-                    ImGui::SameLine();
-                    ImGui::Text(unit, value);
-                }
-                {
-                    double value;
-                    const char* unit = computeReadableSize(drive.totalSpace, value);
-                    ImGui::Text("totalSpace: ");
-                    ImGui::SameLine();
-                    ImGui::Text(unit, value);
-                }
                 if(drive.date)
                 {
                     char date[80];
                     dateToCString(drive.date, date);
                     ImGui::Text("date: %s", date);
                 }
-                if(drive.fileList)
-                    ImGui::Text("fileCount: %llu", (uint64)(drive.fileList->entries.size()));
-                else
-                    ImGui::Text("fileCount: ? (load with left click)");
                 //            bool supportsRemoteStorage = drive.driveFlags & 0x100;
 
                 EndTooltip();
             }
+
+            ImGui::SameLine();
+            ImGui::TextColored(drive.localDrive ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.5f), item);
+
             if(drive.date && !drive.localDrive)
             {
                 char date[80];
                 dateToCString(drive.date, date);
 
                 ImGui::SameLine();
-                ImGui::TextColored(ImVec4(1, 1, 1, 0.5f), " %s", date);
+                ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), " %s", date);
             }
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(1,1,1,0.5f), " %.1f / %.1f GB", free, total);
         }
     }
 
@@ -659,6 +713,10 @@ void WindowDrives::rescan()
         bool operator()(const DriveInfo2& A, const DriveInfo2& B) const
         {
             int64 delta;
+
+            // for the UI it's best to show local drives first
+            delta = (int64)A.localDrive - (int64)B.localDrive;
+            if (delta != 0) return delta >= 0;
 
             delta = strcmp(A.computerName.c_str(), B.computerName.c_str());
             if (delta != 0) return delta < 0;

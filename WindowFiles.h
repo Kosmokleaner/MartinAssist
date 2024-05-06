@@ -42,6 +42,6 @@ private:
 
 //    void treeNodeUI(FileViewId id, std::string& line);
 
-    void fileLineUI(int32 line_no, const FileEntry& entry, std::string& line);
+    void fileLineUI(int32 line_no, const FileEntry& entry, const std::string& line);
     void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, bool folder);
 };

@@ -418,6 +418,8 @@ int Gui::test()
         // docs say >1 is dangerous
         ImGui::GetStyle().WindowBorderSize = 2;
         ImGui::GetStyle().WindowPadding = ImVec2(4, 4);
+        // this way the vertical gaps between progress bars on drive window has better tooltip behavior
+        ImGui::GetStyle().TouchExtraPadding = ImVec2(2, 2);
     }
 
     // Setup Platform/Renderer backends
@@ -571,11 +573,26 @@ bool BeginTooltipPaused()
     return ret;
 }
 
+// looks like Text but can do tooltip and you can test if clicked / activated
+bool ColoredTextButton(ImVec4 color, const char* label)
+{
+//    ImGuiStyle& style = ImGui::GetStyle();
+
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, color);
+    bool ret = ImGui::SmallButton(label);
+    ImGui::PopStyleColor(4);
+
+    return ret;
+}
+
 void BeginTooltip()
 {
     ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.9f, 0.9f, 0.4f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
     ImGui::BeginTooltip();
 }
 

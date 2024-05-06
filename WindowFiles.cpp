@@ -12,7 +12,7 @@
 
 #pragma warning( disable : 4100 ) // unreferenced formal parameter
 
-void WindowFiles::fileLineUI(int32 line_no, const FileEntry& entry, std::string& line)
+void WindowFiles::fileLineUI(int32 line_no, const FileEntry& entry, const std::string& line)
 {
 
 
@@ -293,100 +293,17 @@ void WindowFiles::gui()
 
     std::string line;
 
-/*
-    if(l)
-    if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
-    {
-        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
-        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Name);
-        ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Size);
-        ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Path);
-
-        ImGui::TableHeadersRow();
-
-        pushTableStyle3();
-
-        // list view
-        ImGuiListClipper clipper;
-        clipper.Begin((int)fileView.size());
-        while (clipper.Step())
-        {
-            for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
-            {
-                if (line_no >= fileView.size())
-                    break;
-
-                ViewEntry& viewEntry = fileView[line_no];
-//                const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
-                const FileEntry& entry = l->entries[viewEntry.fileEntryId];
-
-                // todo: optimize
-                line = entry.key.fileName.c_str();
-
-                ImGui::TableNextRow();
-
-                ImGui::PushID(line_no);
-
-                int columnId = 0;
-
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
-//                bool selected = fileSelectionRange.isSelected(line_no);
-                bool selected = false; // todo
-
-                ImGuiSelectable(line.c_str(), &selected, selectable_flags);
-
-                fileLineUI(line_no, entry, line);
-
-                ImGui::PopID();
-
-                // Size
-                ImGui::TableSetColumnIndex(columnId++);
-                if (entry.key.size >= 0)
-                {
-                    double printSize = 0;
-                    const char* printUnit = computeReadableSize(entry.key.size, printSize);
-                    ImGui::Text(printUnit, printSize);
-                }
-
-                ImGui::TableSetColumnIndex(columnId++);
-                ImGui::TextUnformatted(entry.value.path.c_str());
-
-//                ImGui::TableSetColumnIndex(columnId++);
-//                ImGui::Text("%d", entry.value.driveId);
-            }
-        }
-        clipper.End();
-
-        ImGui::PopStyleColor(3);
-
-        ImGui::EndTable();
-    }
-*/
-
-    if(!l)
-    {
-        ImGui::End();
-        return;
-    }
-
     uint32 numberOfColumns = 5;
 
     if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
     {
         ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
         ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Name);
-//        if (filesTabId == eFM_Files)
-        {
-            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Size);
-            ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Redundancy);
-        }
-//       if (filesTabId != eFM_TreeView)
-        {
-            ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Path);
-        }
+        ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Size);
+        ImGui::TableSetupColumn("dup", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Redundancy);
+        ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Path);
         ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_DriveId);
-        //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
+    //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
     //                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
     //                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
         ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
