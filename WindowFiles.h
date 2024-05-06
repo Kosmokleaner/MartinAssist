@@ -2,6 +2,7 @@
 #include <memory> // std::shared_ptr<>
 #include "EFileList.h"
 #include "SelectionRange.h"
+#include "ImGui/imgui.h"
 
 struct DriveInfo2;
 
@@ -23,13 +24,21 @@ public:
 
 private:
     //
-//    double whenToRebuildView = -1;
+    std::string filter;
+    // 2: 1MB
+    int32 minLogSize = 2;
+    //
+    int32 redundancyFilter = 0;
+    //
+    double whenToRebuildView = -1;
+//
+    ImGuiTableSortSpecs* fileSortCriteria = {};
 
     // into everyHere.fileView[]
 //    SelectionRangeWithDriveUpdate fileSelectionRange;
     SelectionRange fileSelectionRange;
 
-//    void setViewDirty();
+    void setViewDirty();
 
 //    void treeNodeUI(FileViewId id, std::string& line);
 

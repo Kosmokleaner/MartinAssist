@@ -80,10 +80,10 @@ void WindowFiles::fileLineUI(int32 line_no, const FileEntry& entry, std::string&
 
 
 
-void WindowFiles::buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, bool folder)
+void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedundancyFilter, SelectionRange& driveSelectionRange, bool folder)
 {
     assert(minSize >= 0);
-    assert(filter);
+    assert(inFilter);
 
     fileView.clear();
 
@@ -93,7 +93,7 @@ void WindowFiles::buildFileView(const char* filter, int64 minSize, int redundanc
     EFileList& l = *fileList;
 
  //   viewSumSize = 0;
-    int filterLen = (int)strlen(filter);
+    int filterLen = (int)strlen(inFilter);
 
 //    for (uint32 lineNoDrive = 0; lineNoDrive < driveView.size(); ++lineNoDrive)
 //    {
@@ -126,10 +126,12 @@ void WindowFiles::buildFileView(const char* filter, int64 minSize, int redundanc
             }
             else
             {
-                if (fileEntry.key.size < minSize)
-                    continue;   // hide folders and files that are filtered out
             }
 */
+            assert(fileEntry.key.size >= 0);
+            if (fileEntry.key.size < minSize)
+                continue;   // hide folders and files that are filtered out
+
 /*
             if (redundancyFilter)
             {
@@ -152,7 +154,7 @@ void WindowFiles::buildFileView(const char* filter, int64 minSize, int redundanc
             }
 */
             // todo: optimize
-            if (stristrOptimized(fileEntry.key.fileName.c_str(), filter, (int)fileEntry.key.fileName.size(), filterLen) == 0)
+            if (stristrOptimized(fileEntry.key.fileName.c_str(), inFilter, (int)fileEntry.key.fileName.size(), filterLen) == 0)
                 continue;
 
             fileView.push_back(entry);
@@ -234,6 +236,47 @@ void WindowFiles::gui()
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 200, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
     ImGui::Begin("Files", &showWindow, ImGuiWindowFlags_NoCollapse);
 
+    // todo: filter button
+    if (ImGui::InputText("filter", &filter))
+    {
+        setViewDirty();
+    }
+
+    {
+//        ImGui::Text("min Size:");
+//        ImGui::SameLine();
+//        int step = 1;
+        const char* fmt[] = { "any size", "> 1KB", "> 1MB", "> 10MB", "> 100MB", "> 1GB" };
+        minLogSize = ImClamp(minLogSize, 0, 5);
+        ImGui::SetNextItemWidth(150);
+//        if (ImGui::InputScalar("minimum File Size  ", ImGuiDataType_S32, &minLogSize, &step, &step, fmt[ImClamp(minLogSize, 0, 5)]))
+        if (ImGui::SliderInt("##min Size", &minLogSize, 0, 5, fmt[ImClamp(minLogSize, 0, 5)]))
+            setViewDirty();
+        if (BeginTooltipPaused())
+        {
+            ImGui::Text("Minimum file size. Sorting many backups of small files doesn't matter so best to focus on large files");
+            EndTooltip();
+        }
+    }
+    ImGui::SameLine();
+    {
+//        ImGui::Text("Redundancy:");
+//        ImGui::SameLine();
+        const char* fmt[] = { "any dup", "<2 dup", "<3 dup", "=3 dup", ">3 dup", ">4 dup" };
+//        const char* fmt = " \000" "<2 no\000" "<3 minor\000" "=3 enough\000" ">3 too much\000" ">4 way too much\000" "\000";
+        redundancyFilter = ImClamp(redundancyFilter, 0, 5);
+        ImGui::SetNextItemWidth(150);
+//        if (ImGui::Combo("Redundancy  ", &redundancyFilter, fmt))
+        if (ImGui::SliderInt("##Redundancy", &redundancyFilter, 0, 5, fmt[ImClamp(redundancyFilter, 0, 5)]))
+            setViewDirty();
+        if (BeginTooltipPaused())
+        {
+            ImGui::Text("Minimum number of duplcates (redundancy). It'a a tradeoff between safety and storage cost.");
+            ImGui::Text("Suggested: <2:no, <3:minor, =3:enough, >3 too much, >4 way too much");
+            EndTooltip();
+        }
+    }
+
     ImGuiTableFlags flags = ImGuiTableFlags_Borders |
         ImGuiTableFlags_ScrollY |
         ImGuiTableFlags_BordersOuter |
@@ -247,10 +290,10 @@ void WindowFiles::gui()
 
     // safe space for info line
     ImVec2 outerSize = ImVec2(0.0f, ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() - ImGui::GetStyle().ItemSpacing.y);
-    uint32 numberOfColumns = 3;
 
     std::string line;
 
+/*
     if(l)
     if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
     {
@@ -318,6 +361,147 @@ void WindowFiles::gui()
         ImGui::PopStyleColor(3);
 
         ImGui::EndTable();
+    }
+*/
+
+    if(!l)
+    {
+        ImGui::End();
+        return;
+    }
+
+    uint32 numberOfColumns = 5;
+
+    if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
+    {
+        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Name);
+//        if (filesTabId == eFM_Files)
+        {
+            ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Size);
+            ImGui::TableSetupColumn("Redundancy", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Redundancy);
+        }
+//       if (filesTabId != eFM_TreeView)
+        {
+            ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_Path);
+        }
+        ImGui::TableSetupColumn("DeviceId", ImGuiTableColumnFlags_WidthFixed, 0.0f, FCID_DriveId);
+        //                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_None);
+    //                    ImGui::TableSetupColumn("Date Accessed", ImGuiTableColumnFlags_None);
+    //                    ImGui::TableSetupColumn("Date Created", ImGuiTableColumnFlags_None);
+        ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
+        ImGui::TableHeadersRow();
+
+        if (ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs())
+            if (sorts_specs->SpecsDirty)
+            {
+                whenToRebuildView = 0;
+                sorts_specs->SpecsDirty = false;
+            }
+
+        if (whenToRebuildView != -1 && g_Timer.GetAbsoluteTime() > whenToRebuildView)
+        {
+            fileSortCriteria = ImGui::TableGetSortSpecs();
+            // do this before changes to the fileView
+            fileSelectionRange.reset();
+            int64 minSize[] = { 0, 1024, 1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024 };
+            SelectionRange driveSelectionRange; // todo
+            buildFileView(filter.c_str(), minSize[ImClamp(minLogSize, 0, 5)], redundancyFilter, driveSelectionRange, fileSortCriteria);
+            whenToRebuildView = -1;
+            fileSortCriteria = {};
+        }
+
+        pushTableStyle3();
+
+        {
+            // list view
+            ImGuiListClipper clipper;
+            clipper.Begin((int)fileView.size());
+            while (clipper.Step())
+            {
+                for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+                {
+                    if (line_no >= (int)fileView.size())
+                        break;
+
+                    ViewEntry& viewEntry = fileView[line_no];
+//                    const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
+                    const FileEntry& entry = l->entries[viewEntry.fileEntryId];
+
+                    // todo: optimize
+                    line = entry.key.fileName.c_str();
+
+                    ImGui::TableNextRow();
+
+                    ImGui::PushID(line_no);
+
+                    int columnId = 0;
+
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                    bool selected = fileSelectionRange.isSelected(line_no);
+
+                    ImGui::Selectable(line.c_str(), &selected, selectable_flags);
+
+                    fileLineUI(line_no, entry, line);
+
+                    ImGui::PopID();
+
+                    {
+                        ImGui::TableSetColumnIndex(columnId++);
+                        double printSize = 0;
+                        const char* printUnit = computeReadableSize(entry.key.size, printSize);
+                        ImGui::Text(printUnit, printSize);
+
+                        ImGui::TableSetColumnIndex(columnId++);
+//                        ImGui::Text("%d", everyHere.findRedundancy(entry.key));
+                        ImGui::Text("TODO");
+                    }
+
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::TextUnformatted(entry.value.path.c_str());
+
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::Text("%d", entry.value.driveId);
+                }
+            }
+            clipper.End();
+        }
+        ImGui::PopStyleColor(3);
+
+        ImGui::EndTable();
+    }
+
+    if (fileSelectionRange.empty())
+    {
+        ImGui::Text("Files: %lld", (int64)fileView.size());
+        ImGui::SameLine();
+//todo        ImGui::Text("Size: ");
+//        ImGui::SameLine();
+
+//        double printSize = 0;
+//        const char* printUnit = computeReadableSize(everyHere.viewSumSize, printSize);
+//        ImGui::Text(printUnit, printSize);
+    }
+    else
+    {
+        ImGui::Text("Selected: %lld", (int64)fileSelectionRange.count());
+  /*      ImGui::SameLine();
+
+        // Can be optimized when using drives instead but then we need selectedFileSize there as well
+        uint64 selectedSize = 0;
+        fileSelectionRange.foreach([&](int64 line_no) {
+            ViewEntry& viewEntry = fileView[line_no];
+//            const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
+            const FileEntry& entry = l->entries[viewEntry.fileEntryId];
+            if (entry.key.size >= 0)
+                selectedSize += entry.key.size;
+            });
+
+        double printSize = 0;
+        const char* printUnit = computeReadableSize(selectedSize, printSize);
+        ImGui::Text("Size: %llu %s", printSize, printUnit);
+*/
     }
 
     // todo: filter button
@@ -526,8 +710,8 @@ void WindowFiles::gui()
     ImGui::End();
 }
 
-//void WindowFiles::setViewDirty()
-//{
-//    // constant is in seconds
-//    whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.25f;
-//}
+void WindowFiles::setViewDirty()
+{
+    // constant is in seconds
+    whenToRebuildView = g_Timer.GetAbsoluteTime() + 0.25f;
+}

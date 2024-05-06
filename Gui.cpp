@@ -414,6 +414,7 @@ int Gui::test()
 
         ImGui::GetStyle().GrabMinSize = 20;
         ImGui::GetStyle().ScrollbarSize = 20;
+        ImGui::GetStyle().ScrollbarRounding = 4;
         // docs say >1 is dangerous
         ImGui::GetStyle().WindowBorderSize = 2;
         ImGui::GetStyle().WindowPadding = ImVec2(4, 4);

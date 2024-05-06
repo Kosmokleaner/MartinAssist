@@ -148,8 +148,11 @@ public:
 
 void DriveInfo2::load()
 {
-    fileList = std::make_shared<EFileList>();
-    fileList->load(::to_wstring(efuFileName).c_str());
+    if(!fileList)
+    {
+        fileList = std::make_shared<EFileList>();
+        fileList->load(::to_wstring(efuFileName).c_str());
+    }
 }
 
 void build(DriveInfo2 & drive)
