@@ -80,7 +80,7 @@ void WindowFiles::fileLineUI(int32 line_no, const FileEntry& entry, const std::s
 
 
 
-void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedundancyFilter, SelectionRange& driveSelectionRange, bool folder)
+void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs)
 {
     assert(minSize >= 0);
     assert(inFilter);
@@ -162,16 +162,21 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
         }
     }
 
-/*    struct CustomLessFile
+    struct CustomLessFile
     {
-//        const EveryHere& everyHere;
+        EFileList& ref;
         ImGuiTableSortSpecs* sorts_specs = {};
 
         bool operator()(const ViewEntry& a, const ViewEntry& b) const
         {
+
             // todo: optimize vector [] in debug
-            const FileEntry& A = everyHere.driveData[a.driveId]->entries[a.fileEntryId];
-            const FileEntry& B = everyHere.driveData[b.driveId]->entries[b.fileEntryId];
+//            const FileEntry& A = everyHere.driveData[a.driveId]->entries[a.fileEntryId];
+//            const FileEntry& B = everyHere.driveData[b.driveId]->entries[b.fileEntryId];
+
+            const FileEntry& A = ref.entries[a.fileEntryId];
+            const FileEntry& B = ref.entries[b.fileEntryId];
+   
 
             int count = sorts_specs ? sorts_specs->SpecsCount : 0;
 
@@ -184,8 +189,9 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
                 switch (sort_spec->ColumnUserID)
                 {
                 case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
-                case FCID_Size:        delta = A.key.sizeOrFolder - B.key.sizeOrFolder; break;
-                case FCID_Redundancy:  delta = everyHere.findRedundancy(A.key) - everyHere.findRedundancy(B.key); break;
+                case FCID_Size:        delta = A.key.size - B.key.size; break;
+//todo                case FCID_Redundancy:  delta = everyHere.findRedundancy(A.key) - everyHere.findRedundancy(B.key); break;
+                case FCID_Redundancy:  delta = 0; break;
                 case FCID_DriveId:    delta = a.driveId - b.driveId; break;
                 case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                 default: IM_ASSERT(0); break;
@@ -202,10 +208,10 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
         }
     };
 
-    CustomLessFile customLess = { *this, sorts_specs };
+    CustomLessFile customLess = { *fileList, sorts_specs };
 
     std::sort(fileView.begin(), fileView.end(), customLess);
-*/
+
 
     // todo: only needed for TreeView
  //   buildFileViewChildLists();
@@ -219,7 +225,7 @@ void WindowFiles::set(DriveInfo2& driveInfo)
     fileList = driveInfo.fileList;
 
     SelectionRange driveSelectionRange;
-    buildFileView("", 0, 0, driveSelectionRange, false);
+    buildFileView("", 0, 0, driveSelectionRange, 0);
 }
 
 void WindowFiles::gui()
@@ -271,7 +277,7 @@ void WindowFiles::gui()
             setViewDirty();
         if (BeginTooltipPaused())
         {
-            ImGui::Text("Minimum number of duplcates (redundancy). It'a a tradeoff between safety and storage cost.");
+            ImGui::Text("Minimum number of duplicates (redundancy). It'a a tradeoff between safety and storage cost.");
             ImGui::Text("Suggested: <2:no, <3:minor, =3:enough, >3 too much, >4 way too much");
             EndTooltip();
         }

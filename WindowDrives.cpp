@@ -449,7 +449,6 @@ void WindowDrives::gui()
                 ImGui::Text("userName: '%s'", drive.userName.c_str());
                 ImGui::Text("driveFlags: %x", drive.driveFlags);
                 ImGui::Text("serialNumber: %x", drive.serialNumber);
-                ImGui::Text("newestEntry: %d", drive.newestEntry);
                 if(drive.date)
                 {
                     char date[80];
