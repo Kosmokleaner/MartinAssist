@@ -132,10 +132,9 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
             if (fileEntry.key.size < minSize)
                 continue;   // hide folders and files that are filtered out
 
-/*
             if (redundancyFilter)
             {
-                int redundancy = (int)findRedundancy(fileEntry.key);
+                int redundancy = (int)g_gui.redundancy.findRedundancy(fileEntry.key);
                 switch (redundancyFilter)
                 {
                 case 1: if (redundancy >= 2) continue;
@@ -152,7 +151,7 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
                     assert(0);
                 }
             }
-*/
+
             // todo: optimize
             if (stristrOptimized(fileEntry.key.fileName.c_str(), inFilter, (int)fileEntry.key.fileName.size(), filterLen) == 0)
                 continue;
@@ -189,10 +188,9 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
                 switch (sort_spec->ColumnUserID)
                 {
                 case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
-                case FCID_Size:        delta = A.key.size - B.key.size; break;
-//todo                case FCID_Redundancy:  delta = everyHere.findRedundancy(A.key) - everyHere.findRedundancy(B.key); break;
-                case FCID_Redundancy:  delta = 0; break;
-                case FCID_DriveId:    delta = a.driveId - b.driveId; break;
+                case FCID_Size:        delta = (int64)A.key.size - (int64)B.key.size; break;
+                case FCID_Redundancy:  delta = (int64)g_gui.redundancy.findRedundancy(A.key) - (int64)g_gui.redundancy.findRedundancy(B.key); break;
+                case FCID_DriveId:    delta = (int64)a.driveId - (int64)b.driveId; break;
                 case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                 default: IM_ASSERT(0); break;
                 }
@@ -284,6 +282,7 @@ void WindowFiles::gui()
     }
 
     ImGuiTableFlags flags = ImGuiTableFlags_Borders |
+        ImGuiTableFlags_ScrollX |
         ImGuiTableFlags_ScrollY |
         ImGuiTableFlags_BordersOuter |
         ImGuiTableFlags_BordersV |
@@ -299,7 +298,7 @@ void WindowFiles::gui()
 
     std::string line;
 
-    uint32 numberOfColumns = 5;
+    uint32 numberOfColumns = 6;
 
     if (ImGui::BeginTable("table_scrolly", numberOfColumns, flags, outerSize))
     {
@@ -375,17 +374,18 @@ void WindowFiles::gui()
                         double printSize = 0;
                         const char* printUnit = computeReadableSize(entry.key.size, printSize);
                         ImGui::Text(printUnit, printSize);
-
-                        ImGui::TableSetColumnIndex(columnId++);
-//                        ImGui::Text("%d", everyHere.findRedundancy(entry.key));
-                        ImGui::Text("TODO");
                     }
+
+                    ImGui::TableSetColumnIndex(columnId++);
+                    ImGui::Text("%d", g_gui.redundancy.findRedundancy(entry.key));
 
                     ImGui::TableSetColumnIndex(columnId++);
                     ImGui::TextUnformatted(entry.value.path.c_str());
 
                     ImGui::TableSetColumnIndex(columnId++);
                     ImGui::Text("%d", entry.value.driveId);
+
+                    
                 }
             }
             clipper.End();

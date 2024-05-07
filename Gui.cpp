@@ -300,6 +300,25 @@ void showIconsWindow(ImFont *font, bool &show)
 
 int Gui::test()
 {
+    {
+        Redundancy r;
+        StringPool pool;
+        FileKey k0;
+        k0.fileName = pool.push("testA");
+        k0.size = 10;
+        FileKey k1;
+        k1.fileName = pool.push("testA");
+        k1.size = 10;
+
+        r.addRedundancy(k0, 0, 123);
+        r.addRedundancy(k1, 1, 24);
+        uint32 cnt = r.findRedundancy(k0);
+        assert(cnt == 2);
+    }
+
+
+
+
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -412,8 +431,10 @@ int Gui::test()
         // this affects Selectable(), make hovered less strong and no color, was (0.260f, 0.590f, 0.980f, 0.800f)
         colors[ImGuiCol_HeaderHovered] = ImVec4(0.4f, 0.4f, 0.4f, 0.400f);
 
-        ImGui::GetStyle().GrabMinSize = 20;
-        ImGui::GetStyle().ScrollbarSize = 20;
+        // height of a vertical scrollbar grab handle
+        ImGui::GetStyle().GrabMinSize = 25;
+        // width of a vertical scrollbar grab handle
+        ImGui::GetStyle().ScrollbarSize = 25;
         ImGui::GetStyle().ScrollbarRounding = 4;
         // docs say >1 is dangerous
         ImGui::GetStyle().WindowBorderSize = 2;

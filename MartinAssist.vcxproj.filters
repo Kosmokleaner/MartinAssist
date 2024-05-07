@@ -63,6 +63,7 @@
       <Filter>Hidden</Filter>
     </ClCompile>
     <ClCompile Include="WindowDrives.cpp" />
+    <ClCompile Include="ERedundancy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -141,6 +142,7 @@
       <Filter>Hidden</Filter>
     </ClInclude>
     <ClInclude Include="WindowDrives.h" />
+    <ClInclude Include="ERedundancy.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

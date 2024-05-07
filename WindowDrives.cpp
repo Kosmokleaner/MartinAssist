@@ -164,6 +164,12 @@ void DriveInfo2::load()
     {
         fileList = std::make_shared<EFileList>();
         fileList->load(::to_wstring(efuFileName).c_str());
+
+        uint64 index = 0;
+        for(auto& el : fileList->entries)
+        {
+            g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
+        }
     }
 }
 

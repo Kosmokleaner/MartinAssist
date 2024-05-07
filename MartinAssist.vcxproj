@@ -164,6 +164,7 @@
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Gui.cpp" />
+    <ClCompile Include="ERedundancy.cpp" />
     <ClCompile Include="WindowDrives.cpp" />
     <ClCompile Include="WindowFiles.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
@@ -207,6 +208,7 @@
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="Parse.h" />
+    <ClInclude Include="ERedundancy.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="PooledString.h" />
     <ClInclude Include="Timer.h" />

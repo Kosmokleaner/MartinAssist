@@ -2,6 +2,7 @@
 
 #include "WindowFiles.h"
 #include "WindowDrives.h"
+#include "ERedundancy.h"
 #include "imgui.h"
 
 #define EFU_FOLDER "EFUs"
@@ -16,6 +17,7 @@ public:
 
     WindowFiles files;
     WindowDrives drives;
+    Redundancy redundancy;
 };
 extern Gui g_gui;
 

@@ -35,7 +35,9 @@ EveryHere app:
 * database can be in one spot e.g. dropbox
 
 todo EFUs
-* filter files, sort
+* add more files to fill the view to always show vertical scrollbar
+* icon window has some bug, seems to repeat after half the data
+* filter box should have lens icon and disc borders
 * compute and show redundancy
 * multi select drives should add all files to the files window
 * editable drive description
