@@ -2,6 +2,16 @@
 #include "ASCIIFile.h"
 #include "Timer.h" // CScopedCPUTimerLog
 #include "Parse.h"
+#include "ERedundancy.h"
+
+void EFileList::computeRedundancy(Redundancy& redundancy)
+{
+    for(auto& el : entries)
+    {
+        el.value.redundancy = redundancy.computeRedundancy(el.key);
+    }
+}
+
 
 bool EFileList::load(const wchar_t* fileName)
 {

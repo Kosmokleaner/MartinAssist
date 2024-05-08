@@ -38,8 +38,6 @@ public:
     
     void addRedundancy(const FileKey& fileKey, uint32 driveId, uint64 fileId);
 
-    uint32 findRedundancy(const FileKey& fileKey) const;
-    
-
+    uint32 computeRedundancy(const FileKey& fileKey) const;    
 };
 

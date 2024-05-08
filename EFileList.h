@@ -2,6 +2,8 @@
 #include "PooledString.h"
 #include "types.h"
 
+class Redundancy;
+
 // see https://www.voidtools.com/support/everything/file_lists/#:~:text=Everything%20File%20List%20(EFU)%20are,%2C%20sizes%2C%20dates%20and%20attributes
 
 struct FileKey
@@ -52,6 +54,8 @@ struct FileValue
     PooledString path;
     // -1 means not part of a drive yet
     int driveId = -1;
+    // cached value from Redundancy::computeRedundancy(), 0 if not computed yet
+    uint32 redundancy = 0;
 };
 
 struct FileEntry
@@ -81,6 +85,8 @@ public:
     // @param must not be 0 
     // @return success
     bool load(const wchar_t* fileName);
+
+    void computeRedundancy(Redundancy& redundancy);
 
     static void test();
 };

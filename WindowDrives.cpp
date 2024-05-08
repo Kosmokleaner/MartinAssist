@@ -397,7 +397,11 @@ void WindowDrives::gui()
 
 //            symbol = "\xef\x87\x80"; // stack of disks
 
-            ImVec4 symbolColor = drive.localDrive ? ImVec4(0, 1, 0, 1) : ImVec4(1, 1, 1, 0.5f);
+            ImVec4 symbolColor = drive.localDrive ? ImVec4(0, 1, 0, 1) : ImVec4(0.5f, 0.5f, 0.5f, 1);
+
+            if(!drive.fileList)
+                symbolColor.w = 0.5f;
+
             ColoredTextButton(symbolColor, symbol);
             if (BeginTooltipPaused())
             {

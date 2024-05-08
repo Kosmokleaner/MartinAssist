@@ -6,7 +6,7 @@ void Redundancy::addRedundancy(const FileKey& fileKey, uint32 driveId, uint64 fi
     keyToRef.insert(std::pair<FileKey, DriveFileRef>(fileKey, ref));
 }
 
-uint32 Redundancy::findRedundancy(const FileKey& fileKey) const
+uint32 Redundancy::computeRedundancy(const FileKey& fileKey) const
 {
     return (uint32)keyToRef.count(fileKey);
 }

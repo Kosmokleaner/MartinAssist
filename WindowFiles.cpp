@@ -126,7 +126,11 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
 
             if (redundancyFilter)
             {
-                int redundancy = (int)g_gui.redundancy.findRedundancy(fileEntry.key);
+                uint32 redundancy = fileEntry.value.redundancy;
+
+                if(!redundancy)
+                    redundancy = fileEntry.value.redundancy = g_gui.redundancy.computeRedundancy(fileEntry.key);
+
                 switch (redundancyFilter)
                 {
                 case 1: if (redundancy >= 2) continue;
@@ -177,11 +181,16 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
                 // We could also choose to identify columns based on their index (sort_spec->ColumnIndex), which is simpler!
                 const ImGuiTableColumnSortSpecs* sort_spec = &sorts_specs->Specs[n];
                 int64 delta = 0;
+
+                assert(A.value.redundancy);
+                assert(B.value.redundancy);
+
                 switch (sort_spec->ColumnUserID)
                 {
                 case FCID_Name:        delta = strcmp(A.key.fileName.c_str(), B.key.fileName.c_str()); break;
                 case FCID_Size:        delta = (int64)A.key.size - (int64)B.key.size; break;
-                case FCID_Redundancy:  delta = (int64)g_gui.redundancy.findRedundancy(A.key) - (int64)g_gui.redundancy.findRedundancy(B.key); break;
+//                case FCID_Redundancy:  delta = (int64)g_gui.redundancy.computeRedundancy(A.key) - (int64)g_gui.redundancy.computeRedundancy(B.key); break;
+                case FCID_Redundancy:  delta = (int64)A.value.redundancy - (int64)B.value.redundancy; break;
                 case FCID_DriveId:    delta = (int64)a.driveId - (int64)b.driveId; break;
                 case FCID_Path:        delta = strcmp(A.value.path.c_str(), B.value.path.c_str()); break;
                 default: IM_ASSERT(0); break;
@@ -213,6 +222,8 @@ void WindowFiles::set(DriveInfo2& driveInfo)
     assert(driveInfo.fileList);
 
     fileList = driveInfo.fileList;
+
+    fileList->computeRedundancy(g_gui.redundancy);
 
     SelectionRange driveSelectionRange;
     buildFileView("", 0, 0, driveSelectionRange, 0);
@@ -369,7 +380,7 @@ void WindowFiles::gui()
                     }
 
                     ImGui::TableSetColumnIndex(columnId++);
-                    ImGui::Text("%d", g_gui.redundancy.findRedundancy(entry.key));
+                    ImGui::Text("%d", g_gui.redundancy.computeRedundancy(entry.key));
 
                     ImGui::TableSetColumnIndex(columnId++);
                     ImGui::TextUnformatted(entry.value.path.c_str());

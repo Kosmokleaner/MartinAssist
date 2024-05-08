@@ -312,7 +312,8 @@ int Gui::test()
 
         r.addRedundancy(k0, 0, 123);
         r.addRedundancy(k1, 1, 24);
-        uint32 cnt = r.findRedundancy(k0);
+        uint32 cnt = r.computeRedundancy(k0);
+        cnt;
         assert(cnt == 2);
     }
 
