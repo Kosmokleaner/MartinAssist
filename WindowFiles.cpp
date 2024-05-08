@@ -35,45 +35,37 @@ void WindowFiles::fileLineUI(int32 line_no, const FileEntry& entry, const std::s
             fileSelectionRange.onClick(line_no, false, false);
         }
 
-/*        if (fileSelectionRange.count() == 1)
+        if (fileSelectionRange.count() == 1)
         {
             if (ImGui::MenuItem("Open (with default program)"))
             {
-                //                                        const char* path = deviceData.generatePath(entry.value.parent);
-                const char* path = entry.value.path.c_str();
-                std::string fullPath = deviceData.drivePath + "/" + path + "/" + entry.key.fileName.c_str();
+                std::string fullPath = entry.value.path.c_str();
+
+                fullPath += "/";
+                fullPath += entry.key.fileName.c_str();
                 ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
             }
             if (ImGui::MenuItem("Open path (in Explorer)"))
             {
-                //                                        const char* path = deviceData.generatePath(entry.value.parent);
-                const char* path = entry.value.path.c_str();
-                std::string fullPath = deviceData.drivePath + "/" + path;
-                ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
+                ShellExecuteA(0, 0, entry.value.path.c_str(), 0, 0, SW_SHOW);
             }
         }
+
         if (ImGui::MenuItem("Copy selection as path (to clipboard)"))
         {
             ImGui::LogToClipboard();
 
             fileSelectionRange.foreach([&](int64 line_no) {
                 ViewEntry& viewEntry = fileView[line_no];
-//                const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
-                const FileEntry& entry = l.entries[viewEntry.fileEntryId];
+                const FileEntry& entry = fileList->entries[viewEntry.fileEntryId];
                 if (entry.key.size >= 0)
                 {
-                    //                                            const char* path = deviceData.generatePath(entry.value.parent);
-                    const char* path = entry.value.path.c_str();
-                    if (*path)
-                        ImGui::LogText("%s/%s/%s\n", deviceData.drivePath.c_str(), path, entry.key.fileName.c_str());
-                    else
-                        ImGui::LogText("%s/%s\n", deviceData.drivePath.c_str(), entry.key.fileName.c_str());
+                    ImGui::LogText("%s/%s\n", entry.value.path.c_str(), entry.key.fileName.c_str());
                 }
                 });
 
             ImGui::LogFinish();
         }
- */
        ImGui::EndPopup();
     }
 }
