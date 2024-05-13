@@ -5,7 +5,7 @@
 #include "ASCIIFile.h"
 #include "Timer.h"
 #include "Gui.h"
-#include <time.h>
+#include <sys/timeb.h>
 #include <windows.h>  // GetDiskFreeSpaceW()
 #undef min
 #undef max
@@ -473,13 +473,30 @@ void WindowDrives::gui()
             ImGui::SameLine();
             ImGui::TextColored(drive.localDrive ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.5f), item);
 
-            if(drive.date && !drive.localDrive)
+            if(drive.date)
             {
-                char date[80];
-                dateToCString(drive.date, date);
+//                char date[80];
+//                dateToCString(drive.date, date);
+                __timeb64 timeptr;
+                _ftime64_s(&timeptr);
+
+                __time64_t rel = timeptr.time - drive.date;
 
                 ImGui::SameLine();
-                ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), " %s", date);
+                if (rel > 60 * 60 * 24)
+                    ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), " ~%.0f days", rel / (60.0f * 60 * 24));
+                else if (rel > 60 * 60)
+                    ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), " ~%.0f hours", rel / (60.0f * 60));
+                else if(rel>60)
+                    ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), " ~%.0f minutes", rel / 60.0f);
+                else
+                    ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), " ~%.0f seconds", rel);
+
+                if(drive.fileList)
+                {
+                    ImGui::SameLine();
+                    ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), ", %lluK files", (drive.fileList->entries.size() + 999) / 1000 );
+                }
             }
         }
     }
@@ -594,6 +611,17 @@ public:
             el.totalSpace = (uint64)lpSectorsPerCluster * lpBytesPerSector * lpTotalNumberOfClusters;
         }
 
+        // if we found it already we don't need to add it to the drives
+        for (auto& here : drives)
+        {
+            if(here.internalName == el.internalName)
+            {
+                here.localDrive = true;
+                return;
+            }
+        }
+
+        // add new ones to the bottom to make more stand out
         drives.push_back(el);
     }
 };
@@ -705,12 +733,6 @@ void WindowDrives::rescan()
 {
     drives.clear();
 
-    // local drives
-    {
-       DriveScan scan(drives);
-        driveTraverse(scan);
-    }
-
     // all EFUs
     {
         FolderScan scan(drives);
@@ -761,6 +783,12 @@ void WindowDrives::rescan()
             first = false;
             internalName = el.internalName;
         }
+    }
+
+    // local drives
+    {
+        DriveScan scan(drives);
+        driveTraverse(scan);
     }
 
     whenToRebuildView = -1;

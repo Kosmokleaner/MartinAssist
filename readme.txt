@@ -35,6 +35,9 @@ EveryHere app:
 * database can be in one spot e.g. dropbox
 
 todo EFUs
+* show drive scanned in x days, show date in tooltip instead
+* where are other dups ?
+* checkbox for recycle bin filter
 * add more files to fill the view to always show vertical scrollbar
 * icon window has some bug, seems to repeat after half the data
 * filter box should have lens icon and disc borders
