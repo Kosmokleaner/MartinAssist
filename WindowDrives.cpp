@@ -191,13 +191,44 @@ void build(DriveInfo2 & drive)
     printf("%s %s\n", command, cmdLine.c_str());
 
 //    HINSTANCE inst = 
-    ShellExecuteA(0, 0, command, cmdLine.c_str(), 0, SW_HIDE);
+//    ShellExecuteA(0, 0, command, cmdLine.c_str(), 0, SW_HIDE);
+    // https://stackoverflow.com/questions/10896778/how-to-get-return-value-of-an-exe-called-by-shellexecute
+    {
+        SHELLEXECUTEINFOA ShExecInfo = { 0 };
+        ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
+        ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+        ShExecInfo.hwnd = NULL;
+        ShExecInfo.lpVerb = NULL;
+        ShExecInfo.lpFile = command;
+        ShExecInfo.lpParameters = cmdLine.c_str();
+        ShExecInfo.lpDirectory = NULL;
+        ShExecInfo.nShow = SW_SHOW;
+        ShExecInfo.hInstApp = NULL;
+        ShellExecuteExA(&ShExecInfo);
+        WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+        int exitCode = 0;
+
+        const char *meaning = "?";
+
+        if(GetExitCodeProcess(ShExecInfo.hProcess, (DWORD*)&exitCode))
+        {
+            if(exitCode == 0)
+                meaning = "Ok";
+            if (exitCode == 8)
+                meaning = "Error: Everything was not running";
+
+            printf("Everything ExitCode: %d %s\n", exitCode, meaning);
+        }
+    }
 
     CASCIIFile file;
     std::string fileData;
     // to avoid reallocations
     fileData.reserve(10 * 1024 * 1024);
     char str[1024];
+
+    // time when we got the EFU
+    drive.date = _time64(0);
 
 #define EL_STRING(NAME) \
     if (!drive.NAME.empty()) \
@@ -227,6 +258,17 @@ void build(DriveInfo2 & drive)
 #undef EL_STRING
 #undef EL_INT64
 
+    // for debugging
+    {
+        fileData += "# dateInText=";
+
+        char date[80];
+        dateToCString(drive.date, date);
+
+        fileData += date;
+        fileData += "\n";
+    }
+    
     fileData += "# version=" SERIALIZE_VERSION "\n";
     fileData += "#\n";
 
@@ -465,6 +507,8 @@ void WindowDrives::gui()
                     dateToCString(drive.date, date);
                     ImGui::Text("date: %s", date);
                 }
+                else ImGui::Text("date: ?");
+
                 //            bool supportsRemoteStorage = drive.driveFlags & 0x100;
 
                 EndTooltip();
@@ -472,6 +516,10 @@ void WindowDrives::gui()
 
             ImGui::SameLine();
             ImGui::TextColored(drive.localDrive ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.5f), item);
+
+            // for debugging, orange
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1, 0.5f, 0, 1.0f), " %s ", drive.efuFileName.c_str());
 
             if(drive.date)
             {
@@ -568,7 +616,6 @@ class DriveScan : public IDriveTraverse
     std::vector<DriveInfo2>& drives;
     std::string computerName;
     std::string userName;
-    __time64_t date = {};
 public:
     DriveScan(std::vector<DriveInfo2> &inDrives)
         : drives(inDrives)
@@ -585,7 +632,6 @@ public:
             // e.g. "Hans"
             userName = name;
         }
-        date = _time64(0);
     }
     virtual void OnDrive(const DriveInfo& driveInfo)
     {
@@ -600,7 +646,6 @@ public:
         el.localDrive = true;
         el.computerName = computerName;
         el.userName = userName;
-        el.date = date;
         DWORD lpSectorsPerCluster;
         DWORD lpBytesPerSector;
         DWORD lpNumberOfFreeClusters;
@@ -698,7 +743,7 @@ public:
                             EL_STRING(volumeName);
                             EL_STRING(computerName);
                             EL_STRING(userName);
-                            EL_STRING(efuFileName);
+//                            EL_STRING(efuFileName);       // not always trustable but useful to to track down issues
                             EL_INT64(freeSpace);
                             EL_INT64(totalSpace);
                             // EL_INT64(driveType);
@@ -767,6 +812,7 @@ void WindowDrives::rescan()
     };
 
     CustomLessFile customLess = { };
+
 
     std::sort(drives.begin(), drives.end(), customLess);
 
