@@ -675,3 +675,61 @@ const char* computeReadableSize(uint64 inputSize, double& outPrintSize)
 
     return "%.0f B";
 }
+
+bool ImGuiSearch(const char* label, std::string* value, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+{
+    assert(value);
+
+    const char* lensIcon = "\xef\x80\x82";
+
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    float iconWidth = ImGui::CalcTextSize(lensIcon).x + ImGui::GetTextLineHeight();
+    float leftDecoWithoutIcon = ImGui::CalcTextSize(lensIcon).x + ImGui::GetTextLineHeight();
+    float rightDeco = ImGui::CalcTextSize(label).x + style.ItemSpacing.x;
+
+    // label should not to close to the border
+    rightDeco += style.ItemSpacing.x;
+
+    // width of the usable TextInput part
+    float buttonWidth = ImGui::GetContentRegionAvail().x - leftDecoWithoutIcon - ImGui::GetTextLineHeight() - rightDeco;
+
+    float x = ImGui::GetCursorPosX();
+
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+    {
+        ImVec2 size(buttonWidth + iconWidth + ImGui::GetTextLineHeight(), ImGui::GetFontSize() + 2 * style.FramePadding.y);
+
+        const ImRect bb(window->DC.CursorPos, ImVec2(window->DC.CursorPos.x + size.x, window->DC.CursorPos.y + size.y));
+        const ImU32 col = ImGui::GetColorU32(ImGuiCol_FrameBg);
+        ImGui::RenderFrame(bb.Min, bb.Max, col, true, 100.0f);
+    }
+
+    bool ret;
+    {
+        ImStyleColor_RAII seeThrough;
+
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
+
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(x + leftDecoWithoutIcon);
+        ImGui::PushItemWidth(buttonWidth);
+        ImGui::PushID(label);
+        ret = ImGui::InputText("##", value, flags, callback, user_data);
+        ImGui::PopID();
+        ImGui::PopItemWidth();
+    }
+
+    // icon
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(x + ImGui::GetFontSize() * 0.5f);
+    ImGui::TextUnformatted(lensIcon);
+
+    // label
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(x + buttonWidth + ImGui::CalcTextSize(lensIcon).x + 2 * ImGui::GetTextLineHeight() + style.ItemSpacing.x);
+    ImGui::TextUnformatted(label);
+
+    return ret;
+}

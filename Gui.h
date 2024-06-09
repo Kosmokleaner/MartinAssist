@@ -92,3 +92,7 @@ struct ImStyleVar_RAII
         ImGui::PopStyleVar(count);
     }
 };
+
+// like ImGui::InputText(label, &value) but with rounded corners and lens symbol
+// @param value must not be 0
+bool ImGuiSearch(const char* label, std::string* value, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);

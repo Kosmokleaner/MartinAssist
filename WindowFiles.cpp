@@ -243,10 +243,11 @@ void WindowFiles::gui()
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 200, main_viewport->WorkPos.y + 420), ImGuiCond_FirstUseEver);
     ImGui::Begin("Files", &showWindow, ImGuiWindowFlags_NoCollapse);
 
-    // todo: filter button
-    if (ImGui::InputText("filter", &filter))
-    {
-        setViewDirty();
+    { 
+        if (ImGuiSearch("filter", &filter))
+        {
+            setViewDirty();
+        }
     }
 
     {
