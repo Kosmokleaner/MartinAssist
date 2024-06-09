@@ -539,6 +539,8 @@ int Gui::test()
 
                 ImGui::EndMenu();
             }
+            ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), "    %4.1f ms  %.1f FPS", 1000.0f / io.Framerate, io.Framerate);
+
             ImGui::EndMainMenuBar();
         }
 
