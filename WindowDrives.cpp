@@ -169,7 +169,7 @@ struct LoadThread
     {
         assert(fileLoadSink);
 
-        EFileList localfileList;
+        FileList localfileList;
         {
             CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
             localfileList.load(::to_wstring(efuFileName).c_str());
@@ -201,19 +201,21 @@ void DriveInfo2::load(IFileLoadSink& fileLoadSink)
             This.run();
         });
 #else
-        fileList = std::make_shared<EFileList>();
+        fileList = std::make_shared<FileList>();
         {
             CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
             fileList->load(::to_wstring(efuFileName).c_str());
         }
-
-        CScopedCPUTimerLog log("DriveInfo2::load addRedundancy");
-
-        uint64 index = 0;
-        for (auto& el : fileList->entries)
         {
-            g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
+            CScopedCPUTimerLog log("DriveInfo2::load addRedundancy");
+
+            uint64 index = 0;
+            for (auto& el : fileList->entries)
+            {
+                g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
+            }
         }
+        g_gui.files.set(*this);
 #endif
     }
 }
@@ -512,9 +514,6 @@ void WindowDrives::gui()
                 if(g_gui.files.showWindow)
                 {
                     drive.load(g_gui.files);
-#if ASYNC_LOAD == 0
-                    g_gui.files.set(drive);
-#endif
                 }
 
 //            setViewDirty();

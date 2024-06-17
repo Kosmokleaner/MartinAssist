@@ -11,12 +11,12 @@ class WindowFiles : public IFileLoadSink
 {
     // todo: refactor
 //    EFileList l;
-    std::shared_ptr<EFileList> fileList;
+    std::shared_ptr<FileList> fileList;
 public:
 
     // intarface IFileLoadSink
 
-    virtual void onIncomingFiles(const EFileList& incomingFileList);
+    virtual void onIncomingFiles(const FileList& incomingFileList);
 
     // [line_no] = ViewEntry, built by buildView()
     std::vector<ViewEntry> fileView;

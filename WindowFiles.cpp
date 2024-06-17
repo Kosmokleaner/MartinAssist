@@ -82,7 +82,7 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
     if(!fileList)
         return;
 
-    EFileList& l = *fileList;
+    FileList& l = *fileList;
 
  //   viewSumSize = 0;
     int filterLen = (int)strlen(inFilter);
@@ -159,7 +159,7 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
 
     struct CustomLessFile
     {
-        EFileList& ref;
+        FileList& ref;
         ImGuiTableSortSpecs* sorts_specs = {};
 
         bool operator()(const ViewEntry& a, const ViewEntry& b) const
@@ -216,7 +216,7 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
  //   buildFileViewChildLists();
 }
 
-void WindowFiles::onIncomingFiles(const EFileList& incomingFileList)
+void WindowFiles::onIncomingFiles(const FileList& incomingFileList)
 {
     CScopedCPUTimerLog log("WindowFiles::onIncomingFiles");
     
@@ -251,7 +251,7 @@ void WindowFiles::gui()
         return;
 
     // mayb be 0
-    EFileList* l = fileList.get();
+    FileList* l = fileList.get();
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);

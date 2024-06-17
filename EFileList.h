@@ -73,7 +73,7 @@ enum FileColumnID
     FCID_Path,
 };
 
-class EFileList
+class FileList
 {
 public: // todo: remove
 

@@ -4,7 +4,7 @@
 #include "Parse.h"
 #include "ERedundancy.h"
 
-void EFileList::computeRedundancy(Redundancy& redundancy)
+void FileList::computeRedundancy(Redundancy& redundancy)
 {
     for(auto& el : entries)
     {
@@ -13,7 +13,7 @@ void EFileList::computeRedundancy(Redundancy& redundancy)
 }
 
 
-bool EFileList::load(const wchar_t* fileName)
+bool FileList::load(const wchar_t* fileName)
 {
     assert(fileName);
 
@@ -183,9 +183,9 @@ bool EFileList::load(const wchar_t* fileName)
     return !error;
 }
 
-void EFileList::test()
+void FileList::test()
 {
-    EFileList l;
+    FileList l;
 
     l.load(L"E:\\EverythingEFUs\\Ryzen4202024.efu");
 }

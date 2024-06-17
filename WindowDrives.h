@@ -7,7 +7,7 @@
 
 struct IFileLoadSink
 {
-    virtual void onIncomingFiles(const EFileList& incomingFileList) = 0;
+    virtual void onIncomingFiles(const FileList& incomingFileList) = 0;
 };
 
 struct DriveInfo2
@@ -43,7 +43,7 @@ struct DriveInfo2
     bool newestEntry = false;
 
     // data from efuFileName, maybe be 0
-    std::shared_ptr<EFileList> fileList;
+    std::shared_ptr<FileList> fileList;
 
     void load(IFileLoadSink& fileLoadSink);
 };
