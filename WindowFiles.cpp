@@ -220,8 +220,30 @@ void WindowFiles::onIncomingFiles(const FileList& incomingFileList)
 {
     CScopedCPUTimerLog log("WindowFiles::onIncomingFiles");
     
-//    std::unique_lock<std::mutex> lock(everyHere_mutex);
-//    std::mutex everyHere_mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+
+    StringPool& dstPool = fileList->stringPool;
+
+    auto mergeContext = dstPool.merge(incomingFileList.stringPool);
+
+    std::vector<FileEntry> dstVector = fileList->entries;
+
+    dstVector.reserve(dstVector.size() + incomingFileList.entries.size());
+
+    for(const auto& el : incomingFileList.entries)
+    {
+        FileEntry newEl = el;
+        newEl.key.fileName = dstPool.mergeIn(mergeContext, newEl.key.fileName);
+        newEl.value.path = dstPool.mergeIn(mergeContext, newEl.value.path); 
+        dstVector.push_back(newEl);
+    }
+}
+
+void WindowFiles::clear()
+{
+    fileList = std::make_shared<FileList>();
+    SelectionRange driveSelectionRange;
+    buildFileView("", 0, 0, driveSelectionRange, 0);
 }
 
 void WindowFiles::set(DriveInfo2& driveInfo)

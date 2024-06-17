@@ -4,13 +4,15 @@
 #include "SelectionRange.h"
 #include "WindowDrives.h"
 #include "ImGui/imgui.h"
+#include <mutex>
 
 struct DriveInfo2;
 
 class WindowFiles : public IFileLoadSink
 {
-    // todo: refactor
-//    EFileList l;
+    // protecting fileList
+    std::mutex mutex;
+    // protected by mutex
     std::shared_ptr<FileList> fileList;
 public:
 
@@ -20,6 +22,8 @@ public:
 
     // [line_no] = ViewEntry, built by buildView()
     std::vector<ViewEntry> fileView;
+
+    void clear();
 
     void set(DriveInfo2& driveInfo);
 

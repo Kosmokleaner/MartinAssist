@@ -68,6 +68,30 @@ void PooledStringUnitTest()
     assert(strcmp(b4.c_str(), "Test") == 0);
 }
 
+StringPool::MergeContext StringPool::merge(const StringPool& in)
+{
+    MergeContext ret;
+
+    ret.sizeBeforeMerge = mem.size();
+
+    const size_t oldSize = mem.size();
+    const size_t inSize = in.mem.size();
+    mem.resize(mem.size() + inSize);
+    memcpy(&mem[oldSize], in.mem.data(), inSize);
+
+    return ret;
+}
+
+PooledString StringPool::mergeIn(const StringPool::MergeContext mergeContext, const PooledString& in)
+{
+    PooledString ret;
+        
+    ret.pool = this;
+    ret.startInPool = mergeContext.sizeBeforeMerge + in.startInPool;
+
+    return ret;
+}
+
 PooledString StringPool::push(const char* in, size_t inSize)
 {
     PooledString ret;

@@ -27,6 +27,11 @@ class StringPool
 {
     // 0 terminated
     std::vector<char> mem;
+    struct MergeContext
+    {
+        size_t sizeBeforeMerge = 0;
+    };
+
 public:
     StringPool();
     ~StringPool();
@@ -35,6 +40,11 @@ public:
     PooledString push(const char* in);
     // @param 0 termination not expected
     PooledString push(const char* in, size_t inSize);
+
+    // call once to merg in another pool
+    MergeContext merge(const StringPool& in);
+    // then call this once per entry to remap
+    PooledString mergeIn(const MergeContext mergeContext, const PooledString& in);
 
     friend PooledString;
 };

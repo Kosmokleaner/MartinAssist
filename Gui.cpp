@@ -514,16 +514,16 @@ int Gui::test()
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
-        files.gui();
-        drives.gui();
+        windowFiles.gui();
+        windowDrives.gui();
         showIconsWindow(fontAwesomeLarge, showIcons);
 
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))
             {
-                ImGui::MenuItem("Drives Window", 0, &drives.showWindow);
-                ImGui::MenuItem("Files Window", 0, &files.showWindow);
+                ImGui::MenuItem("Drives Window", 0, &windowDrives.showWindow);
+                ImGui::MenuItem("Files Window", 0, &windowFiles.showWindow);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Open EFUs folder"))
                     openEFUsFolder();

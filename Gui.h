@@ -15,8 +15,8 @@ public:
     
 //private:
 
-    WindowFiles files;
-    WindowDrives drives;
+    WindowFiles windowFiles;
+    WindowDrives windowDrives;
     Redundancy redundancy;
 };
 extern Gui g_gui;

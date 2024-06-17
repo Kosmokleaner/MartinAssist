@@ -192,15 +192,19 @@ void DriveInfo2::load(IFileLoadSink& fileLoadSink)
     if(!fileList)
     {
 #if ASYNC_LOAD
+        g_gui.windowFiles.clear();
+
         LoadThread loadThread;
         loadThread.efuFileName = efuFileName;
         loadThread.fileLoadSink = &fileLoadSink;
+
         new std::thread([loadThread]
         {
             LoadThread This = loadThread; // loadThread is const, can it be done better?
             This.run();
         });
 #else
+        g_gui.windowFiles.clear();
         fileList = std::make_shared<FileList>();
         {
             CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
@@ -215,7 +219,7 @@ void DriveInfo2::load(IFileLoadSink& fileLoadSink)
                 g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
             }
         }
-        g_gui.files.set(*this);
+        g_gui.windowFiles.set(*this);
 #endif
     }
 }
@@ -511,9 +515,9 @@ void WindowDrives::gui()
             {
                 driveSelectionRange.onClick(driveIndex, ImGui::GetIO().KeyShift, ImGui::GetIO().KeyCtrl);
 
-                if(g_gui.files.showWindow)
+                if(g_gui.windowFiles.showWindow)
                 {
-                    drive.load(g_gui.files);
+                    drive.load(g_gui.windowFiles);
                 }
 
 //            setViewDirty();
