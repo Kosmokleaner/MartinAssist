@@ -5,3 +5,6 @@
 
 #include <assert.h>
 #include "types.h"
+
+// 0:off (sync, stall), 1:on (async, no stall)
+#define ASYNC_LOAD 0

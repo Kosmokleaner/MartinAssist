@@ -5,6 +5,11 @@
 #include "EFileList.h"
 #include "SelectionRange.h"
 
+struct IFileLoadSink
+{
+    virtual void onIncomingFiles(const EFileList& incomingFileList) = 0;
+};
+
 struct DriveInfo2
 {
     // e.g. "C:\"
@@ -40,7 +45,7 @@ struct DriveInfo2
     // data from efuFileName, maybe be 0
     std::shared_ptr<EFileList> fileList;
 
-    void load();
+    void load(IFileLoadSink& fileLoadSink);
 };
 
 class WindowDrives

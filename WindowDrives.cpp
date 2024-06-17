@@ -6,6 +6,7 @@
 #include "Timer.h"
 #include "Gui.h"
 #include <sys/timeb.h>
+#include <thread>
 #include <windows.h>  // GetDiskFreeSpaceW()
 #undef min
 #undef max
@@ -158,18 +159,62 @@ public:
     }
 };
 
-void DriveInfo2::load()
+struct LoadThread
+{
+    std::string efuFileName;
+    // must not be 0
+    IFileLoadSink* fileLoadSink = {};
+
+    void run()
+    {
+        assert(fileLoadSink);
+
+        EFileList localfileList;
+        {
+            CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
+            localfileList.load(::to_wstring(efuFileName).c_str());
+        }
+        {
+            CScopedCPUTimerLog log("DriveInfo2::load addRedundancy");
+
+            uint64 index = 0;
+            for (auto& el : localfileList.entries)
+            {
+                g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
+            }
+        }
+        fileLoadSink->onIncomingFiles(localfileList);
+    }
+};
+
+void DriveInfo2::load(IFileLoadSink& fileLoadSink)
 {
     if(!fileList)
     {
+#if ASYNC_LOAD
+        LoadThread loadThread;
+        loadThread.efuFileName = efuFileName;
+        loadThread.fileLoadSink = &fileLoadSink;
+        new std::thread([loadThread]
+        {
+            LoadThread This = loadThread; // loadThread is const, can it be done better?
+            This.run();
+        });
+#else
         fileList = std::make_shared<EFileList>();
-        fileList->load(::to_wstring(efuFileName).c_str());
+        {
+            CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
+            fileList->load(::to_wstring(efuFileName).c_str());
+        }
+
+        CScopedCPUTimerLog log("DriveInfo2::load addRedundancy");
 
         uint64 index = 0;
-        for(auto& el : fileList->entries)
+        for (auto& el : fileList->entries)
         {
             g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
         }
+#endif
     }
 }
 
@@ -466,8 +511,10 @@ void WindowDrives::gui()
 
                 if(g_gui.files.showWindow)
                 {
-                    drive.load();
+                    drive.load(g_gui.files);
+#if ASYNC_LOAD == 0
                     g_gui.files.set(drive);
+#endif
                 }
 
 //            setViewDirty();

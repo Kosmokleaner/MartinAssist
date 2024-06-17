@@ -216,6 +216,14 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
  //   buildFileViewChildLists();
 }
 
+void WindowFiles::onIncomingFiles(const EFileList& incomingFileList)
+{
+    CScopedCPUTimerLog log("WindowFiles::onIncomingFiles");
+    
+//    std::unique_lock<std::mutex> lock(everyHere_mutex);
+//    std::mutex everyHere_mutex;
+}
+
 void WindowFiles::set(DriveInfo2& driveInfo)
 {
     // call load before
@@ -223,10 +231,18 @@ void WindowFiles::set(DriveInfo2& driveInfo)
 
     fileList = driveInfo.fileList;
 
-    fileList->computeRedundancy(g_gui.redundancy);
+    {
+        CScopedCPUTimerLog log("WindowFiles::set computeRedundancy");
+        fileList->computeRedundancy(g_gui.redundancy);
+    }
 
     SelectionRange driveSelectionRange;
-    buildFileView("", 0, 0, driveSelectionRange, 0);
+
+    {
+        CScopedCPUTimerLog log("WindowFiles::set buildFileView");
+    
+        buildFileView("", 0, 0, driveSelectionRange, 0);
+    }
 }
 
 void WindowFiles::gui()

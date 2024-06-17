@@ -2,16 +2,21 @@
 #include <memory> // std::shared_ptr<>
 #include "EFileList.h"
 #include "SelectionRange.h"
+#include "WindowDrives.h"
 #include "ImGui/imgui.h"
 
 struct DriveInfo2;
 
-class WindowFiles
+class WindowFiles : public IFileLoadSink
 {
     // todo: refactor
 //    EFileList l;
     std::shared_ptr<EFileList> fileList;
 public:
+
+    // intarface IFileLoadSink
+
+    virtual void onIncomingFiles(const EFileList& incomingFileList);
 
     // [line_no] = ViewEntry, built by buildView()
     std::vector<ViewEntry> fileView;
