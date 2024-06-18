@@ -12,7 +12,7 @@
 
 #pragma warning( disable : 4100 ) // unreferenced formal parameter
 
-void WindowFiles::fileLineUI(int32 line_no, const FileEntry& entry, const std::string& line)
+void WindowFiles::fileLineUI(const std::vector<std::shared_ptr<DriveInfo2> >& drives, int32 line_no, const FileEntry& entry, const std::string& line)
 {
 
 
@@ -57,6 +57,9 @@ void WindowFiles::fileLineUI(int32 line_no, const FileEntry& entry, const std::s
 
             fileSelectionRange.foreach([&](int64 line_no) {
                 ViewEntry& viewEntry = fileView[line_no];
+
+                std::shared_ptr<FileList>& fileList = drives[viewEntry.driveId]->fileList;
+
                 const FileEntry& entry = fileList->entries[viewEntry.fileEntryId];
                 if (entry.key.size >= 0)
                 {
@@ -77,24 +80,21 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
     assert(minSize >= 0);
     assert(inFilter);
 
-    fileView.clear();
-
-    if(!fileList)
-        return;
-
-    FileList& l = *fileList;
-
  //   viewSumSize = 0;
     int filterLen = (int)strlen(inFilter);
 
+// todo
+    return;
+    FileList l;
+    std::shared_ptr<FileList> fileList;
+
+// todo
 //    for (uint32 lineNoDrive = 0; lineNoDrive < driveView.size(); ++lineNoDrive)
-//    {
+    {
 //        if (!driveSelectionRange.isSelected(lineNoDrive))
 //            continue;
 
 //        DriveData& itD = *driveData[driveView[lineNoDrive]];
-    {
-
 
         fileView.reserve(l.entries.size());
 
@@ -220,7 +220,12 @@ void WindowFiles::onIncomingFiles(const FileList& incomingFileList)
 {
     CScopedCPUTimerLog log("WindowFiles::onIncomingFiles");
     
-    std::unique_lock<std::mutex> lock(mutex);
+//    std::unique_lock<std::mutex> lock(mutex);
+
+// hack
+    return;
+    FileList l;
+    std::shared_ptr<FileList> fileList;
 
     StringPool& dstPool = fileList->stringPool;
 
@@ -241,7 +246,6 @@ void WindowFiles::onIncomingFiles(const FileList& incomingFileList)
 
 void WindowFiles::clear()
 {
-    fileList = std::make_shared<FileList>();
     SelectionRange driveSelectionRange;
     buildFileView("", 0, 0, driveSelectionRange, 0);
 }
@@ -251,7 +255,10 @@ void WindowFiles::set(DriveInfo2& driveInfo)
     // call load before
     assert(driveInfo.fileList);
 
-    fileList = driveInfo.fileList;
+
+    return;
+    FileList l;
+    std::shared_ptr<FileList> fileList;
 
     {
         CScopedCPUTimerLog log("WindowFiles::set computeRedundancy");
@@ -267,13 +274,10 @@ void WindowFiles::set(DriveInfo2& driveInfo)
     }
 }
 
-void WindowFiles::gui()
+void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
 {
     if(!showWindow)
         return;
-
-    // mayb be 0
-    FileList* l = fileList.get();
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);
@@ -388,6 +392,9 @@ void WindowFiles::gui()
                     if (line_no >= (int)fileView.size())
                         break;
 
+// todo
+                    std::shared_ptr<FileList> l;
+
                     ViewEntry& viewEntry = fileView[line_no];
 //                    const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
                     const FileEntry& entry = l->entries[viewEntry.fileEntryId];
@@ -407,7 +414,7 @@ void WindowFiles::gui()
 
                     ImGui::Selectable(line.c_str(), &selected, selectable_flags);
 
-                    fileLineUI(line_no, entry, line);
+                    fileLineUI(drives, line_no, entry, line);
 
                     ImGui::PopID();
 
