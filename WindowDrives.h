@@ -56,7 +56,7 @@ public:
     bool showWindow = true;
 
 private:
-    std::vector<DriveInfo2> drives;
+    std::vector<std::shared_ptr<DriveInfo2> > drives;
     // into everyHere.driveView[]
     SelectionRange driveSelectionRange;
     //

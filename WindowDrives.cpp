@@ -407,7 +407,7 @@ void WindowDrives::gui()
     {
         for (int driveIndex = 0; driveIndex < drives.size(); driveIndex++)
         {
-            DriveInfo2& drive = drives[driveIndex];
+            DriveInfo2& drive = *drives[driveIndex];
 
             if (driveTabId == 1 && !drive.newestEntry && !drive.localDrive)
                 continue;
@@ -614,7 +614,7 @@ void WindowDrives::openDrive()
 {
     driveSelectionRange.foreach([&](int64 index) {
         auto& drive = drives[index];
-        FilePath filePath(to_wstring(drive.drivePath).c_str());
+        FilePath filePath(to_wstring(drive->drivePath).c_str());
         ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
         });
 
@@ -639,7 +639,7 @@ void WindowDrives::popup()
         if (ImGui::MenuItem("Build EFU for selected drive(s)"))
         {
             driveSelectionRange.foreach([&](int64 index) {
-                DriveInfo2& ref = drives[index];
+                DriveInfo2& ref = *drives[index];
                 build(ref);
                 });
             rescan = true;
@@ -648,7 +648,7 @@ void WindowDrives::popup()
     if (ImGui::MenuItem("Build EFU for each local drive"))
     {
         for (auto& ref : drives)
-            build(ref);
+            build(*ref);
 
         rescan = true;
     }
@@ -663,11 +663,11 @@ void WindowDrives::popup()
 
 class DriveScan : public IDriveTraverse
 {
-    std::vector<DriveInfo2>& drives;
+    std::vector< std::shared_ptr<DriveInfo2> >& drives;
     std::string computerName;
     std::string userName;
 public:
-    DriveScan(std::vector<DriveInfo2> &inDrives)
+    DriveScan(std::vector<std::shared_ptr<DriveInfo2> > &inDrives)
         : drives(inDrives)
     {
         char name[256];
@@ -685,7 +685,8 @@ public:
     }
     virtual void OnDrive(const DriveInfo& driveInfo)
     {
-        DriveInfo2 el;
+        std::shared_ptr<DriveInfo2> ptr = std::make_shared<DriveInfo2>();
+        DriveInfo2& el = *ptr;
 
         el.drivePath = to_string(driveInfo.drivePath.path);
         el.deviceName = to_string(driveInfo.deviceName);
@@ -707,8 +708,10 @@ public:
         }
 
         // if we found it already we don't need to add it to the drives
-        for (auto& here : drives)
+        for (auto& it : drives)
         {
+            auto& here = *it;
+
             if(here.internalName == el.internalName)
             {
                 here.localDrive = true;
@@ -717,15 +720,15 @@ public:
         }
 
         // add new ones to the bottom to make more stand out
-        drives.push_back(el);
+        drives.push_back(ptr);
     }
 };
 
 class FolderScan : public IDirectoryTraverse
 {
-    std::vector<DriveInfo2>& drives;
+    std::vector<std::shared_ptr<DriveInfo2> >& drives;
 public:
-    FolderScan(std::vector<DriveInfo2>& inDrives)
+    FolderScan(std::vector<std::shared_ptr<DriveInfo2> >& inDrives)
         : drives(inDrives)
     {
     }
@@ -743,7 +746,8 @@ public:
     // @param progress 0:unknown or just started .. 1:done
     virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData, float progress)
     {
-        DriveInfo2 el;
+        std::shared_ptr<DriveInfo2> ptr = std::make_shared<DriveInfo2>();
+        DriveInfo2& el = *ptr;
 
         CASCIIFile txtFile;
 
@@ -819,7 +823,7 @@ public:
 
         if (!error)
         {
-            drives.push_back(el);
+            drives.push_back(ptr);
         }
     }
 };
@@ -834,10 +838,13 @@ void WindowDrives::rescan()
         directoryTraverse(scan, L"EFUs", L"*.txt");
     }
 
-    struct CustomLessFile
+    struct CustomLessDrive
     {
-        bool operator()(const DriveInfo2& A, const DriveInfo2& B) const
+        bool operator()(const std::shared_ptr<DriveInfo2>& pA, const std::shared_ptr<DriveInfo2>& pB) const
         {
+            const DriveInfo2& A = *pA;
+            const DriveInfo2& B = *pB; 
+
             int64 delta;
 
             // for the UI it's best to show local drives first
@@ -861,17 +868,18 @@ void WindowDrives::rescan()
         }
     };
 
-    CustomLessFile customLess = { };
+    CustomLessDrive customLessDrive = { };
 
-
-    std::sort(drives.begin(), drives.end(), customLess);
+    std::sort(drives.begin(), drives.end(), customLessDrive);
 
     // set newestEntry
     {
         std::string internalName;
         bool first = true;
-        for(auto& el : drives)
+        for(auto& ptr : drives)
         {
+            auto& el = *ptr;
+
             if(el.internalName != internalName)
                 first = true;
 

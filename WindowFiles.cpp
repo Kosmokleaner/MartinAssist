@@ -207,9 +207,9 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
         }
     };
 
-    CustomLessFile customLess = { *fileList, sorts_specs };
+    CustomLessFile customLessFile = { *fileList, sorts_specs };
 
-    std::sort(fileView.begin(), fileView.end(), customLess);
+    std::sort(fileView.begin(), fileView.end(), customLessFile);
 
 
     // todo: only needed for TreeView
