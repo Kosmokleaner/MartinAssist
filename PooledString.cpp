@@ -82,6 +82,11 @@ StringPool::MergeContext StringPool::merge(const StringPool& in)
     return ret;
 }
 
+void StringPool::clear()
+{
+    mem.clear();
+}
+
 PooledString StringPool::mergeIn(const StringPool::MergeContext mergeContext, const PooledString& in)
 {
     PooledString ret;

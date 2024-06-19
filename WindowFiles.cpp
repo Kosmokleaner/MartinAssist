@@ -56,9 +56,12 @@ void WindowFiles::fileLineUI(const std::vector<std::shared_ptr<DriveInfo2> >& dr
             ImGui::LogToClipboard();
 
             fileSelectionRange.foreach([&](int64 line_no) {
-                ViewEntry& viewEntry = fileView[line_no];
+                ViewEntry& viewEntry = fileViewEx[line_no];
 
-                std::shared_ptr<FileList>& fileList = drives[viewEntry.driveId]->fileList;
+                DriveInfo2& drive = *drives[viewEntry.driveId];
+
+                std::unique_lock<std::mutex> lock(drive.mutex);
+                std::shared_ptr<FileList>& fileList = drive.fileListEx;
 
                 const FileEntry& entry = fileList->entries[viewEntry.fileEntryId];
                 if (entry.key.size >= 0)
@@ -77,29 +80,28 @@ void WindowFiles::fileLineUI(const std::vector<std::shared_ptr<DriveInfo2> >& dr
 
 void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs)
 {
+    std::unique_lock<std::mutex> viewLock(mutex);
+
     assert(minSize >= 0);
     assert(inFilter);
 
  //   viewSumSize = 0;
     int filterLen = (int)strlen(inFilter);
 
-// todo
-    return;
-    FileList l;
-    std::shared_ptr<FileList> fileList;
-
-// todo
-//    for (uint32 lineNoDrive = 0; lineNoDrive < driveView.size(); ++lineNoDrive)
+    for (uint32 lineNoDrive = 0; lineNoDrive < g_gui.windowDrives.drives.size(); ++lineNoDrive)
     {
-//        if (!driveSelectionRange.isSelected(lineNoDrive))
-//            continue;
+        if (!driveSelectionRange.isSelected(lineNoDrive))
+            continue;
 
-//        DriveData& itD = *driveData[driveView[lineNoDrive]];
+        DriveInfo2& itD = *g_gui.windowDrives.drives[lineNoDrive];
 
-        fileView.reserve(l.entries.size());
+        std::unique_lock<std::mutex> driveLock(itD.mutex);
+
+        // convervative but simple
+        fileViewEx.reserve(fileViewEx.size() + itD.fileListEx->entries.size());
 
         uint64 id = 0;
-        for (auto& fileEntry : l.entries)
+        for (auto& fileEntry : itD.fileListEx->entries)
         {
             ViewEntry entry;
 //            entry.driveId = itD.driveId;
@@ -128,8 +130,10 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
             {
                 uint32 redundancy = fileEntry.value.redundancy;
 
+#if TRACK_REDUNDANCY == 1
                 if(!redundancy)
                     redundancy = fileEntry.value.redundancy = g_gui.redundancy.computeRedundancy(fileEntry.key);
+#endif
 
                 switch (redundancyFilter)
                 {
@@ -152,14 +156,14 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
             if (stristrOptimized(fileEntry.key.fileName.c_str(), inFilter, (int)fileEntry.key.fileName.size(), filterLen) == 0)
                 continue;
 
-            fileView.push_back(entry);
+            fileViewEx.push_back(entry);
 //            viewSumSize += fileEntry.key.sizeOrFolder;
         }
     }
 
     struct CustomLessFile
     {
-        FileList& ref;
+        const FileList& ref;
         ImGuiTableSortSpecs* sorts_specs = {};
 
         bool operator()(const ViewEntry& a, const ViewEntry& b) const
@@ -207,71 +211,29 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
         }
     };
 
-    CustomLessFile customLessFile = { *fileList, sorts_specs };
+    CustomLessFile customLessFile = { fileListEx, sorts_specs };
 
-    std::sort(fileView.begin(), fileView.end(), customLessFile);
+    std::sort(fileViewEx.begin(), fileViewEx.end(), customLessFile);
 
 
     // todo: only needed for TreeView
  //   buildFileViewChildLists();
 }
 
-void WindowFiles::onIncomingFiles(const FileList& incomingFileList)
-{
-    CScopedCPUTimerLog log("WindowFiles::onIncomingFiles");
-    
-//    std::unique_lock<std::mutex> lock(mutex);
-
-// hack
-    return;
-    FileList l;
-    std::shared_ptr<FileList> fileList;
-
-    StringPool& dstPool = fileList->stringPool;
-
-    auto mergeContext = dstPool.merge(incomingFileList.stringPool);
-
-    std::vector<FileEntry> dstVector = fileList->entries;
-
-    dstVector.reserve(dstVector.size() + incomingFileList.entries.size());
-
-    for(const auto& el : incomingFileList.entries)
-    {
-        FileEntry newEl = el;
-        newEl.key.fileName = dstPool.mergeIn(mergeContext, newEl.key.fileName);
-        newEl.value.path = dstPool.mergeIn(mergeContext, newEl.value.path); 
-        dstVector.push_back(newEl);
-    }
-}
-
 void WindowFiles::clear()
 {
-    SelectionRange driveSelectionRange;
-    buildFileView("", 0, 0, driveSelectionRange, 0);
+    std::unique_lock<std::mutex> lock(mutex);
+
+    fileViewEx.clear();
 }
 
-void WindowFiles::set(DriveInfo2& driveInfo)
+void WindowFiles::rebuild()
 {
-    // call load before
-    assert(driveInfo.fileList);
-
-
-    return;
-    FileList l;
-    std::shared_ptr<FileList> fileList;
-
-    {
-        CScopedCPUTimerLog log("WindowFiles::set computeRedundancy");
-        fileList->computeRedundancy(g_gui.redundancy);
-    }
-
+    CScopedCPUTimerLog log("WindowFiles::set buildFileView");
+    
     SelectionRange driveSelectionRange;
 
-    {
-        CScopedCPUTimerLog log("WindowFiles::set buildFileView");
-    
-        buildFileView("", 0, 0, driveSelectionRange, 0);
-    }
+    buildFileView("", 0, 0, driveSelectionRange, 0);
 }
 
 void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
@@ -382,20 +344,22 @@ void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
         pushTableStyle3();
 
         {
+            std::unique_lock<std::mutex> lock(mutex);
+
             // list view
             ImGuiListClipper clipper;
-            clipper.Begin((int)fileView.size());
+            clipper.Begin((int)fileViewEx.size());
             while (clipper.Step())
             {
                 for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
                 {
-                    if (line_no >= (int)fileView.size())
+                    if (line_no >= (int)fileViewEx.size())
                         break;
 
 // todo
                     std::shared_ptr<FileList> l;
 
-                    ViewEntry& viewEntry = fileView[line_no];
+                    ViewEntry& viewEntry = fileViewEx[line_no];
 //                    const DriveData& deviceData = *everyHere.driveData[viewEntry.driveId];
                     const FileEntry& entry = l->entries[viewEntry.fileEntryId];
 
@@ -446,7 +410,7 @@ void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
 
     if (fileSelectionRange.empty())
     {
-        ImGui::Text("Files: %lld", (int64)fileView.size());
+        ImGui::Text("Files: %lld", (int64)fileViewEx.size());
         ImGui::SameLine();
 //todo        ImGui::Text("Size: ");
 //        ImGui::SameLine();

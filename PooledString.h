@@ -45,6 +45,8 @@ public:
     MergeContext merge(const StringPool& in);
     // then call this once per entry to remap
     PooledString mergeIn(const MergeContext mergeContext, const PooledString& in);
+    //
+    void clear();
 
     friend PooledString;
 };

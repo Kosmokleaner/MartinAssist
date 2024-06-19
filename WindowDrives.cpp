@@ -172,8 +172,9 @@ struct LoadThread
         FileList localfileList;
         {
             CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
-            localfileList.load(::to_wstring(efuFileName).c_str());
+            localfileList.load(::to_wstring(efuFileName).c_str(), fileLoadSink);
         }
+#if TRACK_REDUNDANCY == 1
         {
             CScopedCPUTimerLog log("DriveInfo2::load addRedundancy");
 
@@ -183,45 +184,96 @@ struct LoadThread
                 g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
             }
         }
-        fileLoadSink->onIncomingFiles(localfileList);
+#endif
+#if TRACK_REDUNDANCY == 1
+        {
+            CScopedCPUTimerLog log("WindowFiles::set computeRedundancy");
+            fileList->computeRedundancy(g_gui.redundancy);
+        }
+#endif
+
     }
 };
 
-void DriveInfo2::load(IFileLoadSink& fileLoadSink)
+size_t DriveInfo2::getFileListSize()
 {
-    if(!fileList)
+    std::unique_lock<std::mutex> lock(mutex);
+
+    if(fileListEx)
+        return fileListEx->entries.size();
+
+    return 0;
+}
+
+void DriveInfo2::onIncomingFiles(const FileList& incomingFileList)
+{
+    CScopedCPUTimerLog log("DriveInfo2::onIncomingFiles");
+
+    std::unique_lock<std::mutex> lock(mutex);
+
+    if(!fileListEx)
+        fileListEx = std::make_shared<FileList>();
+
+    StringPool& dstPool = fileListEx->stringPool;
+
+    auto mergeContext = dstPool.merge(incomingFileList.stringPool);
+
+    std::vector<FileEntry> dstVector = fileListEx->entries;
+
+    dstVector.reserve(dstVector.size() + incomingFileList.entries.size());
+
+    for (const auto& el : incomingFileList.entries)
     {
-#if ASYNC_LOAD
-        g_gui.windowFiles.clear();
-
-        LoadThread loadThread;
-        loadThread.efuFileName = efuFileName;
-        loadThread.fileLoadSink = &fileLoadSink;
-
-        new std::thread([loadThread]
-        {
-            LoadThread This = loadThread; // loadThread is const, can it be done better?
-            This.run();
-        });
-#else
-        g_gui.windowFiles.clear();
-        fileList = std::make_shared<FileList>();
-        {
-            CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
-            fileList->load(::to_wstring(efuFileName).c_str());
-        }
-        {
-            CScopedCPUTimerLog log("DriveInfo2::load addRedundancy");
-
-            uint64 index = 0;
-            for (auto& el : fileList->entries)
-            {
-                g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
-            }
-        }
-        g_gui.windowFiles.set(*this);
-#endif
+        FileEntry newEl = el;
+        newEl.key.fileName = dstPool.mergeIn(mergeContext, newEl.key.fileName);
+        newEl.value.path = dstPool.mergeIn(mergeContext, newEl.value.path);
+        dstVector.push_back(newEl);
     }
+
+    g_gui.windowFiles.rebuild();
+}
+
+
+void DriveInfo2::load()
+{
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        if(fileListEx)
+            return; // already loaded
+    }
+
+#if ASYNC_LOAD
+    g_gui.windowFiles.clear();
+
+    LoadThread loadThread;
+    loadThread.efuFileName = efuFileName;
+    loadThread.fileLoadSink = this;
+
+    new std::thread([loadThread]
+    {
+        LoadThread This = loadThread; // loadThread is const, can it be done better?
+        This.run();
+    });
+#else
+    g_gui.windowFiles.clear();
+    fileList = std::make_shared<FileList>();
+    {
+        CScopedCPUTimerLog log("DriveInfo2::load fileList->load");
+        fileList->load(::to_wstring(efuFileName).c_str());
+    }
+#if TRACK_REDUNDANCY == 1
+    {
+        CScopedCPUTimerLog log("DriveInfo2::load addRedundancy");
+
+        uint64 index = 0;
+        for (auto& el : fileList->entries)
+        {
+            g_gui.redundancy.addRedundancy(el.key, el.value.driveId, index++);
+        }
+    }
+#endif
+    g_gui.windowFiles.set(*this);
+#endif
 }
 
 void build(DriveInfo2 & drive)
@@ -412,6 +464,8 @@ void WindowDrives::gui()
             if (driveTabId == 1 && !drive.newestEntry && !drive.localDrive)
                 continue;
 
+            const size_t fileListSize = drive.getFileListSize();
+
             ImGui::PushID(driveIndex);
 
             double gb = 1024 * 1024 * 1024;
@@ -459,8 +513,9 @@ void WindowDrives::gui()
                         ImGui::TableSetColumnIndex(0);
                         RightAlignedText("file count :");
                         ImGui::TableSetColumnIndex(1);
-                        if (drive.fileList)
-                            ImGui::Text("%llu", (uint64)(drive.fileList->entries.size()));
+
+                        if (fileListSize)
+                            ImGui::Text("%llu", (uint64)fileListSize);
                         else
                             ImGui::Text("? (load with left click)");
                     }
@@ -492,7 +547,7 @@ void WindowDrives::gui()
 
             ImVec4 symbolColor = drive.localDrive ? ImVec4(0, 1, 0, 1) : ImVec4(0.5f, 0.5f, 0.5f, 1);
 
-            if(!drive.fileList)
+            if(!fileListSize)
                 symbolColor.w = 0.5f;
 
             ColoredTextButton(symbolColor, symbol);
@@ -517,7 +572,7 @@ void WindowDrives::gui()
 
                 if(g_gui.windowFiles.showWindow)
                 {
-                    drive.load(g_gui.windowFiles);
+                    drive.load();
                 }
 
 //            setViewDirty();
@@ -590,10 +645,10 @@ void WindowDrives::gui()
                 else
                     ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), " ~%.0f seconds", rel);
 
-                if(drive.fileList)
+                if(fileListSize)
                 {
                     ImGui::SameLine();
-                    ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), ", %lluK files", (drive.fileList->entries.size() + 999) / 1000 );
+                    ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), ", %lluK files", (fileListSize + 999) / 1000 );
                 }
             }
         }

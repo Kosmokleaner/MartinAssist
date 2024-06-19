@@ -13,7 +13,7 @@ void FileList::computeRedundancy(Redundancy& redundancy)
 }
 
 
-bool FileList::load(const wchar_t* fileName)
+bool FileList::load(const wchar_t* fileName, IFileLoadSink* fileLoadSink)
 {
     assert(fileName);
 
@@ -24,6 +24,8 @@ bool FileList::load(const wchar_t* fileName)
         if (!file.IO_LoadASCIIFile(fileName))
             return false;
     }
+
+    double time = g_Timer.GetAbsoluteTime();
 
     const Char* p = (const Char*)file.GetDataPtr();
 
@@ -168,7 +170,26 @@ bool FileList::load(const wchar_t* fileName)
 
             if(removeEntry)
                 entries.pop_back();
+            else
+            {
+                if(fileLoadSink)
+                {
+                    const double intervalInSec = 0.5f;
+                    if(g_Timer.GetAbsoluteTime() > time + intervalInSec)
+                    {
+                        fileLoadSink->onIncomingFiles(*this);
+                        clear();
+                        time = g_Timer.GetAbsoluteTime();
+                    }
+                }
+            }
         }
+    }
+
+    if(fileLoadSink && !entries.empty())
+    {
+        fileLoadSink->onIncomingFiles(*this);
+        clear();
     }
 
 //    DriveInfo driveInfo;
@@ -181,6 +202,12 @@ bool FileList::load(const wchar_t* fileName)
 //    data.csvName = to_string(driveInfo.generateKeyName()).c_str();
 
     return !error;
+}
+
+void FileList::clear()
+{
+    stringPool.clear();
+    entries.clear();
 }
 
 void FileList::test()

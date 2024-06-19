@@ -46,7 +46,7 @@ struct FileKey
 struct FileValue
 {
     // -1 is used for root, otherwise fileEntryIndex
-    int64 parent = -1;
+//    int64 parent = -1;
     // -1 for FAT file systems
     __time64_t time_create = -1;
     // -1 for FAT file systems
@@ -73,6 +73,11 @@ enum FileColumnID
     FCID_Path,
 };
 
+struct IFileLoadSink
+{
+    virtual void onIncomingFiles(const class FileList& incomingFileList) = 0;
+};
+
 class FileList
 {
 public: // todo: remove
@@ -82,11 +87,14 @@ public: // todo: remove
 public:
 
     // 1.7ms for 3.2MB file on Ryzen in Release
-    // @param must not be 0 
+    // @param fileName must not be 0 
+    // @param fileLoadSink may be 0 
     // @return success
-    bool load(const wchar_t* fileName);
+    bool load(const wchar_t* fileName, IFileLoadSink* fileLoadSink = nullptr);
 
     void computeRedundancy(Redundancy& redundancy);
+
+    void clear();
 
     static void test();
 };

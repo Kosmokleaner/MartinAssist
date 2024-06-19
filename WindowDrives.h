@@ -1,16 +1,12 @@
 #pragma once
 #include <vector>
+#include <mutex>
 #include <memory> // std::shared_ptr<>
 #include "FileSystem.h"
 #include "EFileList.h"
 #include "SelectionRange.h"
 
-struct IFileLoadSink
-{
-    virtual void onIncomingFiles(const FileList& incomingFileList) = 0;
-};
-
-struct DriveInfo2
+struct DriveInfo2 : public IFileLoadSink
 {
     // e.g. "C:\"
     std::string drivePath;
@@ -42,10 +38,22 @@ struct DriveInfo2
     //
     bool newestEntry = false;
 
-    // data from efuFileName, maybe be 0
-    std::shared_ptr<FileList> fileList;
+    void load();
 
-    void load(IFileLoadSink& fileLoadSink);
+
+    // protecting fileListEx
+    std::mutex mutex;
+    // protected by mutex
+    // data from efuFileName, maybe be 0
+    std::shared_ptr<FileList> fileListEx;
+
+    size_t getFileListSize();
+
+private:
+
+    // interface IFileLoadSink
+
+    virtual void onIncomingFiles(const FileList& incomingFileList);
 };
 
 class WindowDrives
@@ -55,7 +63,9 @@ public:
 
     bool showWindow = true;
 
+    // elements must not be 0
     std::vector<std::shared_ptr<DriveInfo2> > drives;
+
 private:
     // into everyHere.driveView[]
     SelectionRange driveSelectionRange;

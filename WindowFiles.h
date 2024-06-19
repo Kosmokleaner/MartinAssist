@@ -8,24 +8,19 @@
 
 struct DriveInfo2;
 
-class WindowFiles : public IFileLoadSink
+class WindowFiles
 {
-    // protecting fileList
-//    std::mutex mutex;
-    // protected by mutex
-//    std::shared_ptr<FileList> fileList;
 public:
 
-    // intarface IFileLoadSink
-
-    virtual void onIncomingFiles(const FileList& incomingFileList);
+    // protecting fileViewEx
+    std::mutex mutex;
 
     // [line_no] = ViewEntry, built by buildView()
-    std::vector<ViewEntry> fileView;
+    std::vector<ViewEntry> fileViewEx;
 
     void clear();
 
-    void set(DriveInfo2& driveInfo);
+    void rebuild();
 
     void gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives);
 
@@ -51,6 +46,8 @@ private:
 
 //    void treeNodeUI(FileViewId id, std::string& line);
 
+    //
     void fileLineUI(const std::vector<std::shared_ptr<DriveInfo2> >& drives, int32 line_no, const FileEntry& entry, const std::string& line);
+    //
     void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs);
 };

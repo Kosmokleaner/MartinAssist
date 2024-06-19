@@ -514,8 +514,8 @@ int Gui::test()
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
-        windowFiles.gui();
         windowDrives.gui();
+        windowFiles.gui(windowDrives.drives);
         showIconsWindow(fontAwesomeLarge, showIcons);
 
         if (ImGui::BeginMainMenuBar())
