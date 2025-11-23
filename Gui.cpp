@@ -218,7 +218,7 @@ void showIconsWindow(ImFont *font, bool &show)
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
     ImVec2 itemSpacing = ImGui::GetStyle().ItemSpacing;
 
-    const ImU32 glyph_col = ImGui::GetColorU32(ImGuiCol_Text);
+//    const ImU32 glyph_col = ImGui::GetColorU32(ImGuiCol_Text);
     const float cell_size = fontWidth; //font->FontSize * 1;
 
     if (ImGui::BeginChild("ScrollReg", ImVec2((cell_size + itemSpacing.x) * IconsPerLine + ImGui::GetStyle().ScrollbarSize, 0), false))

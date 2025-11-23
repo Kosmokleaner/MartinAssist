@@ -33,73 +33,68 @@ short getSample(unsigned int pos)
 
 struct Wave
 {
-    // in /1024 number of samples
-    int time = 0;
-    // in /1024 number of samples
-    int advance = 1024;
+    // in seconds
+    double time = 0;
+    // in seconds
+    float advanceSec = 1.0f;
 
-    // in /1024 number of samples, [mode0, mode1] = { time, time }
-    int pos[2] = { 0, 0 };
+    // in seconds [mode0, mode1] = { time, time }
+    double pos[2] = { 0, 0 };
 
     // volume shape
 
-    // in number of samples
-    int attack = 10;
-    // in number of samples
-    int hold = 100;
-
-    // 0..1
+    // in seconds
+    float holdSec = 1.0f;
+    // in seconds
+    float attackSec = 0.1f;
+    // 0:mute .. 1:max
     float volume = 0.5f;
-
-    // in /1024 number of samples, to control pitch
-    int speed = 1024;
+    // in seconds
+    float speedSec = 1.0f;
 
     //     ___
     // ___/   \   
     //  0 1 2 3
     int phase = 0;
-    // in /1024 number of samples
-    int phasePos = 0;
+    // in seconds
+    float phasePos = 0;
 
     // side effect: update phase and phasePos
     // @return 0..1
     float update()
     {
-        time += advance;
-        phasePos += advance;
-
-        int holdM = hold * 1024;
-        int attackM = attack * 1024;
+        time += advanceSec / DEVICE_SAMPLE_RATE;
+        phasePos += advanceSec / DEVICE_SAMPLE_RATE;
 
         for (;;)
         {
             if (phase == 0)
             {
-                if (phasePos < holdM)break;
-                phase++; phasePos -= holdM;
+                if (phasePos < holdSec)break;
+                phase++; phasePos -= holdSec;
                 pos[0] = time;
                 assert(phasePos >= 0);
             }
 
             if (phase == 1)
             {
-                if (phasePos < attackM)break;
-                phase++; phasePos -= attackM;
+                if (phasePos < attackSec)break;
+                phase++; phasePos -= attackSec;
                 assert(phasePos >= 0);
             }
 
             if (phase == 2)
             {
-                if (phasePos < holdM)break;
-                phase++; phasePos -= holdM;
+                if (phasePos < holdSec)break;
+                phase++; phasePos -= holdSec;
                 pos[1] = time;
                 assert(phasePos >= 0);
             }
 
             if (phase == 3)
             {
-                if (phasePos < attackM)break;
-                phase = 0; phasePos -= attackM;
+                if (phasePos < attackSec)break;
+                phase = 0; phasePos -= attackSec;
                 assert(phasePos >= 0);
             }
         }
@@ -116,17 +111,17 @@ struct Wave
             ret = 0.0f;                            // phase 0
         else if (phase == 1)
         {
-            ret = phasePos / (float)attackM;        // phase 1
+            ret = phasePos / (float)attackSec;     // phase 1
         }
         else if (phase == 3)
         {
-            ret = 1.0f - phasePos / (float)attackM; // phase 3
+            ret = 1.0f - phasePos / (float)attackSec; // phase 3
 
             assert(ret >= 0.0f && ret <= 1.0f);
         }
 
-        pos[0] += speed;
-        pos[1] += speed;
+        pos[0] += speedSec / DEVICE_SAMPLE_RATE;
+        pos[1] += speedSec / DEVICE_SAMPLE_RATE;
 
         return ret;
     }
@@ -188,8 +183,8 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 
         //        ma_int16 s = getSample(wave.time);
 
-        ma_int16 s0 = getSample(wave.pos[0] / 1024);
-        ma_int16 s1 = getSample(wave.pos[1] / 1024);
+        ma_int16 s0 = getSample((ImU32)(wave.pos[0] * DEVICE_SAMPLE_RATE));
+        ma_int16 s1 = getSample((ImU32)(wave.pos[1] * DEVICE_SAMPLE_RATE));
 
         // 0..1
         float alpha = wave.update();
@@ -199,13 +194,6 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
         for (ma_uint64 iChannel = 0; iChannel < DEVICE_CHANNELS; iChannel += 1) {
             pFramesOutS16[iFrame * DEVICE_CHANNELS + iChannel] = s;
         }
-
-        //        static int k = 0; ++k;
-        //       if(k == 10)
-        //        {
-        //            k =0;
-        //            printf("%d:%.2f   time:%.2f   0:%.2f 1:%.2f\n", wave.phase, wave.phasePos / 1024.0f, wave.time / 1024.0f, wave.pos[0] / 1024.0f, wave.pos[1] / 1024.0f);
-        //        }
     }
 
 
@@ -310,11 +298,11 @@ void GranularSynth::Impl::gui(bool& showWindow)
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 300, main_viewport->WorkPos.y + 220), ImGuiCond_FirstUseEver);
     ImGui::Begin("GranularSynth", &showWindow, ImGuiWindowFlags_NoCollapse);
 
-    ImGui::SliderFloat("volume", &wave.volume, 0, 1);
-    ImGui::SliderInt("advance", &wave.advance, 0, 2048);
-    ImGui::SliderInt("speed", &wave.speed, 0, 2048);
-    ImGui::SliderInt("hold", &wave.hold, 0, 2048);
-    ImGui::SliderInt("attack", &wave.attack, 0, 2048);
+    ImGui::SliderFloat("volume", &wave.volume, 0, 1.0f);
+    ImGui::SliderFloat("advance", &wave.advanceSec, 0, 2.0f);
+    ImGui::SliderFloat("speed", &wave.speedSec, 0, 1.0f);
+    ImGui::SliderFloat("hold", &wave.holdSec, 0, 1.0f);
+    ImGui::SliderFloat("attack", &wave.attackSec, 0, 1.0f);
 
     draw();
 
@@ -338,6 +326,7 @@ void GranularSynth::Impl::draw()
 
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     ImGui::PlotHistogram("Audio Sample", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
+//    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
 
     ImVec2 actualPlotBottomRight = ImVec2(plotStartPos.x + ImGui::GetContentRegionAvail().x, plotStartPos.y + plotHeight);
 
@@ -349,20 +338,25 @@ void GranularSynth::Impl::draw()
     float normalizedX = 0;
 
     // Draw the vertical lines
-    normalizedX = (wave.pos[0] / 1024 % display_count)/ (float)display_count;
+//    for(int i = 0; i < 3; ++i)
+    int i = 0;
     {
-        float lineScreenX = plotStartPos.x + (normalizedX * plotWidth);
-        drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y),ImVec2(lineScreenX, actualPlotBottomRight.y), IM_COL32(255, 0, 0, 255), 2.0f);
-    }
-    normalizedX = (wave.pos[1] / 1024 % display_count) / (float)display_count;
-    {
-        float lineScreenX = plotStartPos.x + (normalizedX * plotWidth);
-        drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y), ImVec2(lineScreenX, actualPlotBottomRight.y), IM_COL32(0, 255, 0, 255), 2.0f);
+        double sec = wave.time;
+        if (i == 1) sec = wave.pos[0];
+        if (i == 2) sec = wave.pos[1];
+
+        normalizedX = ((ImU32)(sec * DEVICE_SAMPLE_RATE) % display_count)/ (float)display_count;
+        {
+            ImU32 col = IM_COL32(255, 0, 0, 255);
+            if (i == 1) col = IM_COL32(0, 255, 0, 255);
+            if (i == 2) col = IM_COL32(0, 0, 255, 255);
+
+            float lineScreenX = plotStartPos.x + (normalizedX * plotWidth);
+            drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y),ImVec2(lineScreenX, actualPlotBottomRight.y), col, 2.0f);
+        }
     }
 
-//    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, 180));
-
-    
+//    ImGui::Text("time:%.2f", wave.time);
 }
     
 
