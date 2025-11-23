@@ -525,6 +525,7 @@ int Gui::test()
             {
                 ImGui::MenuItem("Drives Window", 0, &windowDrives.showWindow);
                 ImGui::MenuItem("Files Window", 0, &windowFiles.showWindow);
+                ImGui::MenuItem("GranularSynth Window", 0, &granularSynth.showWindow);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Open EFUs folder"))
                     openEFUsFolder();

@@ -65,6 +65,12 @@
     <ClCompile Include="WindowDrives.cpp" />
     <ClCompile Include="ERedundancy.cpp" />
     <ClCompile Include="GranularSynth.cpp" />
+    <ClCompile Include="external\miniAudio\miniaudio.cpp">
+      <Filter>External\miniAudio</Filter>
+    </ClCompile>
+    <ClCompile Include="audioSample.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -145,6 +151,9 @@
     <ClInclude Include="WindowDrives.h" />
     <ClInclude Include="ERedundancy.h" />
     <ClInclude Include="GranularSynth.h" />
+    <ClInclude Include="external\miniAudio\miniaudio.h">
+      <Filter>External\miniAudio</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">
@@ -152,6 +161,12 @@
     </Filter>
     <Filter Include="ImGui">
       <UniqueIdentifier>{0180d86a-b814-4971-b2b6-f8b1772bb6bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{f268d0e9-7933-4117-abaf-6c5755bf2107}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\miniAudio">
+      <UniqueIdentifier>{f203802a-7efd-4f13-a762-7c3764183c8d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

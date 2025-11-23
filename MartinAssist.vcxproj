@@ -155,6 +155,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ASCIIFile.cpp" />
+    <ClCompile Include="audioSample.cpp" />
     <ClCompile Include="CppParser.cpp" />
     <ClCompile Include="CppParserTest.cpp" />
     <ClCompile Include="EFileList.cpp" />
@@ -162,6 +163,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="external\miniAudio\miniaudio.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="GranularSynth.cpp" />
     <ClCompile Include="Gui.cpp" />
@@ -193,6 +195,7 @@
     <ClInclude Include="CppParser.h" />
     <ClInclude Include="CppParserTest.h" />
     <ClInclude Include="EFileList.h" />
+    <ClInclude Include="external\miniAudio\miniaudio.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="GranularSynth.h" />

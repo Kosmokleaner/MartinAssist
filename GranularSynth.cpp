@@ -1,11 +1,296 @@
 #include "GranularSynth.h"
 #include "ImGui/imgui.h"
 
+#define MA_NO_DECODING
+#define MA_NO_ENCODING
+#include "external/miniAudio/miniaudio.h"
 
-void GranularSynth::gui()
+unsigned char g_sample[];
+
+#define MA_ASSERT assert
+
+#define DEVICE_FORMAT       ma_format_s16
+#define DEVICE_CHANNELS     2
+#define DEVICE_SAMPLE_RATE  48000
+
+
+
+// https://docs.fileformat.com/audio/wav
+const unsigned int g_wavHeader = 44;
+const unsigned int getSampleDataSize()
 {
-    if (!showWindow)
-        return;
+    return *(unsigned int*)&g_sample[40] / 2;
+}
+short getSample(unsigned int time)
+{
+    short* data = (short*)&g_sample[g_wavHeader];
+
+    // fixed point
+    unsigned int pos = time / 1024;
+
+    // can be improved
+    return data[pos % getSampleDataSize()];
+}
+
+struct Wave
+{
+    // in /1024 number of samples
+    int time = 0;
+    // in /1024 number of samples
+    int advance = 1024;
+
+    // in /1024 number of samples, [mode0, mode1] = { time, time }
+    int pos[2] = { 0, 0 };
+
+    // volume shape
+
+    // in number of samples
+    int attack = 10;
+    // in number of samples
+    int hold = 100;
+
+    // 0..1
+    float volume = 1.0f;
+
+    // in /1024 number of samples, to control pitch
+    int speed = 1024;
+
+    //     ___
+    // ___/   \   
+    //  0 1 2 3
+    int phase = 0;
+    // in /1024 number of samples
+    int phasePos = 0;
+
+    // side effect: update phase and phasePos
+    // @return 0..1
+    float update()
+    {
+        time += advance;
+        phasePos += advance;
+
+        int holdM = hold * 1024;
+        int attackM = attack * 1024;
+
+        for (;;)
+        {
+            if (phase == 0)
+            {
+                if (phasePos < holdM)break;
+                phase++; phasePos -= holdM;
+                pos[0] = time;
+                assert(phasePos >= 0);
+            }
+
+            if (phase == 1)
+            {
+                if (phasePos < attackM)break;
+                phase++; phasePos -= attackM;
+                assert(phasePos >= 0);
+            }
+
+            if (phase == 2)
+            {
+                if (phasePos < holdM)break;
+                phase++; phasePos -= holdM;
+                pos[1] = time;
+                assert(phasePos >= 0);
+            }
+
+            if (phase == 3)
+            {
+                if (phasePos < attackM)break;
+                phase = 0; phasePos -= attackM;
+                assert(phasePos >= 0);
+            }
+        }
+
+
+        //     ___
+        // ___/   \   
+        //  0 1 2 3 : phase
+        // 000x111x : return, x is linear crossfade area 0..1
+
+        float ret = 1.0f;                          // phase 2
+
+        if (phase == 0)
+            ret = 0.0f;                            // phase 0
+        else if (phase == 1)
+        {
+            ret = phasePos / (float)attackM;        // phase 1
+        }
+        else if (phase == 3)
+        {
+            ret = 1.0f - phasePos / (float)attackM; // phase 3
+
+            assert(ret >= 0.0f && ret <= 1.0f);
+        }
+
+        pos[0] += speed;
+        pos[1] += speed;
+
+        return ret;
+    }
+};
+
+// @param alpha 0..1
+float lerp(float s0, float s1, float alpha)
+{
+    return s0 * (1.0f - alpha) + s1 * alpha;
+}
+
+class GranularSynth::Impl
+{
+public:
+    // @return error code, 0:no erro
+    int init();
+    void deinit();
+
+    void gui(bool& show);
+
+    ma_device_config deviceConfig;
+    ma_device device;
+    Wave wave;
+
+private:
+
+    bool isInit = false;
+};
+
+GranularSynth::GranularSynth() : pimpl_(new Impl())
+{
+}
+
+GranularSynth::~GranularSynth()
+{
+    pimpl_->deinit();
+    delete pimpl_; // Deallocate the implementation object
+}
+
+float saturate(float x)
+{
+    if (x < 0.0f) return 0.0f;
+    if (x > 1.0f) return 1.0f;
+    return x;
+}
+
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    MA_ASSERT(pDevice->playback.channels == DEVICE_CHANNELS);
+
+    Wave& wave = *(Wave*)pDevice->pUserData;
+
+    //    ma_waveform_read_pcm_frames(pSineWave, pOutput, frameCount, NULL);
+
+    ma_int16* pFramesOutS16 = (ma_int16*)pOutput;
+    for (ma_uint64 iFrame = 0; iFrame < frameCount; iFrame += 1) {
+        //        ma_int16 s = ma_waveform_sine_s16(pWaveform->time, pWaveform->config.amplitude);
+
+        //        ma_int16 s = getSample(wave.time);
+
+        ma_int16 s0 = getSample(wave.pos[0]);
+        ma_int16 s1 = getSample(wave.pos[1]);
+
+        // 0..1
+        float alpha = wave.update();
+
+        ma_int16 s = (ma_int16)(lerp(s0, s1, alpha) * wave.volume);
+
+        for (ma_uint64 iChannel = 0; iChannel < DEVICE_CHANNELS; iChannel += 1) {
+            pFramesOutS16[iFrame * DEVICE_CHANNELS + iChannel] = s;
+        }
+
+        //        static int k = 0; ++k;
+        //       if(k == 10)
+        //        {
+        //            k =0;
+        //            printf("%d:%.2f   time:%.2f   0:%.2f 1:%.2f\n", wave.phase, wave.phasePos / 1024.0f, wave.time / 1024.0f, wave.pos[0] / 1024.0f, wave.pos[1] / 1024.0f);
+        //        }
+    }
+
+
+    (void)pInput;
+}
+
+int GranularSynth::Impl::init()
+{
+    deviceConfig = ma_device_config_init(ma_device_type_playback);
+    deviceConfig.playback.format = DEVICE_FORMAT;
+    deviceConfig.playback.channels = DEVICE_CHANNELS;
+    deviceConfig.sampleRate = DEVICE_SAMPLE_RATE;
+    deviceConfig.dataCallback = data_callback;
+    deviceConfig.pUserData = &wave;
+
+    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+//        printf("Failed to open playback device.\n");
+        return -4;
+    }
+
+//    printf("Device Name: %s\n\n", device.playback.name);
+
+    if (ma_device_start(&device) != MA_SUCCESS) {
+//        printf("Failed to start playback device.\n");
+        ma_device_uninit(&device);
+        return -5;
+    }
+
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(main_loop__em, 0, 1);
+#else
+
+/*    printf("1..9:volume  0:mute  ,.:advance  ;':speed  -=:hold  []:attack  enter:quit\n\n");
+
+    bool print = true;
+
+    for (;;)
+    {
+        if (_kbhit())
+        {
+            print = true;
+            int c = _getch();
+            if (c == 13)
+                break;
+            if (c == '-' && wave.hold > 1) wave.hold -= 1;
+            if (c == '=') wave.hold += 1;
+
+            if (c == '[' && wave.attack > 0) wave.attack -= 1;
+            if (c == ']') wave.attack += 1;
+
+            if (c == ',') wave.advance -= 8;
+            if (c == '.') wave.advance += 8;
+
+            if (c == ';') wave.speed -= 8;
+            if (c == '\'') wave.speed += 8;
+
+            if (c >= '0' && c <= '9') wave.volume = (c - '0') / 9.0f;
+        }
+
+        if (print)
+        {
+            print = false;
+            printf("vol:%d  adv:%d  speed:%d  hold:%d  attack:%d               \r", (int)(wave.volume * 9.0f + 0.5f), wave.advance, wave.speed, wave.hold, wave.attack);
+        }
+
+    }
+*/
+#endif
+
+
+    return 0;
+}
+
+void GranularSynth::Impl::deinit()
+{
+    ma_device_uninit(&device);
+}
+
+void GranularSynth::Impl::gui(bool& showWindow)
+{
+    if (!isInit)
+    {
+        init();
+        isInit = true;
+    }
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);
@@ -13,4 +298,12 @@ void GranularSynth::gui()
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 300, main_viewport->WorkPos.y + 220), ImGuiCond_FirstUseEver);
     ImGui::Begin("GranularSynth", &showWindow, ImGuiWindowFlags_NoCollapse);
     ImGui::End();
+}
+
+void GranularSynth::gui()
+{
+    if (!showWindow)
+        return;
+
+    pimpl_->gui(showWindow);
 }
