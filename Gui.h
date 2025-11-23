@@ -3,6 +3,7 @@
 #include "WindowFiles.h"
 #include "WindowDrives.h"
 #include "ERedundancy.h"
+#include "GranularSynth.h"
 #include "imgui.h"
 
 #define EFU_FOLDER "EFUs"
@@ -18,6 +19,7 @@ public:
     WindowFiles windowFiles;
     WindowDrives windowDrives;
     Redundancy redundancy;
+    GranularSynth granularSynth;
 };
 extern Gui g_gui;
 

@@ -163,6 +163,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="GranularSynth.cpp" />
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="ERedundancy.cpp" />
     <ClCompile Include="WindowDrives.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="EFileList.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="GranularSynth.h" />
     <ClInclude Include="Gui.h" />
     <ClInclude Include="ImGui\imconfig.h" />
     <ClInclude Include="ImGui\imgui.h" />

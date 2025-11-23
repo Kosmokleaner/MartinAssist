@@ -64,6 +64,7 @@
     </ClCompile>
     <ClCompile Include="WindowDrives.cpp" />
     <ClCompile Include="ERedundancy.cpp" />
+    <ClCompile Include="GranularSynth.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -143,6 +144,7 @@
     </ClInclude>
     <ClInclude Include="WindowDrives.h" />
     <ClInclude Include="ERedundancy.h" />
+    <ClInclude Include="GranularSynth.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

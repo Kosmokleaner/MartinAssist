@@ -5,6 +5,7 @@
 /Backup
 /EFUs/Backup
 /EFUs
+/_EFUs
 
 # Dear ImGui artifacts
 imgui.ini
