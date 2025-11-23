@@ -514,6 +514,7 @@ int Gui::test()
 
         showIconsWindow(fontAwesomeLarge, showIcons);
 
+        granularSynth.gui();
         windowDrives.gui();
         windowFiles.gui(windowDrives.drives);
         showIconsWindow(fontAwesomeLarge, showIcons);
