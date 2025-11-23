@@ -1,5 +1,6 @@
 #include "GranularSynth.h"
 #include "ImGui/imgui.h"
+#include <math.h>
 
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
@@ -21,12 +22,10 @@ const unsigned int getSampleDataSize()
 {
     return *(unsigned int*)&g_sample[40] / 2;
 }
-short getSample(unsigned int time)
+// @param pos = 0..getSampleDataSize()
+short getSample(unsigned int pos)
 {
     short* data = (short*)&g_sample[g_wavHeader];
-
-    // fixed point
-    unsigned int pos = time / 1024;
 
     // can be improved
     return data[pos % getSampleDataSize()];
@@ -50,7 +49,7 @@ struct Wave
     int hold = 100;
 
     // 0..1
-    float volume = 1.0f;
+    float volume = 0.5f;
 
     // in /1024 number of samples, to control pitch
     int speed = 1024;
@@ -147,6 +146,7 @@ public:
     void deinit();
 
     void gui(bool& show);
+    void draw();
 
     ma_device_config deviceConfig;
     ma_device device;
@@ -188,8 +188,8 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 
         //        ma_int16 s = getSample(wave.time);
 
-        ma_int16 s0 = getSample(wave.pos[0]);
-        ma_int16 s1 = getSample(wave.pos[1]);
+        ma_int16 s0 = getSample(wave.pos[0] / 1024);
+        ma_int16 s1 = getSample(wave.pos[1] / 1024);
 
         // 0..1
         float alpha = wave.update();
@@ -286,10 +286,22 @@ void GranularSynth::Impl::deinit()
 
 void GranularSynth::Impl::gui(bool& showWindow)
 {
-    if (!isInit)
+    if (showWindow)
     {
-        init();
-        isInit = true;
+        if(!isInit)
+        {
+            init();
+            isInit = true;
+        }
+    }
+    else
+    {
+        if (isInit)
+        {
+            deinit();
+            isInit = false;
+        }
+        return;
     }
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
@@ -304,13 +316,57 @@ void GranularSynth::Impl::gui(bool& showWindow)
     ImGui::SliderInt("hold", &wave.hold, 0, 2048);
     ImGui::SliderInt("attack", &wave.attack, 0, 2048);
 
+    draw();
+
     ImGui::End();
 }
 
+void GranularSynth::Impl::draw()
+{
+    struct Funcs
+    {
+//        static float Audio(void*, int i) { return sinf(i * 0.1f) * 70; }
+        static float Audio(void*, int i) { return (float)getSample(i); }
+    };
+
+    static int display_count = getSampleDataSize();
+    float (*func)(void*, int) = Funcs::Audio;
+
+    float plotHeight = 80.0f;
+
+    ImVec2 plotStartPos = ImGui::GetCursorScreenPos();
+
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    ImGui::PlotHistogram("Audio Sample", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
+
+    ImVec2 actualPlotBottomRight = ImVec2(plotStartPos.x + ImGui::GetContentRegionAvail().x, plotStartPos.y + plotHeight);
+
+    float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
+    
+    // Get the draw list
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    float normalizedX = 0;
+
+    // Draw the vertical lines
+    normalizedX = (wave.pos[0] / 1024 % display_count)/ (float)display_count;
+    {
+        float lineScreenX = plotStartPos.x + (normalizedX * plotWidth);
+        drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y),ImVec2(lineScreenX, actualPlotBottomRight.y), IM_COL32(255, 0, 0, 255), 2.0f);
+    }
+    normalizedX = (wave.pos[1] / 1024 % display_count) / (float)display_count;
+    {
+        float lineScreenX = plotStartPos.x + (normalizedX * plotWidth);
+        drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y), ImVec2(lineScreenX, actualPlotBottomRight.y), IM_COL32(0, 255, 0, 255), 2.0f);
+    }
+
+//    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, 180));
+
+    
+}
+    
+
 void GranularSynth::gui()
 {
-    if (!showWindow)
-        return;
-
     pimpl_->gui(showWindow);
 }
