@@ -22,7 +22,13 @@ unsigned char g_sample[];
 const unsigned int g_wavHeader = 44;
 const unsigned int getSampleDataSize()
 {
+    // /2 for DEVICE_FORMAT==ma_format_s16
     return *(unsigned int*)&g_sample[40] / 2;
+}
+const unsigned int getSampleRate()
+{
+    // /2 for DEVICE_FORMAT==ma_format_s16
+    return *(unsigned int*)&g_sample[24] / 2;
 }
 // @param pos = 0..getSampleDataSize()
 short getSample(unsigned int pos)
@@ -39,12 +45,19 @@ float lerp(float s0, float s1, float alpha)
     return s0 * (1.0f - alpha) + s1 * alpha;
 }
 
+float saturate(float x)
+{
+    if (x < 0.0f) return 0.0f;
+    if (x > 1.0f) return 1.0f;
+    return x;
+}
+
 struct Wave
 {
     // in seconds
     double time = 0;
-    // in seconds
-    float advanceSec = 1.0f;
+    // in sec seconds per dst second
+    float advancePerSec = 1.0f;
 
     // in seconds [mode0, mode1] = { time, time }
     double pos[2] = { 0, 0 };
@@ -57,13 +70,14 @@ struct Wave
     float blendPercent = 10.0f;
     // 0:mute .. 100:max
     float volumePercent = 40.0f;
-    // in seconds
-    float speedSec = 1.0f;
+    // in sec seconds per dst second
+    float pitch = 1.0f;
 
-    //     ___
-    // ___/   \   
-    //  0 1 2 3
-    int phase = 0;
+    //  ___
+    // /   \___ 
+    // 0 1 2 3  : phaseInt
+    // x111x000 : return, x is linear crossfade alpha 0..1
+    int phaseInt = 0;
     // in seconds
     float phasePos = 0;
 
@@ -73,30 +87,35 @@ struct Wave
         const float holdSec = grainSec * (1.0f - blendFrac);
         const float attackSec = grainSec * blendFrac;
 
-        float alpha = 1.0f;                             // phase 2
+        float alpha = 0.0f;
 
-        if (phase == 0)
-            alpha = 0.0f;                               // phase 0
-        else if (phase == 1)
+        if (phaseInt == 0)
         {
-            alpha = phasePos / (float)attackSec;        // phase 1
-            assert(alpha >= 0.0f && alpha <= 1.0f);
+            alpha = phasePos / (float)attackSec;
+//            assert(alpha >= 0.0f && alpha <= 1.0f);
+            alpha = saturate(alpha);
         }
-        else if (phase == 3)
+        else if (phaseInt == 1)
+            alpha = 1.0f;
+        else if (phaseInt == 2)
         {
-            alpha = 1.0f - phasePos / (float)attackSec; // phase 3
-            assert(alpha >= 0.0f && alpha <= 1.0f);
+            alpha = 1.0f - phasePos / (float)attackSec;
+//            assert(alpha >= 0.0f && alpha <= 1.0f);
+            alpha = saturate(alpha);
         }
-        
+       
         return alpha;
     }
 
     // side effect: update phase and phasePos
+    // @param deltaTime in seconds 
     // @return value without volume applied
-    float update()
+    float update(float deltaTime)
     {
-        time += advanceSec / DEVICE_SAMPLE_RATE;
-        phasePos += advanceSec / DEVICE_SAMPLE_RATE;
+        const unsigned int sampleRate = getSampleRate();
+
+        time += advancePerSec * deltaTime;
+        phasePos += pitch * deltaTime;
 
         const float blendFrac = blendPercent / 100.0f;
         const float holdSec = grainSec * (1.0f - blendFrac);
@@ -104,72 +123,66 @@ struct Wave
 
         for (;;)
         {
-            if (phase == 0)
-            {
-                if (phasePos < holdSec)break;
-                phase++; phasePos -= holdSec;
-                pos[0] = time;
-                assert(phasePos >= 0);
-            }
-
-            if (phase == 1)
+            if (phaseInt == 0)  // ramp up 0, ramp down 1
             {
                 if (phasePos < attackSec)break;
-                phase++; phasePos -= attackSec;
+                phaseInt++; phasePos -= attackSec;
                 assert(phasePos >= 0);
             }
 
-            if (phase == 2)
+            if (phaseInt == 1)  // hold 0
             {
                 if (phasePos < holdSec)break;
-                phase++; phasePos -= holdSec;
+                phaseInt++; phasePos -= holdSec;
                 pos[1] = time;
                 assert(phasePos >= 0);
             }
 
-            if (phase == 3)
+            if (phaseInt == 2)  // ramp down 0, ramp down 1
             {
                 if (phasePos < attackSec)break;
-                phase = 0; phasePos -= attackSec;
+                phaseInt = 3; phasePos -= attackSec;
+                assert(phasePos >= 0);
+            }
+
+            if (phaseInt == 3)  // 1
+            {
+                if (phasePos < holdSec)break;
+                phaseInt = 0; phasePos -= holdSec;
+                pos[0] = time;
                 assert(phasePos >= 0);
             }
         }
 
-
-        //     ___
-        // ___/   \   
-        //  0 1 2 3 : phase
-        // 000x111x : return, x is linear crossfade area 0..1
-
         const float alpha = computeAlpha();
 
-        // this could be refactored
-        float samplePos = computeSamplePos();
+        double readerSec0 = pos[0] + computeSamplePos(0);
+        double readerSec1 = pos[1] + computeSamplePos(1);
 
-        double readerPos0 = pos[0] + samplePos / DEVICE_SAMPLE_RATE;
-        double readerPos1 = pos[1] + samplePos / DEVICE_SAMPLE_RATE;
-
-        ma_int16 s0 = getSample((ImU32)(readerPos0 * DEVICE_SAMPLE_RATE));
-        ma_int16 s1 = getSample((ImU32)(readerPos1 * DEVICE_SAMPLE_RATE));
+        ma_int16 s0 = getSample((ImU32)(readerSec0 * sampleRate));
+        ma_int16 s1 = getSample((ImU32)(readerSec1 * sampleRate));
 
         return lerp(s0, s1, alpha);
     }
 
+    // @param grain0Or1 0/1
     // @return in seconds
-    float computeSamplePos() const
+    float computeSamplePos(const int grain0Or1) const
     {
         // can be optimized
         const float blendFrac = blendPercent / 100.0f;
         const float holdSec = grainSec * (1.0f - blendFrac);
         const float attackSec = grainSec * blendFrac;
 
+        unsigned int localPhaseInt = (grain0Or1 == 0) ? phaseInt : ((phaseInt + 2)%4);
+
         float samplePos = phasePos;
-        if (phase > 0)
-            samplePos += holdSec;
-        if (phase > 1)
+        if (localPhaseInt > 0)
             samplePos += attackSec;
-        if (phase > 2)
+        if (localPhaseInt > 1)
             samplePos += holdSec;
+        if (localPhaseInt > 2)
+            samplePos += attackSec;
 
         return samplePos;
     }
@@ -188,7 +201,10 @@ public:
 
     ma_device_config deviceConfig;
     ma_device device;
-    Wave wave;
+//    Wave audioWave;
+//    Wave drawWave;
+    Wave audioWave;
+    Wave &drawWave = audioWave;
 
 private:
 
@@ -205,18 +221,11 @@ GranularSynth::~GranularSynth()
     delete pimpl_; // Deallocate the implementation object
 }
 
-float saturate(float x)
-{
-    if (x < 0.0f) return 0.0f;
-    if (x > 1.0f) return 1.0f;
-    return x;
-}
-
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
     MA_ASSERT(pDevice->playback.channels == DEVICE_CHANNELS);
 
-    Wave& wave = *(Wave*)pDevice->pUserData;
+    Wave& audioWave = *(Wave*)pDevice->pUserData;
 
     //    ma_waveform_read_pcm_frames(pSineWave, pOutput, frameCount, NULL);
 
@@ -226,9 +235,9 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 
         //        ma_int16 s = getSample(wave.time);
 
-        float value = wave.update();
+        float value = audioWave.update(1.0f / DEVICE_SAMPLE_RATE);
 
-        ma_int16 s = (ma_int16)(value * wave.volumePercent / 100.0f);
+        ma_int16 s = (ma_int16)(value * audioWave.volumePercent / 100.0f);
 
         for (ma_uint64 iChannel = 0; iChannel < DEVICE_CHANNELS; iChannel += 1) {
             pFramesOutS16[iFrame * DEVICE_CHANNELS + iChannel] = s;
@@ -246,7 +255,7 @@ int GranularSynth::Impl::init()
     deviceConfig.playback.channels = DEVICE_CHANNELS;
     deviceConfig.sampleRate = DEVICE_SAMPLE_RATE;
     deviceConfig.dataCallback = data_callback;
-    deviceConfig.pUserData = &wave;
+    deviceConfig.pUserData = &audioWave;
 
     if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
 //        printf("Failed to open playback device.\n");
@@ -337,21 +346,38 @@ void GranularSynth::Impl::gui(bool& showWindow)
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 300, main_viewport->WorkPos.y + 220), ImGuiCond_FirstUseEver);
     ImGui::Begin("GranularSynth", &showWindow, ImGuiWindowFlags_NoCollapse);
 
-    ImGui::SliderFloat("volume (mute .. max)", &wave.volumePercent, 0, 100.0f, "%.0f%%");
+    ImGui::SliderFloat("volume (mute .. max)", &audioWave.volumePercent, 0, 100.0f, "%.0f%%");
     ImGui::Separator();
-    ImGui::SliderFloat("advance (in seconds)", &wave.advanceSec, 0, 2.0f);
-    ImGui::SliderFloat("speed (in seconds)", &wave.speedSec, 0, 1.0f);
+    ImGui::SliderFloat("advance (in seconds)", &drawWave.advancePerSec, 0, 2.0f);
+    ImGui::SameLine();
+    if(ImGui::SmallButton("1##advancePerSec"))
+        drawWave.advancePerSec = 1.0f;
+
+    ImGui::SliderFloat("pitch (1 = original)", &drawWave.pitch, 0, 2.0f);
+    ImGui::SameLine();
+    if (ImGui::SmallButton("1##speedPerSec"))
+        drawWave.pitch = 1.0f;
+
     ImGui::Separator();
-    ImGui::SliderFloat("hold (in seconds)", &wave.grainSec, 0, 0.1f);
-    ImGui::SliderFloat("blend (rect .. triangle)", &wave.blendPercent, 0, 100.0f, "%.0f%%");
+    ImGui::SliderFloat("grain size (in seconds)", &drawWave.grainSec, 0.01f, 0.1f);
+    ImGui::SliderFloat("blend (rect .. triangle)", &drawWave.blendPercent, 0, 100.0f, "%.0f%%");
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    if(&drawWave != &audioWave)
+        drawWave.update(io.DeltaTime);
 
     draw();
 
     ImGui::End();
 }
 
-void drawRamp(ImVec2 plotStartPos, float plotWidth, ImVec2 actualPlotBottomRight, const Wave &wave, double sec0, const int grain0Or1)
+// @param grain0Or1 0/1
+// @param sec0 start pos in seconds
+void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wave, double sec0, const int grain0Or1)
 {
+    const float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
+
     const ImU32 col = (grain0Or1 == 0) ? IM_COL32(255, 0, 0, 255) : IM_COL32(0, 255, 0, 255);
 
     const float blendFrac = wave.blendPercent / 100.0f;
@@ -362,11 +388,13 @@ void drawRamp(ImVec2 plotStartPos, float plotWidth, ImVec2 actualPlotBottomRight
 
     static int display_count = getSampleDataSize();
 
+    const unsigned int sampleRate = getSampleRate();
+
     // 0.. display_count-1 in samples
-    const ImU32 sample0 = (ImU32)(sec0 * DEVICE_SAMPLE_RATE) % display_count;
-    const ImU32 sample1 = sample0 + (ImU32)(attackSec * DEVICE_SAMPLE_RATE);
-    const ImU32 sample2 = sample1 + (ImU32)(holdSec * DEVICE_SAMPLE_RATE);
-    const ImU32 sample3 = sample2 + (ImU32)(attackSec * DEVICE_SAMPLE_RATE);
+    const ImU32 sample0 = (ImU32)(sec0 * sampleRate) % display_count;
+    const ImU32 sample1 = sample0 + (ImU32)(attackSec * sampleRate);
+    const ImU32 sample2 = sample1 + (ImU32)(holdSec * sampleRate);
+    const ImU32 sample3 = sample2 + (ImU32)(attackSec * sampleRate);
 
     const float mul = plotWidth / display_count;
 
@@ -386,13 +414,13 @@ void drawRamp(ImVec2 plotStartPos, float plotWidth, ImVec2 actualPlotBottomRight
     // current pos
     {
         float alpha = wave.computeAlpha();
-        float thisAlpha = (grain0Or1 == 1) ? (1.0f - alpha) : alpha;
+        float thisAlpha = (grain0Or1 == 0) ? alpha : (1.0f - alpha);
 
         // in samples
-        float readerPos0 = sample0 + wave.computeSamplePos() * DEVICE_SAMPLE_RATE;
+        float readerPos0 = sample0 + wave.computeSamplePos(grain0Or1) * sampleRate;
 
         const float x = (plotStartPos.x + readerPos0 * mul);
-        const float midy = lerp(actualPlotBottomRight.y, plotStartPos.y, alpha);
+        const float midy = lerp(actualPlotBottomRight.y, plotStartPos.y, thisAlpha);
         drawList->AddLine(ImVec2(x, midy), ImVec2(x, actualPlotBottomRight.y), col, 2.0f);
     }
 }
@@ -413,33 +441,38 @@ void GranularSynth::Impl::draw()
 
     ImVec2 plotStartPos = ImGui::GetCursorScreenPos();
 
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    ImVec2 actualPlotBottomRight = ImVec2(plotStartPos.x + ImGui::CalcItemWidth(), plotStartPos.y + plotHeight);
+
     ImGui::PlotHistogram("Audio Sample", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
-//    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
+    //    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
 
-    ImVec2 actualPlotBottomRight = ImVec2(plotStartPos.x + ImGui::GetContentRegionAvail().x, plotStartPos.y + plotHeight);
+    const unsigned int sampleRate = getSampleRate();
 
-    float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
-    
     // Draw the two grains
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    drawList->PushClipRect(plotStartPos, actualPlotBottomRight);
+
     for(int i = 0; i < 2; ++i)
     {
-        const double sec = wave.pos[i];
+        const double sec = drawWave.pos[i];
 
-        drawRamp(plotStartPos, plotWidth, actualPlotBottomRight, wave, sec, i);
+        drawRamp(plotStartPos, actualPlotBottomRight, drawWave, sec, i);
         // draw another to make it appear cyclic
-        drawRamp(plotStartPos, plotWidth, actualPlotBottomRight, wave, sec - display_count / (float)DEVICE_SAMPLE_RATE, i);
+        drawRamp(plotStartPos, actualPlotBottomRight, drawWave, sec - display_count / (float)sampleRate, i);
     }
 
     if(0)
     {
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        const float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
         const float mul = plotWidth / display_count;
         const ImU32 col = IM_COL32(0, 0, 255, 255);
-        const ImU32 sample0 = (ImU32)(wave.time * DEVICE_SAMPLE_RATE) % display_count;
+        const ImU32 sample0 = (ImU32)(drawWave.time * sampleRate) % display_count;
         const float lineScreenX = plotStartPos.x + sample0 * mul;
         drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y), ImVec2(lineScreenX, actualPlotBottomRight.y), col, 2.0f);
     }
+
+    drawList->PopClipRect();
 
 //    ImGui::Text("time:%.2f", wave.time);
 }
