@@ -2,6 +2,8 @@
 #include "ImGui/imgui.h"
 #include <math.h>
 
+#pragma warning( disable : 4189 ) // local variable is initialized but not referenced
+
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
 #include "external/miniAudio/miniaudio.h"
@@ -31,6 +33,12 @@ short getSample(unsigned int pos)
     return data[pos % getSampleDataSize()];
 }
 
+// @param alpha 0..1
+float lerp(float s0, float s1, float alpha)
+{
+    return s0 * (1.0f - alpha) + s1 * alpha;
+}
+
 struct Wave
 {
     // in seconds
@@ -44,11 +52,11 @@ struct Wave
     // volume shape
 
     // in seconds
-    float holdSec = 1.0f;
-    // in seconds
-    float attackSec = 0.1f;
-    // 0:mute .. 1:max
-    float volume = 0.5f;
+    float grainSec = 0.1f;
+    // 0:hard..100:max
+    float blendPercent = 10.0f;
+    // 0:mute .. 100:max
+    float volumePercent = 40.0f;
     // in seconds
     float speedSec = 1.0f;
 
@@ -59,12 +67,40 @@ struct Wave
     // in seconds
     float phasePos = 0;
 
+    float computeAlpha() const
+    {
+        const float blendFrac = blendPercent / 100.0f;
+        const float holdSec = grainSec * (1.0f - blendFrac);
+        const float attackSec = grainSec * blendFrac;
+
+        float alpha = 1.0f;                             // phase 2
+
+        if (phase == 0)
+            alpha = 0.0f;                               // phase 0
+        else if (phase == 1)
+        {
+            alpha = phasePos / (float)attackSec;        // phase 1
+            assert(alpha >= 0.0f && alpha <= 1.0f);
+        }
+        else if (phase == 3)
+        {
+            alpha = 1.0f - phasePos / (float)attackSec; // phase 3
+            assert(alpha >= 0.0f && alpha <= 1.0f);
+        }
+        
+        return alpha;
+    }
+
     // side effect: update phase and phasePos
-    // @return 0..1
+    // @return value without volume applied
     float update()
     {
         time += advanceSec / DEVICE_SAMPLE_RATE;
         phasePos += advanceSec / DEVICE_SAMPLE_RATE;
+
+        const float blendFrac = blendPercent / 100.0f;
+        const float holdSec = grainSec * (1.0f - blendFrac);
+        const float attackSec = grainSec * blendFrac;
 
         for (;;)
         {
@@ -105,33 +141,40 @@ struct Wave
         //  0 1 2 3 : phase
         // 000x111x : return, x is linear crossfade area 0..1
 
-        float ret = 1.0f;                          // phase 2
+        const float alpha = computeAlpha();
 
-        if (phase == 0)
-            ret = 0.0f;                            // phase 0
-        else if (phase == 1)
-        {
-            ret = phasePos / (float)attackSec;     // phase 1
-        }
-        else if (phase == 3)
-        {
-            ret = 1.0f - phasePos / (float)attackSec; // phase 3
+        // this could be refactored
+        float samplePos = computeSamplePos();
 
-            assert(ret >= 0.0f && ret <= 1.0f);
-        }
+        double readerPos0 = pos[0] + samplePos / DEVICE_SAMPLE_RATE;
+        double readerPos1 = pos[1] + samplePos / DEVICE_SAMPLE_RATE;
 
-        pos[0] += speedSec / DEVICE_SAMPLE_RATE;
-        pos[1] += speedSec / DEVICE_SAMPLE_RATE;
+        ma_int16 s0 = getSample((ImU32)(readerPos0 * DEVICE_SAMPLE_RATE));
+        ma_int16 s1 = getSample((ImU32)(readerPos1 * DEVICE_SAMPLE_RATE));
 
-        return ret;
+        return lerp(s0, s1, alpha);
+    }
+
+    // @return in seconds
+    float computeSamplePos() const
+    {
+        // can be optimized
+        const float blendFrac = blendPercent / 100.0f;
+        const float holdSec = grainSec * (1.0f - blendFrac);
+        const float attackSec = grainSec * blendFrac;
+
+        float samplePos = phasePos;
+        if (phase > 0)
+            samplePos += holdSec;
+        if (phase > 1)
+            samplePos += attackSec;
+        if (phase > 2)
+            samplePos += holdSec;
+
+        return samplePos;
     }
 };
 
-// @param alpha 0..1
-float lerp(float s0, float s1, float alpha)
-{
-    return s0 * (1.0f - alpha) + s1 * alpha;
-}
 
 class GranularSynth::Impl
 {
@@ -183,13 +226,9 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 
         //        ma_int16 s = getSample(wave.time);
 
-        ma_int16 s0 = getSample((ImU32)(wave.pos[0] * DEVICE_SAMPLE_RATE));
-        ma_int16 s1 = getSample((ImU32)(wave.pos[1] * DEVICE_SAMPLE_RATE));
+        float value = wave.update();
 
-        // 0..1
-        float alpha = wave.update();
-
-        ma_int16 s = (ma_int16)(lerp(s0, s1, alpha) * wave.volume);
+        ma_int16 s = (ma_int16)(value * wave.volumePercent / 100.0f);
 
         for (ma_uint64 iChannel = 0; iChannel < DEVICE_CHANNELS; iChannel += 1) {
             pFramesOutS16[iFrame * DEVICE_CHANNELS + iChannel] = s;
@@ -298,16 +337,66 @@ void GranularSynth::Impl::gui(bool& showWindow)
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 300, main_viewport->WorkPos.y + 220), ImGuiCond_FirstUseEver);
     ImGui::Begin("GranularSynth", &showWindow, ImGuiWindowFlags_NoCollapse);
 
-    ImGui::SliderFloat("volume", &wave.volume, 0, 1.0f);
-    ImGui::SliderFloat("advance", &wave.advanceSec, 0, 2.0f);
-    ImGui::SliderFloat("speed", &wave.speedSec, 0, 1.0f);
-    ImGui::SliderFloat("hold", &wave.holdSec, 0, 1.0f);
-    ImGui::SliderFloat("attack", &wave.attackSec, 0, 1.0f);
+    ImGui::SliderFloat("volume (mute .. max)", &wave.volumePercent, 0, 100.0f, "%.0f%%");
+    ImGui::Separator();
+    ImGui::SliderFloat("advance (in seconds)", &wave.advanceSec, 0, 2.0f);
+    ImGui::SliderFloat("speed (in seconds)", &wave.speedSec, 0, 1.0f);
+    ImGui::Separator();
+    ImGui::SliderFloat("hold (in seconds)", &wave.grainSec, 0, 0.1f);
+    ImGui::SliderFloat("blend (rect .. triangle)", &wave.blendPercent, 0, 100.0f, "%.0f%%");
 
     draw();
 
     ImGui::End();
 }
+
+void drawRamp(ImVec2 plotStartPos, float plotWidth, ImVec2 actualPlotBottomRight, const Wave &wave, double sec0, const int grain0Or1)
+{
+    const ImU32 col = (grain0Or1 == 0) ? IM_COL32(255, 0, 0, 255) : IM_COL32(0, 255, 0, 255);
+
+    const float blendFrac = wave.blendPercent / 100.0f;
+    const float holdSec = wave.grainSec * (1.0f - blendFrac);
+    const float attackSec = wave.grainSec * blendFrac;
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    static int display_count = getSampleDataSize();
+
+    // 0.. display_count-1 in samples
+    const ImU32 sample0 = (ImU32)(sec0 * DEVICE_SAMPLE_RATE) % display_count;
+    const ImU32 sample1 = sample0 + (ImU32)(attackSec * DEVICE_SAMPLE_RATE);
+    const ImU32 sample2 = sample1 + (ImU32)(holdSec * DEVICE_SAMPLE_RATE);
+    const ImU32 sample3 = sample2 + (ImU32)(attackSec * DEVICE_SAMPLE_RATE);
+
+    const float mul = plotWidth / display_count;
+
+    ImVec2 p[4];
+    p[0] = ImVec2(plotStartPos.x + sample0 * mul, actualPlotBottomRight.y);
+    p[1] = ImVec2(plotStartPos.x + sample1 * mul, plotStartPos.y);
+    p[2] = ImVec2(plotStartPos.x + sample2 * mul, plotStartPos.y);
+    p[3] = ImVec2(plotStartPos.x + sample3 * mul, actualPlotBottomRight.y);
+
+    // attack up
+    drawList->AddLine(p[0], p[1], col, 1.0f);
+    // hold
+    drawList->AddLine(p[1], p[2], col, 1.0f);
+    // attack down
+    drawList->AddLine(p[2], p[3], col, 1.0f);
+
+    // current pos
+    {
+        float alpha = wave.computeAlpha();
+        float thisAlpha = (grain0Or1 == 1) ? (1.0f - alpha) : alpha;
+
+        // in samples
+        float readerPos0 = sample0 + wave.computeSamplePos() * DEVICE_SAMPLE_RATE;
+
+        const float x = (plotStartPos.x + readerPos0 * mul);
+        const float midy = lerp(actualPlotBottomRight.y, plotStartPos.y, alpha);
+        drawList->AddLine(ImVec2(x, midy), ImVec2(x, actualPlotBottomRight.y), col, 2.0f);
+    }
+}
+
 
 void GranularSynth::Impl::draw()
 {
@@ -332,28 +421,24 @@ void GranularSynth::Impl::draw()
 
     float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
     
-    // Get the draw list
-    ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-    float normalizedX = 0;
-
-    // Draw the vertical lines
-//    for(int i = 0; i < 3; ++i)
-    int i = 0;
+    // Draw the two grains
+    for(int i = 0; i < 2; ++i)
     {
-        double sec = wave.time;
-        if (i == 1) sec = wave.pos[0];
-        if (i == 2) sec = wave.pos[1];
+        const double sec = wave.pos[i];
 
-        normalizedX = ((ImU32)(sec * DEVICE_SAMPLE_RATE) % display_count)/ (float)display_count;
-        {
-            ImU32 col = IM_COL32(255, 0, 0, 255);
-            if (i == 1) col = IM_COL32(0, 255, 0, 255);
-            if (i == 2) col = IM_COL32(0, 0, 255, 255);
+        drawRamp(plotStartPos, plotWidth, actualPlotBottomRight, wave, sec, i);
+        // draw another to make it appear cyclic
+        drawRamp(plotStartPos, plotWidth, actualPlotBottomRight, wave, sec - display_count / (float)DEVICE_SAMPLE_RATE, i);
+    }
 
-            float lineScreenX = plotStartPos.x + (normalizedX * plotWidth);
-            drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y),ImVec2(lineScreenX, actualPlotBottomRight.y), col, 2.0f);
-        }
+    if(0)
+    {
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        const float mul = plotWidth / display_count;
+        const ImU32 col = IM_COL32(0, 0, 255, 255);
+        const ImU32 sample0 = (ImU32)(wave.time * DEVICE_SAMPLE_RATE) % display_count;
+        const float lineScreenX = plotStartPos.x + sample0 * mul;
+        drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y), ImVec2(lineScreenX, actualPlotBottomRight.y), col, 2.0f);
     }
 
 //    ImGui::Text("time:%.2f", wave.time);
