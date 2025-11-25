@@ -4,6 +4,14 @@
 #include <math.h>
 #include <stdlib.h>
 
+// todo: backwards
+// verify/fix crackling
+
+// high quality even with large values
+//typedef double flt;
+// faster, todo: make sure we stay near 0
+typedef float flt;
+
 #pragma warning( disable : 4189 ) // local variable is initialized but not referenced
 #pragma warning( disable : 4100 ) // unreferenced parameter
 
@@ -55,25 +63,40 @@ float saturate(float x)
     return x;
 }
 
-// also works with negative value
-uint32 wrapWithin(const double value, const uint32 display_count)
+double _floor(double x)
 {
-    double f = value / display_count;
+    return floor(x);
+}
+float _floor(float x)
+{
+    return floorf(x);
+}
+
+// also works with negative value
+uint32 wrapWithin(const flt value, const uint32 display_count)
+{
+    flt f = value / display_count;
     // 0..1
-    double g = f - floor(f);
+    flt g = f - _floor(f);
 
     return (uint32)(g * display_count);
 }
 
 struct Wave
 {
+    struct Envelope
+    {
+        float holdSec;
+        float attackSec;
+    };
+
     // in seconds
-    double time = 0;
+    flt time = 0;
     // in sec seconds per dst second
     float advancePerSec = 1.0f;
 
     // in seconds [mode0, mode1] = { time, time }
-    double pos[2] = { 0, 0 };
+    flt pos[2] = { 0, 0 };
 
     // volume shape
 
@@ -120,6 +143,17 @@ struct Wave
         return alpha;
     }
 
+    Envelope computeEnvelope() const
+    {
+        Envelope ret;
+
+        const float blendFrac = blendPercent / 100.0f;
+        ret.holdSec = grainSec * (1.0f - blendFrac);
+        ret.attackSec = grainSec * blendFrac;
+
+        return ret;
+    }
+
     // side effect: update phase and phasePos
     // @param deltaTime in seconds 
     // @return value without volume applied
@@ -130,38 +164,37 @@ struct Wave
         time += advancePerSec * deltaTime;
         phasePos += pitch * deltaTime;
 
-        const float blendFrac = blendPercent / 100.0f;
-        const float holdSec = grainSec * (1.0f - blendFrac);
-        const float attackSec = grainSec * blendFrac;
+        Envelope envelope = computeEnvelope();
 
+        if(envelope.attackSec + envelope.holdSec > 0)
         for (;;)
         {
             if (phaseInt == 0)  // ramp up 0, ramp down 1
             {
-                if (phasePos < attackSec)break;
-                phaseInt++; phasePos -= attackSec;
+                if (phasePos < envelope.attackSec)break;
+                phaseInt++; phasePos -= envelope.attackSec;
                 assert(phasePos >= 0);
             }
 
             if (phaseInt == 1)  // hold 0
             {
-                if (phasePos < holdSec)break;
-                phaseInt++; phasePos -= holdSec;
+                if (phasePos < envelope.holdSec)break;
+                phaseInt++; phasePos -= envelope.holdSec;
                 pos[1] = time;
                 assert(phasePos >= 0);
             }
 
             if (phaseInt == 2)  // ramp down 0, ramp down 1
             {
-                if (phasePos < attackSec)break;
-                phaseInt = 3; phasePos -= attackSec;
+                if (phasePos < envelope.attackSec)break;
+                phaseInt = 3; phasePos -= envelope.attackSec;
                 assert(phasePos >= 0);
             }
 
             if (phaseInt == 3)  // 1
             {
-                if (phasePos < holdSec)break;
-                phaseInt = 0; phasePos -= holdSec;
+                if (phasePos < envelope.holdSec)break;
+                phaseInt = 0; phasePos -= envelope.holdSec;
                 pos[0] = time;
                 assert(phasePos >= 0);
             }
@@ -169,8 +202,8 @@ struct Wave
 
         const float alpha = computeAlpha();
 
-        double readerSec0 = pos[0] + computeSamplePos(0);
-        double readerSec1 = pos[1] + computeSamplePos(1);
+        flt readerSec0 = pos[0] + computeSamplePos(envelope, 0);
+        flt readerSec1 = pos[1] + computeSamplePos(envelope, 1);
 
         static int display_count = getSampleDataSize();
 
@@ -184,22 +217,17 @@ struct Wave
 
     // @param grain0Or1 0/1
     // @return in seconds
-    float computeSamplePos(const int grain0Or1) const
+    float computeSamplePos(const Envelope envelope, const int grain0Or1) const
     {
-        // can be optimized
-        const float blendFrac = blendPercent / 100.0f;
-        const float holdSec = grainSec * (1.0f - blendFrac);
-        const float attackSec = grainSec * blendFrac;
-
         unsigned int localPhaseInt = (grain0Or1 == 0) ? phaseInt : ((phaseInt + 2)%4);
 
         float samplePos = phasePos;
         if (localPhaseInt > 0)
-            samplePos += attackSec;
+            samplePos += envelope.attackSec;
         if (localPhaseInt > 1)
-            samplePos += holdSec;
+            samplePos += envelope.holdSec;
         if (localPhaseInt > 2)
-            samplePos += attackSec;
+            samplePos += envelope.attackSec;
 
         return samplePos;
     }
@@ -373,7 +401,7 @@ void GranularSynth::Impl::gui(bool& showWindow)
         drawWave.pitch = 1.0f;
 
     ImGui::Separator();
-    ImGui::SliderFloat("grain size (in seconds)", &drawWave.grainSec, 0.01f, 0.5f);
+    ImGui::SliderFloat("grain size (in seconds)", &drawWave.grainSec, 0.00f, 0.5f);
     ImGui::SliderFloat("blend (rect .. triangle)", &drawWave.blendPercent, 0, 100.0f, "%.0f%%");
 
     ImGuiIO& io = ImGui::GetIO();
@@ -388,7 +416,7 @@ void GranularSynth::Impl::gui(bool& showWindow)
 
 // @param grain0Or1 0/1
 // @param sec0 start pos in seconds
-void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wave, double sec0, const int grain0Or1)
+void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wave, flt sec0, const int grain0Or1)
 {
     const float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
 
@@ -407,7 +435,9 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
     // 0.. display_count-1 in samples
     const int32 sampleStart = wrapWithin(sec0 * sampleRate, display_count);
 
-    for(uint32 wrap = 0; wrap < 2; ++wrap)
+    Wave::Envelope envelope = wave.computeEnvelope();
+
+    for(uint32 wrap = 0; wrap < 2; ++wrap) 
     {
         int32 sample0 = sampleStart;
 
@@ -439,7 +469,7 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
             float thisAlpha = (grain0Or1 == 0) ? alpha : (1.0f - alpha);
 
             // in samples
-            float readerPos0 = sample0 + wave.computeSamplePos(grain0Or1) * sampleRate;
+            float readerPos0 = sample0 + wave.computeSamplePos(envelope, grain0Or1) * sampleRate;
 
             const float x = (plotStartPos.x + readerPos0 * mul);
             const float midy = lerp(actualPlotBottomRight.y, plotStartPos.y, thisAlpha);
@@ -482,7 +512,7 @@ void GranularSynth::Impl::draw()
     // draw both grains
     for(int i = 0; i < 2; ++i)
     {
-        const double sec = drawWave.pos[i];
+        const flt sec = drawWave.pos[i];
 
         drawRamp(plotStartPos, actualPlotBottomRight, drawWave, sec, i);
     }
