@@ -118,18 +118,32 @@ struct Wave
     // /   \___ 
     // 0 1 2 3  : phaseInt
     // x111x000 : return, x is linear crossfade alpha 0..1
-    int phaseInt = 0;
+//    int phaseInt = 0;
     // in seconds
     float phasePos = 0;
 
-    float computeAlpha() const
+    float computeAlpha(const Envelope envelope) const
     {
-        const float blendFrac = blendPercent / 100.0f;
-        const float holdSec = grainSec * (1.0f - blendFrac);
-        const float attackSec = grainSec * blendFrac;
-
         float alpha = 0.0f;
 
+        if(phasePos < envelope.attackSec)
+        {
+            alpha = phasePos / (float)envelope.attackSec;
+//            assert(alpha >= 0.0f && alpha <= 1.0f);
+            alpha = saturate(alpha);
+        }
+        else if(phasePos < envelope.attackSec + envelope.holdSec)
+        {
+            return 1.0f;
+        }
+        else if (phasePos < envelope.attackSec * 2 + envelope.holdSec)
+        {
+            alpha = 1.0f - (phasePos - envelope.attackSec - envelope.holdSec) / (float)envelope.attackSec;
+            //            assert(alpha >= 0.0f && alpha <= 1.0f);
+            alpha = saturate(alpha);
+        }
+
+/*
         if (phaseInt == 0)
         {
             alpha = phasePos / (float)attackSec;
@@ -144,7 +158,7 @@ struct Wave
 //            assert(alpha >= 0.0f && alpha <= 1.0f);
             alpha = saturate(alpha);
         }
-       
+ */      
         return alpha;
     }
 
@@ -154,7 +168,13 @@ struct Wave
 
         const float blendFrac = blendPercent / 100.0f;
         ret.holdSec = grainSec * (1.0f - blendFrac);
-        ret.attackSec = grainSec * blendFrac;
+        ret.attackSec = (grainSec - ret.holdSec);
+
+        float test1 = fabsf(grainSec * 2 - (ret.holdSec * 2 + ret.attackSec * 2));
+        assert(test1 < 0.01f);
+
+        float test2 = fabsf(grainSec - (ret.holdSec + ret.attackSec));
+        assert(test2 < 0.01f);
 
         return ret;
     }
@@ -169,7 +189,8 @@ struct Wave
         time += advancePerSec * deltaTime;
 
         // for better precision with float
-        time = frac(time / sampleRate) * sampleRate;
+        // wrap time in 
+//        time = frac(time / sampleRate) * sampleRate;
 
         phasePos += pitch * deltaTime;
 
@@ -178,46 +199,56 @@ struct Wave
         // wrap even works with backwards
         if(grainSec > 0)
         {
-            phasePos = frac(phasePos / grainSec) * grainSec;
+            // wrap phasePos in 0..grainSec * 2
+            phasePos = frac(phasePos / grainSec / 2) * grainSec * 2;
+
+/*
+            float localPhase = phasePos;
 
             for (;;)
             {
                 if (phaseInt == 0)  // ramp up 0, ramp down 1
                 {
-                    if (phasePos < envelope.attackSec)break;
-                    phaseInt++; phasePos -= envelope.attackSec;
-                    assert(phasePos >= 0);
+                    if (localPhase < envelope.attackSec)break;
+                    phaseInt++; localPhase -= envelope.attackSec;
+                    assert(localPhase >= 0);
                 }
 
                 if (phaseInt == 1)  // hold 0
                 {
-                    if (phasePos < envelope.holdSec)break;
-                    phaseInt++; phasePos -= envelope.holdSec;
+                    if (localPhase < envelope.holdSec)break;
+                    phaseInt++; localPhase -= envelope.holdSec;
                     pos[1] = time;
-                    assert(phasePos >= 0);
+                    assert(localPhase >= 0);
                 }
 
                 if (phaseInt == 2)  // ramp down 0, ramp down 1
                 {
-                    if (phasePos < envelope.attackSec)break;
-                    phaseInt = 3; phasePos -= envelope.attackSec;
-                    assert(phasePos >= 0);
+                    if (localPhase < envelope.attackSec)break;
+                    phaseInt = 3; localPhase -= envelope.attackSec;
+                    assert(localPhase >= 0);
                 }
 
                 if (phaseInt == 3)  // 1
                 {
-                    if (phasePos < envelope.holdSec)break;
-                    phaseInt = 0; phasePos -= envelope.holdSec;
+                    if (localPhase < envelope.holdSec)break;
+                    phaseInt = 0; localPhase -= envelope.holdSec;
                     pos[0] = time;
-                    assert(phasePos >= 0);
+                    assert(localPhase >= 0);
                 }
             }
+*/
         }
 
-        const float alpha = computeAlpha();
+        const float alpha = computeAlpha(envelope);
 
-        flt readerSec0 = pos[0] + computeSamplePos(envelope, 0);
-        flt readerSec1 = pos[1] + computeSamplePos(envelope, 1);
+        if(alpha == 0.0f)
+            pos[1] = time;
+        else if (alpha == 1.0f)
+            pos[0] = time;
+
+        flt readerSec0 = pos[0] + computeLocalSamplePos(envelope, 0);
+        flt readerSec1 = pos[1] + computeLocalSamplePos(envelope, 1);
 
         static int display_count = getSampleDataSize();
 
@@ -230,20 +261,21 @@ struct Wave
     }
 
     // @param grain0Or1 0/1
-    // @return in seconds
-    float computeSamplePos(const Envelope envelope, const int grain0Or1) const
+    // @return in seconds, in 0..grainSec*2 range
+    float computeLocalSamplePos(const Envelope envelope, const int grain0Or1) const
     {
-        unsigned int localPhaseInt = (grain0Or1 == 0) ? phaseInt : ((phaseInt + 2)%4);
+        if(grainSec <= 0)
+            return 0.0f;
 
-        float samplePos = phasePos;
-        if (localPhaseInt > 0)
-            samplePos += envelope.attackSec;
-        if (localPhaseInt > 1)
-            samplePos += envelope.holdSec;
-        if (localPhaseInt > 2)
-            samplePos += envelope.attackSec;
+        float shift = 0;
 
-        return samplePos;
+        if(grain0Or1)
+            shift = envelope.attackSec + envelope.holdSec;
+        //    shift = envelope.holdSec;
+        //        shift = grainSec;
+
+//        return frac((phasePos) / grainSec / 2) * grainSec * 2 - shift;
+        return frac((phasePos - shift) / grainSec / 2) * grainSec * 2;
     }
 };
 
@@ -260,10 +292,15 @@ public:
 
     ma_device_config deviceConfig;
     ma_device device;
-//    Wave audioWave;
-//    Wave drawWave;
+
+#if 0
+    // hacky, to debug Wave code
+    Wave audioWave;
+    Wave drawWave;
+#else
     Wave audioWave;
     Wave &drawWave = audioWave;
+#endif
 
 private:
 
@@ -457,7 +494,10 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
 
     Wave::Envelope envelope = wave.computeEnvelope();
 
-    for(uint32 wrap = 0; wrap < 2; ++wrap) 
+    // samples to pixel
+    const float mul = plotWidth / display_count;
+
+    for(uint32 wrap = 0; wrap < 2; ++wrap)
     {
         int32 sample0 = sampleStart;
 
@@ -467,8 +507,6 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
         const int32 sample1 = sample0 + (uint32)(attackSec * sampleRate);
         const int32 sample2 = sample1 + (uint32)(holdSec * sampleRate);
         const int32 sample3 = sample2 + (uint32)(attackSec * sampleRate);
-
-        const float mul = plotWidth / display_count;
 
         ImVec2 p[4];
         p[0] = ImVec2(plotStartPos.x + sample0 * mul, actualPlotBottomRight.y);
@@ -485,11 +523,11 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
 
         // current pos
         {
-            float alpha = wave.computeAlpha();
+            float alpha = wave.computeAlpha(envelope);
             float thisAlpha = (grain0Or1 == 0) ? alpha : (1.0f - alpha);
 
             // in samples
-            float readerPos0 = sample0 + wave.computeSamplePos(envelope, grain0Or1) * sampleRate;
+            float readerPos0 = sample0 + wave.computeLocalSamplePos(envelope, grain0Or1) * sampleRate;
 
             const float x = (plotStartPos.x + readerPos0 * mul);
             const float midy = lerp(actualPlotBottomRight.y, plotStartPos.y, thisAlpha);
@@ -516,6 +554,9 @@ void GranularSynth::Impl::draw()
     ImVec2 plotStartPos = ImGui::GetCursorScreenPos();
 
     ImVec2 actualPlotBottomRight = ImVec2(plotStartPos.x + ImGui::CalcItemWidth(), plotStartPos.y + plotHeight);
+
+//    ImVec2 actualPlotBottomRight = ImVec2(plotStartPos.x + 1024, plotStartPos.y + plotHeight);
+//    ImGui::SetNextItemWidth(1024);
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::PlotHistogram("Audio Sample", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
