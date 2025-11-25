@@ -1,8 +1,11 @@
 #include "GranularSynth.h"
 #include "ImGui/imgui.h"
+#include "types.h"
 #include <math.h>
+#include <stdlib.h>
 
 #pragma warning( disable : 4189 ) // local variable is initialized but not referenced
+#pragma warning( disable : 4100 ) // unreferenced parameter
 
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
@@ -23,12 +26,12 @@ const unsigned int g_wavHeader = 44;
 const unsigned int getSampleDataSize()
 {
     // /2 for DEVICE_FORMAT==ma_format_s16
+//    return *(unsigned int*)&g_sample[40] / 2;
     return *(unsigned int*)&g_sample[40] / 2;
 }
 const unsigned int getSampleRate()
 {
-    // /2 for DEVICE_FORMAT==ma_format_s16
-    return *(unsigned int*)&g_sample[24] / 2;
+    return *(unsigned int*)&g_sample[24];
 }
 // @param pos = 0..getSampleDataSize()
 short getSample(unsigned int pos)
@@ -50,6 +53,16 @@ float saturate(float x)
     if (x < 0.0f) return 0.0f;
     if (x > 1.0f) return 1.0f;
     return x;
+}
+
+// also works with negative value
+uint32 wrapWithin(const double value, const uint32 display_count)
+{
+    double f = value / display_count;
+    // 0..1
+    double g = f - floor(f);
+
+    return (uint32)(g * display_count);
 }
 
 struct Wave
@@ -159,8 +172,12 @@ struct Wave
         double readerSec0 = pos[0] + computeSamplePos(0);
         double readerSec1 = pos[1] + computeSamplePos(1);
 
-        ma_int16 s0 = getSample((ImU32)(readerSec0 * sampleRate));
-        ma_int16 s1 = getSample((ImU32)(readerSec1 * sampleRate));
+        static int display_count = getSampleDataSize();
+
+//        ma_int16 s0 = getSample((ImU32)(readerSec0 * sampleRate));
+//        ma_int16 s1 = getSample((ImU32)(readerSec1 * sampleRate));
+        ma_int16 s0 = getSample(wrapWithin(readerSec0 * sampleRate, display_count));
+        ma_int16 s1 = getSample(wrapWithin(readerSec1 * sampleRate, display_count));
 
         return lerp(s0, s1, alpha);
     }
@@ -243,9 +260,6 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
             pFramesOutS16[iFrame * DEVICE_CHANNELS + iChannel] = s;
         }
     }
-
-
-    (void)pInput;
 }
 
 int GranularSynth::Impl::init()
@@ -359,7 +373,7 @@ void GranularSynth::Impl::gui(bool& showWindow)
         drawWave.pitch = 1.0f;
 
     ImGui::Separator();
-    ImGui::SliderFloat("grain size (in seconds)", &drawWave.grainSec, 0.01f, 0.1f);
+    ImGui::SliderFloat("grain size (in seconds)", &drawWave.grainSec, 0.01f, 0.5f);
     ImGui::SliderFloat("blend (rect .. triangle)", &drawWave.blendPercent, 0, 100.0f, "%.0f%%");
 
     ImGuiIO& io = ImGui::GetIO();
@@ -388,40 +402,50 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
 
     static int display_count = getSampleDataSize();
 
-    const unsigned int sampleRate = getSampleRate();
+    const uint32 sampleRate = getSampleRate();
 
     // 0.. display_count-1 in samples
-    const ImU32 sample0 = (ImU32)(sec0 * sampleRate) % display_count;
-    const ImU32 sample1 = sample0 + (ImU32)(attackSec * sampleRate);
-    const ImU32 sample2 = sample1 + (ImU32)(holdSec * sampleRate);
-    const ImU32 sample3 = sample2 + (ImU32)(attackSec * sampleRate);
+    const int32 sampleStart = wrapWithin(sec0 * sampleRate, display_count);
 
-    const float mul = plotWidth / display_count;
-
-    ImVec2 p[4];
-    p[0] = ImVec2(plotStartPos.x + sample0 * mul, actualPlotBottomRight.y);
-    p[1] = ImVec2(plotStartPos.x + sample1 * mul, plotStartPos.y);
-    p[2] = ImVec2(plotStartPos.x + sample2 * mul, plotStartPos.y);
-    p[3] = ImVec2(plotStartPos.x + sample3 * mul, actualPlotBottomRight.y);
-
-    // attack up
-    drawList->AddLine(p[0], p[1], col, 1.0f);
-    // hold
-    drawList->AddLine(p[1], p[2], col, 1.0f);
-    // attack down
-    drawList->AddLine(p[2], p[3], col, 1.0f);
-
-    // current pos
+    for(uint32 wrap = 0; wrap < 2; ++wrap)
     {
-        float alpha = wave.computeAlpha();
-        float thisAlpha = (grain0Or1 == 0) ? alpha : (1.0f - alpha);
+        int32 sample0 = sampleStart;
 
-        // in samples
-        float readerPos0 = sample0 + wave.computeSamplePos(grain0Or1) * sampleRate;
+        if(wrap)
+            sample0 -= display_count;
 
-        const float x = (plotStartPos.x + readerPos0 * mul);
-        const float midy = lerp(actualPlotBottomRight.y, plotStartPos.y, thisAlpha);
-        drawList->AddLine(ImVec2(x, midy), ImVec2(x, actualPlotBottomRight.y), col, 2.0f);
+        const int32 sample1 = sample0 + (uint32)(attackSec * sampleRate);
+        const int32 sample2 = sample1 + (uint32)(holdSec * sampleRate);
+        const int32 sample3 = sample2 + (uint32)(attackSec * sampleRate);
+
+        const float mul = plotWidth / display_count;
+
+        ImVec2 p[4];
+        p[0] = ImVec2(plotStartPos.x + sample0 * mul, actualPlotBottomRight.y);
+        p[1] = ImVec2(plotStartPos.x + sample1 * mul, plotStartPos.y);
+        p[2] = ImVec2(plotStartPos.x + sample2 * mul, plotStartPos.y);
+        p[3] = ImVec2(plotStartPos.x + sample3 * mul, actualPlotBottomRight.y);
+
+        // attack up
+        drawList->AddLine(p[0], p[1], col, 1.0f);
+        // hold
+        drawList->AddLine(p[1], p[2], col, 1.0f);
+        // attack down
+        drawList->AddLine(p[2], p[3], col, 1.0f);
+
+        // current pos
+        {
+            float alpha = wave.computeAlpha();
+            float thisAlpha = (grain0Or1 == 0) ? alpha : (1.0f - alpha);
+
+            // in samples
+            float readerPos0 = sample0 + wave.computeSamplePos(grain0Or1) * sampleRate;
+
+            const float x = (plotStartPos.x + readerPos0 * mul);
+            const float midy = lerp(actualPlotBottomRight.y, plotStartPos.y, thisAlpha);
+            drawList->AddLine(ImVec2(x, midy), ImVec2(x, actualPlotBottomRight.y), col, 2.0f);
+        }
+
     }
 }
 
@@ -443,7 +467,9 @@ void GranularSynth::Impl::draw()
 
     ImVec2 actualPlotBottomRight = ImVec2(plotStartPos.x + ImGui::CalcItemWidth(), plotStartPos.y + plotHeight);
 
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::PlotHistogram("Audio Sample", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
+    ImGui::PopStyleVar();
     //    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
 
     const unsigned int sampleRate = getSampleRate();
@@ -453,23 +479,22 @@ void GranularSynth::Impl::draw()
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     drawList->PushClipRect(plotStartPos, actualPlotBottomRight);
 
+    // draw both grains
     for(int i = 0; i < 2; ++i)
     {
         const double sec = drawWave.pos[i];
 
         drawRamp(plotStartPos, actualPlotBottomRight, drawWave, sec, i);
-        // draw another to make it appear cyclic
-        drawRamp(plotStartPos, actualPlotBottomRight, drawWave, sec - display_count / (float)sampleRate, i);
     }
 
-    if(0)
+    if(1)
     {
         const float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
         const float mul = plotWidth / display_count;
-        const ImU32 col = IM_COL32(0, 0, 255, 255);
+        const ImU32 col = IM_COL32(255,255, 255, 255);
         const ImU32 sample0 = (ImU32)(drawWave.time * sampleRate) % display_count;
         const float lineScreenX = plotStartPos.x + sample0 * mul;
-        drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y), ImVec2(lineScreenX, actualPlotBottomRight.y), col, 2.0f);
+        drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y), ImVec2(lineScreenX, actualPlotBottomRight.y), col, 4.0f);
     }
 
     drawList->PopClipRect();
