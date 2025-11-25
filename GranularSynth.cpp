@@ -72,14 +72,19 @@ float _floor(float x)
     return floorf(x);
 }
 
+double frac(double x)
+{
+    return x - _floor(x);
+}
+float frac(float x)
+{
+    return x - _floor(x);
+}
+
 // also works with negative value
 uint32 wrapWithin(const flt value, const uint32 display_count)
 {
-    flt f = value / display_count;
-    // 0..1
-    flt g = f - _floor(f);
-
-    return (uint32)(g * display_count);
+    return (uint32)(frac(value / display_count) * display_count);
 }
 
 struct Wave
@@ -162,41 +167,50 @@ struct Wave
         const unsigned int sampleRate = getSampleRate();
 
         time += advancePerSec * deltaTime;
+
+        // for better precision with float
+        time = frac(time / sampleRate) * sampleRate;
+
         phasePos += pitch * deltaTime;
 
         Envelope envelope = computeEnvelope();
 
-        if(envelope.attackSec + envelope.holdSec > 0)
-        for (;;)
+        // wrap even works with backwards
+        if(grainSec > 0)
         {
-            if (phaseInt == 0)  // ramp up 0, ramp down 1
-            {
-                if (phasePos < envelope.attackSec)break;
-                phaseInt++; phasePos -= envelope.attackSec;
-                assert(phasePos >= 0);
-            }
+            phasePos = frac(phasePos / grainSec) * grainSec;
 
-            if (phaseInt == 1)  // hold 0
+            for (;;)
             {
-                if (phasePos < envelope.holdSec)break;
-                phaseInt++; phasePos -= envelope.holdSec;
-                pos[1] = time;
-                assert(phasePos >= 0);
-            }
+                if (phaseInt == 0)  // ramp up 0, ramp down 1
+                {
+                    if (phasePos < envelope.attackSec)break;
+                    phaseInt++; phasePos -= envelope.attackSec;
+                    assert(phasePos >= 0);
+                }
 
-            if (phaseInt == 2)  // ramp down 0, ramp down 1
-            {
-                if (phasePos < envelope.attackSec)break;
-                phaseInt = 3; phasePos -= envelope.attackSec;
-                assert(phasePos >= 0);
-            }
+                if (phaseInt == 1)  // hold 0
+                {
+                    if (phasePos < envelope.holdSec)break;
+                    phaseInt++; phasePos -= envelope.holdSec;
+                    pos[1] = time;
+                    assert(phasePos >= 0);
+                }
 
-            if (phaseInt == 3)  // 1
-            {
-                if (phasePos < envelope.holdSec)break;
-                phaseInt = 0; phasePos -= envelope.holdSec;
-                pos[0] = time;
-                assert(phasePos >= 0);
+                if (phaseInt == 2)  // ramp down 0, ramp down 1
+                {
+                    if (phasePos < envelope.attackSec)break;
+                    phaseInt = 3; phasePos -= envelope.attackSec;
+                    assert(phasePos >= 0);
+                }
+
+                if (phaseInt == 3)  // 1
+                {
+                    if (phasePos < envelope.holdSec)break;
+                    phaseInt = 0; phasePos -= envelope.holdSec;
+                    pos[0] = time;
+                    assert(phasePos >= 0);
+                }
             }
         }
 
@@ -390,12 +404,18 @@ void GranularSynth::Impl::gui(bool& showWindow)
 
     ImGui::SliderFloat("volume (mute .. max)", &audioWave.volumePercent, 0, 100.0f, "%.0f%%");
     ImGui::Separator();
-    ImGui::SliderFloat("advance (in seconds)", &drawWave.advancePerSec, 0, 2.0f);
+    ImGui::SliderFloat("advance (in seconds)", &drawWave.advancePerSec, -2.0f, 2.0f);
+    ImGui::SameLine();
+    if (ImGui::SmallButton("0##advancePerSec"))
+        drawWave.advancePerSec = 0.0f;
     ImGui::SameLine();
     if(ImGui::SmallButton("1##advancePerSec"))
         drawWave.advancePerSec = 1.0f;
 
-    ImGui::SliderFloat("pitch (1 = original)", &drawWave.pitch, 0, 2.0f);
+    ImGui::SliderFloat("pitch (1 = original)", &drawWave.pitch, -2.0f, 2.0f);
+    ImGui::SameLine();
+    if (ImGui::SmallButton("0##speedPerSec"))
+        drawWave.pitch = 0.0f;
     ImGui::SameLine();
     if (ImGui::SmallButton("1##speedPerSec"))
         drawWave.pitch = 1.0f;
