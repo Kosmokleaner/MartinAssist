@@ -4,8 +4,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-// todo: backwards
-// verify/fix crackling
+// todo: 
+// * verify/fix crackling when UI change, need atomic ?
 
 // high quality even with large values
 //typedef double flt;
@@ -242,10 +242,11 @@ struct Wave
 
         const float alpha = computeAlpha(envelope);
 
+        // todo: reconsider order
         if(alpha == 0.0f)
-            pos[1] = time;
-        else if (alpha == 1.0f)
             pos[0] = time;
+        else if (alpha == 1.0f)
+            pos[1] = time;
 
         flt readerSec0 = pos[0] + computeLocalSamplePos(envelope, 0);
         flt readerSec1 = pos[1] + computeLocalSamplePos(envelope, 1);
@@ -257,7 +258,7 @@ struct Wave
         ma_int16 s0 = getSample(wrapWithin(readerSec0 * sampleRate, display_count));
         ma_int16 s1 = getSample(wrapWithin(readerSec1 * sampleRate, display_count));
 
-        return lerp(s0, s1, alpha);
+        return lerp(s1, s0, alpha);
     }
 
     // @param grain0Or1 0/1
