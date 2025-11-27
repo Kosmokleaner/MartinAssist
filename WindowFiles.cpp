@@ -78,7 +78,7 @@ void WindowFiles::fileLineUI(const std::vector<std::shared_ptr<DriveInfo2> >& dr
 
 
 
-void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs)
+void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedundancyFilter, const SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs)
 {
     std::unique_lock<std::mutex> viewLock(mutex);
 
@@ -161,6 +161,7 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
         }
     }
 
+/*
     struct CustomLessFile
     {
         const FileList& ref;
@@ -214,7 +215,7 @@ void WindowFiles::buildFileView(const char* inFilter, int64 minSize, int inRedun
     CustomLessFile customLessFile = { fileListEx, sorts_specs };
 
     std::sort(fileViewEx.begin(), fileViewEx.end(), customLessFile);
-
+*/
 
     // todo: only needed for TreeView
  //   buildFileViewChildLists();
@@ -227,11 +228,9 @@ void WindowFiles::clear()
     fileViewEx.clear();
 }
 
-void WindowFiles::rebuild()
+void WindowFiles::rebuild(const SelectionRange& driveSelectionRange)
 {
     CScopedCPUTimerLog log("WindowFiles::set buildFileView");
-    
-    SelectionRange driveSelectionRange;
 
     buildFileView("", 0, 0, driveSelectionRange, 0);
 }
@@ -239,7 +238,8 @@ void WindowFiles::rebuild()
 void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
 {
     if(!showWindow)
-        return;
+        return
+
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(320, 200), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::SetNextWindowSize(ImVec2(850, 680), ImGuiCond_FirstUseEver);

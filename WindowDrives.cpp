@@ -230,7 +230,9 @@ void DriveInfo2::onIncomingFiles(const FileList& incomingFileList)
         dstVector.push_back(newEl);
     }
 
-    g_gui.windowFiles.rebuild();
+    SelectionRange driveSelectionRange;
+    driveSelectionRange.toggle(0);
+    g_gui.windowFiles.rebuild(driveSelectionRange);
 }
 
 

@@ -20,7 +20,7 @@ public:
 
     void clear();
 
-    void rebuild();
+    void rebuild(const SelectionRange& driveSelectionRange);
 
     void gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives);
 
@@ -49,5 +49,5 @@ private:
     //
     void fileLineUI(const std::vector<std::shared_ptr<DriveInfo2> >& drives, int32 line_no, const FileEntry& entry, const std::string& line);
     //
-    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs);
+    void buildFileView(const char* filter, int64 minSize, int redundancyFilter, const SelectionRange& driveSelectionRange, ImGuiTableSortSpecs* sorts_specs);
 };
