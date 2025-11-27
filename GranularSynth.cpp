@@ -3,6 +3,8 @@
 #include "types.h"
 #include <math.h>
 #include <stdlib.h>
+#include <memory> // std::unique_ptr<>
+#include <vector>
 #include "ImGui/imgui_stdlib.h"
 #include "FileIODialog.h"
 
@@ -22,36 +24,74 @@ typedef float flt;
 #define MA_NO_ENCODING
 #include "external/miniAudio/miniaudio.h"
 
-unsigned char g_sample[];
-
 #define MA_ASSERT assert
 
 #define DEVICE_FORMAT       ma_format_s16
 #define DEVICE_CHANNELS     2
 #define DEVICE_SAMPLE_RATE  48000
 
-
-
-// https://docs.fileformat.com/audio/wav
-const unsigned int g_wavHeader = 44;
-const unsigned int getSampleDataSize()
+// pass with std::unique_ptr<> for thread safety
+struct AudioFile
 {
-    // /2 for DEVICE_FORMAT==ma_format_s16
-//    return *(unsigned int*)&g_sample[40] / 2;
-    return *(unsigned int*)&g_sample[40] / 2;
-}
-const unsigned int getSampleRate()
-{
-    return *(unsigned int*)&g_sample[24];
-}
-// @param pos = 0..getSampleDataSize()
-short getSample(unsigned int pos)
-{
-    short* data = (short*)&g_sample[g_wavHeader];
+    std::vector<uint8> fileData;
 
-    // can be improved
-    return data[pos % getSampleDataSize()];
-}
+    bool isValid() const
+    {
+        // todo
+        return false;
+    }
+
+    bool LoadWav(const char* pathname)
+    {
+        size_t IO_GetFileSize(const char* Name);
+
+        size_t size = IO_GetFileSize(pathname);
+
+        fileData.clear();
+
+        if (!size)
+            return false;
+            
+        fileData.resize(size);
+
+        FILE* file = 0;
+
+        errno_t err = fopen_s(&file, pathname, "rb");
+//        if ((file = _wfopen(pathname.c_str(), L"rb")) != NULL)
+        if (err == 0)
+        {
+            fread(fileData.data(), size, 1, file);
+            fclose(file);
+            return true;
+        }
+
+        fileData.clear();
+        return false;
+    }
+
+    const unsigned int getSampleDataSize() const
+    {
+        // /2 for DEVICE_FORMAT==ma_format_s16
+    //    return *(unsigned int*)&g_sample[40] / 2;
+        return *(unsigned int*)&fileData[40] / 2;
+    }
+    const unsigned int getSampleRate() const
+    {
+        return *(unsigned int*)&fileData[24];
+    }
+    // @param pos = 0..getSampleDataSize()
+    short getSample(unsigned int pos) const
+    {
+        // https://docs.fileformat.com/audio/wav
+        const unsigned int g_wavHeader = 44;
+
+        short* data = (short*)&fileData[g_wavHeader];
+
+        // can be improved
+        return data[pos % getSampleDataSize()];
+    }
+};
+
 
 // @param alpha 0..1
 float lerp(float s0, float s1, float alpha)
@@ -125,6 +165,8 @@ struct Wave
     // in seconds
     float phasePos = 0;
 
+    std::unique_ptr<AudioFile> audioFile;
+
     float computeAlpha(const Envelope envelope) const
     {
         float alpha = 0.0f;
@@ -187,7 +229,7 @@ struct Wave
     // @return value without volume applied
     float update(float deltaTime)
     {
-        const unsigned int sampleRate = getSampleRate();
+        const unsigned int sampleRate = audioFile->getSampleRate();
 
         time += advancePerSec * deltaTime;
 
@@ -254,12 +296,12 @@ struct Wave
         flt readerSec0 = pos[0] + computeLocalSamplePos(envelope, 0);
         flt readerSec1 = pos[1] + computeLocalSamplePos(envelope, 1);
 
-        static int display_count = getSampleDataSize();
+        int display_count = audioFile->getSampleDataSize();
 
 //        ma_int16 s0 = getSample((ImU32)(readerSec0 * sampleRate));
 //        ma_int16 s1 = getSample((ImU32)(readerSec1 * sampleRate));
-        ma_int16 s0 = getSample(wrapWithin(readerSec0 * sampleRate, display_count));
-        ma_int16 s1 = getSample(wrapWithin(readerSec1 * sampleRate, display_count));
+        ma_int16 s0 = audioFile->getSample(wrapWithin(readerSec0 * sampleRate, display_count));
+        ma_int16 s1 = audioFile->getSample(wrapWithin(readerSec1 * sampleRate, display_count));
 
         return lerp(s1, s0, alpha);
     }
@@ -354,6 +396,19 @@ int GranularSynth::Impl::init()
     deviceConfig.sampleRate = DEVICE_SAMPLE_RATE;
     deviceConfig.dataCallback = data_callback;
     deviceConfig.pUserData = &audioWave;
+
+    extern unsigned char g_sample[];
+
+    drawWave.audioFile = std::move(std::make_unique<AudioFile>());
+//    drawWave.audioFile->LoadWav("audioSample.wav");
+//    drawWave.audioFile->LoadWav("pickup_mana.wav");
+    drawWave.audioFile->LoadWav("!step on stage_2.wav");
+    if (&drawWave != &audioWave)
+    {
+        audioWave.audioFile = std::move(std::make_unique<AudioFile>());
+        assert(0);  // todo
+    }
+
 
     if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
 //        printf("Failed to open playback device.\n");
@@ -512,9 +567,9 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    static int display_count = getSampleDataSize();
+    int display_count = wave.audioFile->getSampleDataSize();
 
-    const uint32 sampleRate = getSampleRate();
+    const uint32 sampleRate = wave.audioFile->getSampleRate();
 
     // 0.. display_count-1 in samples
     const int32 sampleStart = wrapWithin(sec0 * sampleRate, display_count);
@@ -567,14 +622,19 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
 
 void GranularSynth::Impl::draw()
 {
+    // for PlotHistogram
     struct Funcs
     {
-//        static float Audio(void*, int i) { return sinf(i * 0.1f) * 70; }
-        static float Audio(void*, int i) { return (float)getSample(i); }
+        static float Audio(void*userdata, int i)
+        {
+            GranularSynth::Impl *This = (GranularSynth::Impl*)userdata;
+            return (float)This->drawWave.audioFile->getSample(i);
+        }
     };
 
-    static int display_count = getSampleDataSize();
+    int display_count = drawWave.audioFile->getSampleDataSize();
     float (*func)(void*, int) = Funcs::Audio;
+
 
     float plotHeight = 80.0f;
 
@@ -586,11 +646,11 @@ void GranularSynth::Impl::draw()
 //    ImGui::SetNextItemWidth(1024);
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    ImGui::PlotHistogram("Audio Sample", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
+    ImGui::PlotHistogram("Audio Sample", func, this, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
     ImGui::PopStyleVar();
     //    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
 
-    const unsigned int sampleRate = getSampleRate();
+    const unsigned int sampleRate = drawWave.audioFile->getSampleRate();
 
     // Draw the two grains
 
