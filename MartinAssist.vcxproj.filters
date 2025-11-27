@@ -71,6 +71,9 @@
     <ClCompile Include="audioSample.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
+    <ClCompile Include="FileIODialog.cpp">
+      <Filter>Hidden</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -153,6 +156,9 @@
     <ClInclude Include="GranularSynth.h" />
     <ClInclude Include="external\miniAudio\miniaudio.h">
       <Filter>External\miniAudio</Filter>
+    </ClInclude>
+    <ClInclude Include="FileIODialog.h">
+      <Filter>Hidden</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

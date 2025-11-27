@@ -164,6 +164,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="external\miniAudio\miniaudio.cpp" />
+    <ClCompile Include="FileIODialog.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="GranularSynth.cpp" />
     <ClCompile Include="Gui.cpp" />
@@ -196,6 +197,7 @@
     <ClInclude Include="CppParserTest.h" />
     <ClInclude Include="EFileList.h" />
     <ClInclude Include="external\miniAudio\miniaudio.h" />
+    <ClInclude Include="FileIODialog.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="GranularSynth.h" />

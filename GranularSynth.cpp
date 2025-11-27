@@ -3,9 +3,12 @@
 #include "types.h"
 #include <math.h>
 #include <stdlib.h>
+#include "ImGui/imgui_stdlib.h"
+#include "FileIODialog.h"
 
 // todo: 
 // * verify/fix crackling when UI change, need atomic ?
+// * load sounds sample
 
 // high quality even with large values
 //typedef double flt;
@@ -306,6 +309,7 @@ public:
 private:
 
     bool isInit = false;
+    std::string fileName;
 };
 
 GranularSynth::GranularSynth() : pimpl_(new Impl())
@@ -439,6 +443,28 @@ void GranularSynth::Impl::gui(bool& showWindow)
     const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 300, main_viewport->WorkPos.y + 220), ImGuiCond_FirstUseEver);
     ImGui::Begin("GranularSynth", &showWindow, ImGuiWindowFlags_NoCollapse);
+
+    {
+        ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - (ImGui::CalcTextSize("...").x + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::GetStyle().FramePadding.x * 2));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemInnerSpacing.x, ImGui::GetStyle().ItemSpacing.y));
+        ImGui::InputText("##Sound file", &fileName);
+        ImGui::SameLine();
+        if(ImGui::Button("..."))
+        {
+            CFileIODialog dialog;
+
+            if(dialog.FileDialogLoad("Load audio file", ".wav", 
+                "wav files (*.wav)\0*.wav\0"
+                "all files (*.*)\0*.*\0"
+                "\0", fileName))
+            {
+            }
+        }
+        ImGui::SameLine();
+        ImGui::TextUnformatted("Sound file");
+        ImGui::PopStyleVar();
+    }
+
 
     ImGui::SliderFloat("volume (mute .. max)", &audioWave.volumePercent, 0, 100.0f, "%.0f%%");
     ImGui::Separator();
