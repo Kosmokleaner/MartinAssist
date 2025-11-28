@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <memory> // std::unique_ptr<>
 #include <vector>
+#include <mutex>
 #include "ImGui/imgui_stdlib.h"
 #include "FileIODialog.h"
 
@@ -33,6 +34,9 @@ typedef float flt;
 // pass with std::unique_ptr<> for thread safety
 struct AudioFile
 {
+    // mostly for debugging
+    std::string fileName;
+    // .wav file
     std::vector<uint8> fileData;
 
     bool isValid() const
@@ -43,6 +47,7 @@ struct AudioFile
 
     bool LoadWav(const char* pathname)
     {
+        fileName = pathname;
         size_t IO_GetFileSize(const char* Name);
 
         size_t size = IO_GetFileSize(pathname);
@@ -69,11 +74,11 @@ struct AudioFile
         return false;
     }
 
-    const unsigned int getSampleDataSize() const
+    const uint32 getSampleDataSize() const
     {
         // /2 for DEVICE_FORMAT==ma_format_s16
     //    return *(unsigned int*)&g_sample[40] / 2;
-        return *(unsigned int*)&fileData[40] / 2;
+        return *(uint32*)&fileData[40] / 2;
     }
     const unsigned int getSampleRate() const
     {
@@ -87,8 +92,10 @@ struct AudioFile
 
         short* data = (short*)&fileData[g_wavHeader];
 
+        const uint32 sampleDataSize = getSampleDataSize();
+
         // can be improved
-        return data[pos % getSampleDataSize()];
+        return data[pos % sampleDataSize];
     }
 };
 
@@ -165,7 +172,22 @@ struct Wave
     // in seconds
     float phasePos = 0;
 
-    std::unique_ptr<AudioFile> audioFile;
+private:
+    // protect audioFile
+    std::mutex mutexAudioFile;
+    // protected by mutexAudioFile 
+    std::shared_ptr<AudioFile> audioFile;
+public:
+    void setAudioFile(std::shared_ptr<AudioFile> inAudioFile)
+    {
+        std::lock_guard<std::mutex> lock(mutexAudioFile);
+        audioFile = inAudioFile;
+    }
+    std::shared_ptr<AudioFile> getAudioFile()
+    { 
+        std::lock_guard<std::mutex> lock(mutexAudioFile); 
+        return audioFile;
+    }
 
     float computeAlpha(const Envelope envelope) const
     {
@@ -339,19 +361,15 @@ public:
     ma_device_config deviceConfig;
     ma_device device;
 
-#if 0
-    // hacky, to debug Wave code
-    Wave audioWave;
-    Wave drawWave;
-#else
-    Wave audioWave;
-    Wave &drawWave = audioWave;
-#endif
 
 private:
 
     bool isInit = false;
     std::string fileName;
+    // protected by mutexAudioWave
+    Wave audioWave;
+    // protect audioWave
+//    std::mutex mutexAudioWave;
 };
 
 GranularSynth::GranularSynth() : pimpl_(new Impl())
@@ -399,15 +417,13 @@ int GranularSynth::Impl::init()
 
     extern unsigned char g_sample[];
 
-    drawWave.audioFile = std::move(std::make_unique<AudioFile>());
-//    drawWave.audioFile->LoadWav("audioSample.wav");
-//    drawWave.audioFile->LoadWav("pickup_mana.wav");
-    drawWave.audioFile->LoadWav("!step on stage_2.wav");
-    if (&drawWave != &audioWave)
     {
-        audioWave.audioFile = std::move(std::make_unique<AudioFile>());
-        assert(0);  // todo
+        auto audioFile = std::make_unique<AudioFile>();
+        audioFile->LoadWav("audioSample.wav");
+        audioWave.setAudioFile(std::move(audioFile));
     }
+//    audioWave.audioFile->LoadWav("pickup_mana.wav");
+//    audioWave.audioFile->LoadWav("!step on stage_2.wav");
 
 
     if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
@@ -513,6 +529,9 @@ void GranularSynth::Impl::gui(bool& showWindow)
                 "all files (*.*)\0*.*\0"
                 "\0", fileName))
             {
+                auto audioFile = std::make_unique<AudioFile>();
+                audioFile->LoadWav(fileName.c_str());
+                audioWave.setAudioFile(std::move(audioFile));
             }
         }
         ImGui::SameLine();
@@ -523,30 +542,27 @@ void GranularSynth::Impl::gui(bool& showWindow)
 
     ImGui::SliderFloat("volume (mute .. max)", &audioWave.volumePercent, 0, 100.0f, "%.0f%%");
     ImGui::Separator();
-    ImGui::SliderFloat("advance (in seconds)", &drawWave.advancePerSec, -2.0f, 2.0f);
+    ImGui::SliderFloat("advance (in seconds)", &audioWave.advancePerSec, -2.0f, 2.0f);
     ImGui::SameLine();
     if (ImGui::SmallButton("0##advancePerSec"))
-        drawWave.advancePerSec = 0.0f;
+        audioWave.advancePerSec = 0.0f;
     ImGui::SameLine();
     if(ImGui::SmallButton("1##advancePerSec"))
-        drawWave.advancePerSec = 1.0f;
+        audioWave.advancePerSec = 1.0f;
 
-    ImGui::SliderFloat("pitch (1 = original)", &drawWave.pitch, -2.0f, 2.0f);
+    ImGui::SliderFloat("pitch (1 = original)", &audioWave.pitch, -2.0f, 2.0f);
     ImGui::SameLine();
     if (ImGui::SmallButton("0##speedPerSec"))
-        drawWave.pitch = 0.0f;
+        audioWave.pitch = 0.0f;
     ImGui::SameLine();
     if (ImGui::SmallButton("1##speedPerSec"))
-        drawWave.pitch = 1.0f;
+        audioWave.pitch = 1.0f;
 
     ImGui::Separator();
-    ImGui::SliderFloat("grain size (in seconds)", &drawWave.grainSec, 0.00f, 0.5f);
-    ImGui::SliderFloat("blend (rect .. triangle)", &drawWave.blendPercent, 0, 100.0f, "%.0f%%");
+    ImGui::SliderFloat("grain size (in seconds)", &audioWave.grainSec, 0.00f, 0.5f);
+    ImGui::SliderFloat("blend (rect .. triangle)", &audioWave.blendPercent, 0, 100.0f, "%.0f%%");
 
     ImGuiIO& io = ImGui::GetIO();
-
-    if(&drawWave != &audioWave)
-        drawWave.update(io.DeltaTime);
 
     draw();
 
@@ -554,8 +570,9 @@ void GranularSynth::Impl::gui(bool& showWindow)
 }
 
 // @param grain0Or1 0/1
+// @param audioFile same as wave.getAudioFile() but passing it here is less calling overhead
 // @param sec0 start pos in seconds
-void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wave, flt sec0, const int grain0Or1)
+void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, Wave &wave, std::shared_ptr<AudioFile> audioFile, flt sec0, const int grain0Or1)
 {
     const float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
 
@@ -567,9 +584,9 @@ void drawRamp(ImVec2 plotStartPos, ImVec2 actualPlotBottomRight, const Wave &wav
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    int display_count = wave.audioFile->getSampleDataSize();
+    int display_count = audioFile->getSampleDataSize();
 
-    const uint32 sampleRate = wave.audioFile->getSampleRate();
+    const uint32 sampleRate = audioFile->getSampleRate();
 
     // 0.. display_count-1 in samples
     const int32 sampleStart = wrapWithin(sec0 * sampleRate, display_count);
@@ -627,14 +644,15 @@ void GranularSynth::Impl::draw()
     {
         static float Audio(void*userdata, int i)
         {
-            GranularSynth::Impl *This = (GranularSynth::Impl*)userdata;
-            return (float)This->drawWave.audioFile->getSample(i);
+            std::shared_ptr<AudioFile>& audioFile = *(std::shared_ptr<AudioFile>*)userdata;
+            return (float)audioFile->getSample(i);
         }
     };
 
-    int display_count = drawWave.audioFile->getSampleDataSize();
-    float (*func)(void*, int) = Funcs::Audio;
+    auto audioFile = audioWave.getAudioFile();
 
+    int display_count = audioFile->getSampleDataSize();
+    float (*func)(void*, int) = Funcs::Audio;
 
     float plotHeight = 80.0f;
 
@@ -646,11 +664,11 @@ void GranularSynth::Impl::draw()
 //    ImGui::SetNextItemWidth(1024);
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    ImGui::PlotHistogram("Audio Sample", func, this, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
+    ImGui::PlotHistogram("Audio Sample", func, &audioFile, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
     ImGui::PopStyleVar();
     //    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
 
-    const unsigned int sampleRate = drawWave.audioFile->getSampleRate();
+    const unsigned int sampleRate = audioFile->getSampleRate();
 
     // Draw the two grains
 
@@ -660,9 +678,9 @@ void GranularSynth::Impl::draw()
     // draw both grains
     for(int i = 0; i < 2; ++i)
     {
-        const flt sec = drawWave.pos[i];
+        const flt sec = audioWave.pos[i];
 
-        drawRamp(plotStartPos, actualPlotBottomRight, drawWave, sec, i);
+        drawRamp(plotStartPos, actualPlotBottomRight, audioWave, audioFile, sec, i);
     }
 
     if(1)
@@ -670,7 +688,7 @@ void GranularSynth::Impl::draw()
         const float plotWidth = actualPlotBottomRight.x - plotStartPos.x;
         const float mul = plotWidth / display_count;
         const ImU32 col = IM_COL32(255,255, 255, 255);
-        const ImU32 sample0 = (ImU32)(drawWave.time * sampleRate) % display_count;
+        const ImU32 sample0 = (ImU32)(audioWave.time * sampleRate) % display_count;
         const float lineScreenX = plotStartPos.x + sample0 * mul;
         drawList->AddLine(ImVec2(lineScreenX, plotStartPos.y), ImVec2(lineScreenX, actualPlotBottomRight.y), col, 4.0f);
     }
