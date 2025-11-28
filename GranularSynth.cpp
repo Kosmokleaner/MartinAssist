@@ -39,6 +39,8 @@ struct AudioFile
     // .wav file
     std::vector<uint8> fileData;
 
+    const static unsigned int wavHeaderSize = 44;
+
     bool isValid() const
     {
         // todo
@@ -56,7 +58,10 @@ struct AudioFile
 
         if (!size)
             return false;
-            
+
+        if(size < wavHeaderSize)       // minimal wav header
+            return false;
+
         fileData.resize(size);
 
         FILE* file = 0;
@@ -67,6 +72,29 @@ struct AudioFile
         {
             fread(fileData.data(), size, 1, file);
             fclose(file);
+
+            // https://docs.fileformat.com/audio/wav
+            // https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
+
+            uint32 riff = *(uint32*)&fileData[0];
+            uint32 wave = *(uint32*)&fileData[8];
+            uint32 fmt = *(uint32*)&fileData[12];
+            uint32 chunkSize = *(uint32*)&fileData[16];
+            uint16 format = *(uint16*)&fileData[20];
+            uint16 channels = *(uint16*)&fileData[22];
+            uint16 bitsPerSample = *(uint16*)&fileData[34];
+            if (riff != 'FFIR' ||   // 'RIFF'
+                wave != 'EVAW' ||   // 'WAVE'
+                fmt != ' tmf' ||    // 'fmt '
+                chunkSize != 16 ||  // 16 / 18 / 40
+                format != 1 ||      // PCM
+                channels != 1 ||      // mono
+                bitsPerSample !=16) // 16 bit
+            {
+                fileData.clear();
+                return false;
+            }
+
             return true;
         }
 
@@ -87,9 +115,6 @@ struct AudioFile
     // @param pos = 0..getSampleDataSize()
     short getSample(unsigned int pos) const
     {
-        // https://docs.fileformat.com/audio/wav
-        const unsigned int g_wavHeader = 44;
-
         short* data = (short*)&fileData[g_wavHeader];
 
         const uint32 sampleDataSize = getSampleDataSize();
@@ -419,8 +444,8 @@ int GranularSynth::Impl::init()
 
     {
         auto audioFile = std::make_unique<AudioFile>();
-        audioFile->LoadWav("audioSample.wav");
-        audioWave.setAudioFile(std::move(audioFile));
+        if(audioFile->LoadWav("audioSample.wav"))
+            audioWave.setAudioFile(std::move(audioFile));
     }
 //    audioWave.audioFile->LoadWav("pickup_mana.wav");
 //    audioWave.audioFile->LoadWav("!step on stage_2.wav");
@@ -524,19 +549,40 @@ void GranularSynth::Impl::gui(bool& showWindow)
         {
             CFileIODialog dialog;
 
+            std::string oldFileName = fileName;
+
             if(dialog.FileDialogLoad("Load audio file", ".wav", 
                 "wav files (*.wav)\0*.wav\0"
                 "all files (*.*)\0*.*\0"
                 "\0", fileName))
             {
                 auto audioFile = std::make_unique<AudioFile>();
-                audioFile->LoadWav(fileName.c_str());
-                audioWave.setAudioFile(std::move(audioFile));
+                if (audioFile->LoadWav(fileName.c_str()))
+                    audioWave.setAudioFile(std::move(audioFile));
+                else
+                {
+                    fileName = oldFileName;
+                    ImGui::OpenPopup("Error##FileFormat");
+                }
             }
         }
         ImGui::SameLine();
         ImGui::TextUnformatted("Sound file");
         ImGui::PopStyleVar();
+
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f)); // Center the modal
+        if (ImGui::BeginPopupModal("Error##FileFormat", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("File format not supported!");
+            ImGui::Text("Please convert to: .WAV (variant with chuckSize 16), PCM, 16bit, mono, uncompressed");
+
+            if (ImGui::Button("OK", ImVec2(120, 0)))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SetItemDefaultFocus(); // Set OK button as default focus
+            ImGui::EndPopup();
+        }
     }
 
 
