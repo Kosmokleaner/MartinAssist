@@ -64,7 +64,7 @@
     </ClCompile>
     <ClCompile Include="WindowDrives.cpp" />
     <ClCompile Include="ERedundancy.cpp" />
-    <ClCompile Include="GranularSynth.cpp" />
+    <ClCompile Include="GranularSynthUI.cpp" />
     <ClCompile Include="external\miniAudio\miniaudio.cpp">
       <Filter>External\miniAudio</Filter>
     </ClCompile>
@@ -74,6 +74,7 @@
     <ClCompile Include="FileIODialog.cpp">
       <Filter>Hidden</Filter>
     </ClCompile>
+    <ClCompile Include="GranularSynth.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -153,13 +154,14 @@
     </ClInclude>
     <ClInclude Include="WindowDrives.h" />
     <ClInclude Include="ERedundancy.h" />
-    <ClInclude Include="GranularSynth.h" />
+    <ClInclude Include="GranularSynthUI.h" />
     <ClInclude Include="external\miniAudio\miniaudio.h">
       <Filter>External\miniAudio</Filter>
     </ClInclude>
     <ClInclude Include="FileIODialog.h">
       <Filter>Hidden</Filter>
     </ClInclude>
+    <ClInclude Include="GranularSynth.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">
