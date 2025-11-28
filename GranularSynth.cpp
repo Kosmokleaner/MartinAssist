@@ -115,7 +115,7 @@ struct AudioFile
     // @param pos = 0..getSampleDataSize()
     short getSample(unsigned int pos) const
     {
-        short* data = (short*)&fileData[g_wavHeader];
+        short* data = (short*)&fileData[wavHeaderSize];
 
         const uint32 sampleDataSize = getSampleDataSize();
 
