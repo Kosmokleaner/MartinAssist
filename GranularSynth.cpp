@@ -10,8 +10,12 @@
 #include "FileIODialog.h"
 
 // todo: 
-// * verify/fix crackling when UI change, need atomic ?
-// * load sounds sample
+// * verify/fix when UI change, need atomic ?
+// * set loop region
+// * set and switch between presets, when a loop is finished or instant
+// * snap / grid
+// * draw waveform nicer
+// * Pico friendly user interface
 
 // high quality even with large values
 //typedef double flt;
@@ -81,14 +85,14 @@ struct AudioFile
             uint32 fmt = *(uint32*)&fileData[12];
             uint32 chunkSize = *(uint32*)&fileData[16];
             uint16 format = *(uint16*)&fileData[20];
-            uint16 channels = *(uint16*)&fileData[22];
+            uint16 channels = getChannelCount();
             uint16 bitsPerSample = *(uint16*)&fileData[34];
             if (riff != 'FFIR' ||   // 'RIFF'
                 wave != 'EVAW' ||   // 'WAVE'
                 fmt != ' tmf' ||    // 'fmt '
-                chunkSize != 16 ||  // 16 / 18 / 40
+                chunkSize != 16 ||  // 16 / 18 / 28 / 40
                 format != 1 ||      // PCM
-                channels != 1 ||      // mono
+                (channels != 1 && channels != 2) ||      // mono / stereo
                 bitsPerSample !=16) // 16 bit
             {
                 fileData.clear();
@@ -112,15 +116,22 @@ struct AudioFile
     {
         return *(unsigned int*)&fileData[24];
     }
+    const uint16 getChannelCount() const
+    {
+        return *(uint16*)&fileData[22];
+    }
     // @param pos = 0..getSampleDataSize()
     short getSample(unsigned int pos) const
     {
-        short* data = (short*)&fileData[wavHeaderSize];
+        const short* data = (short*)&fileData[wavHeaderSize];
+        const uint16 channelCount = getChannelCount();
 
         const uint32 sampleDataSize = getSampleDataSize();
 
-        // can be improved
-        return data[pos % sampleDataSize];
+       if(channelCount == 2)
+            pos *= 2;              // only use one channel
+
+       return data[pos % sampleDataSize];
     }
 };
 
@@ -574,7 +585,7 @@ void GranularSynth::Impl::gui(bool& showWindow)
         if (ImGui::BeginPopupModal("Error##FileFormat", NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::Text("File format not supported!");
-            ImGui::Text("Please convert to: .WAV (variant with chuckSize 16), PCM, 16bit, mono, uncompressed");
+            ImGui::Text("Please convert to: .WAV (variant with chuckSize 16), PCM, 16bit, mono/stereo, uncompressed");
 
             if (ImGui::Button("OK", ImVec2(120, 0)))
             {
@@ -711,8 +722,8 @@ void GranularSynth::Impl::draw()
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::PlotHistogram("Audio Sample", func, &audioFile, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
+//    ImGui::PlotLines("Audio", func, &audioFile, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
     ImGui::PopStyleVar();
-    //    ImGui::PlotLines("Audio", func, NULL, display_count, 0, NULL, FLT_MAX, FLT_MAX, ImVec2(0, plotHeight));
 
     const unsigned int sampleRate = audioFile->getSampleRate();
 
