@@ -1,5 +1,7 @@
 #pragma once
 
+// minimal granlar sound synth without UI and backend specifics
+
 #include <string>
 #include <vector>
 #include <assert.h>
@@ -10,10 +12,6 @@
 //typedef double flt;
 // faster, todo: make sure we stay near 0
 typedef float flt;
-
-#define DEVICE_FORMAT       ma_format_s16
-#define DEVICE_CHANNELS     2
-#define DEVICE_SAMPLE_RATE  48000
 
 // ===========================================================================
 

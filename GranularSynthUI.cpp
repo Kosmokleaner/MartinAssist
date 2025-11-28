@@ -1,3 +1,5 @@
+// ImGui UI and Windows miniaudio implementation
+
 #include "GranularSynthUI.h"
 #include "ImGui/imgui.h"
 #include "types.h"
@@ -16,6 +18,10 @@
 // * snap / grid
 // * draw waveform nicer
 // * Pico friendly user interface
+
+#define DEVICE_FORMAT       ma_format_s16
+#define DEVICE_CHANNELS     2
+#define DEVICE_SAMPLE_RATE  48000
 
 #pragma warning( disable : 4189 ) // local variable is initialized but not referenced
 #pragma warning( disable : 4100 ) // unreferenced parameter
