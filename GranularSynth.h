@@ -1,6 +1,6 @@
 #pragma once
 
-// minimal granlar sound synth without UI and backend specifics
+// minimal granular sound synth without UI and backend specifics
 
 #include <string>
 #include <vector>
