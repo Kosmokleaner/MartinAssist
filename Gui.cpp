@@ -683,6 +683,9 @@ bool ImGuiSearch(const char* label, std::string* value, ImGuiInputTextFlags flag
     assert(value);
 
     const char* lensIcon = "\xef\x80\x82";
+	
+    // label, show if it does not start with '##'
+    bool showLabel = label[0] == 0 || label[1] == 0 || !(label[0] == '#' && label[1] == '#');
 
     ImGuiStyle& style = ImGui::GetStyle();
 
@@ -692,6 +695,9 @@ bool ImGuiSearch(const char* label, std::string* value, ImGuiInputTextFlags flag
 
     // label should not to close to the border
     rightDeco += style.ItemSpacing.x;
+	
+    if (!showLabel)
+        rightDeco = 0;
 
     // width of the usable TextInput part
     float buttonWidth = ImGui::GetContentRegionAvail().x - leftDecoWithoutIcon - ImGui::GetTextLineHeight() - rightDeco;
@@ -711,7 +717,8 @@ bool ImGuiSearch(const char* label, std::string* value, ImGuiInputTextFlags flag
     bool ret;
     {
         ImStyleColor_RAII seeThrough;
-
+		
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
 
         ImGui::SameLine();
@@ -721,6 +728,7 @@ bool ImGuiSearch(const char* label, std::string* value, ImGuiInputTextFlags flag
         ret = ImGui::InputText("##", value, flags, callback, user_data);
         ImGui::PopID();
         ImGui::PopItemWidth();
+        ImGui::PopStyleVar();
     }
 
     // icon
