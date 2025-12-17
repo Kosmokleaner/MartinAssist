@@ -43,6 +43,11 @@ void EndTooltip();
 // same as ImGui::Selectable()
 bool ImGuiSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags = 0, const ImVec2& size_arg = ImVec2(0, 0));
 
+// @param icon can be 0 e.g. "\xef\x80\x84" for Heart
+// @param p_checked not 0 for checkbox
+// @param shortcut only visually working, like ImGui
+bool ImGuiMenuItem(const char* label, const char* icon, const char* shortcut, bool *p_checked, bool enabled = true);
+inline bool ImGuiMenuItem(const char* label) { return ImGuiMenuItem(label, 0, 0, 0, true); }
 
 // @return printUnit e.g. "%.3f GB" or "%.3f MB" 
 const char* computeReadableSize(uint64 inputSize, double& outPrintSize);

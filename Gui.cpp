@@ -523,18 +523,25 @@ int Gui::test()
         {
             if (ImGui::BeginMenu("File"))
             {
-                ImGui::MenuItem("Drives Window", 0, &windowDrives.showWindow);
-                ImGui::MenuItem("Files Window", 0, &windowFiles.showWindow);
-                ImGui::MenuItem("GranularSynth Window", 0, &granularSynth.showWindow);
+				ImGuiMenuItem("Drives Window", 0, 0, &windowDrives.showWindow);
+
+				// test ImGuiMenuItem()
+//				static bool state = true;
+//				ImGuiMenuItem("Disabled", 0, 0, &state, false);	// test disabled
+//				ImGuiMenuItem("Icon", "\xef\x80\x84");	// test icon
+
+                ImGuiMenuItem("Files Window", 0, 0, &windowFiles.showWindow);
+                ImGuiMenuItem("GranularSynth Window", 0, 0, &granularSynth.showWindow);
                 ImGui::Separator();
-                if (ImGui::MenuItem("Open EFUs folder"))
+                if (ImGuiMenuItem("Open EFUs folder", 0, 0, 0))
                     openEFUsFolder();
                 ImGui::Separator();
-                ImGui::MenuItem("ImGui Demo", 0, &showImGuiDemoWindow);
-                ImGui::MenuItem("Icons", 0, &showIcons);
-//                ImGui::MenuItem("Test", 0, &showTest);
+                ImGuiMenuItem("ImGui Demo", 0, 0, &showImGuiDemoWindow);
+                ImGuiMenuItem("Icons", 0, 0, &showIcons);
+//                ImGuiMenuItem("Test", 0, &showTest);
                 ImGui::Separator();
-                if (ImGui::MenuItem("Quit"))
+                if (ImGuiMenuItem("Quit", 0, "Alt+F4", 0))
+//				if (ImGuiMenuItem("Quit\tAlt+F4", 0))
                 {
                     quitApp = true;
                 }
@@ -652,6 +659,91 @@ bool ImGuiSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags f
     bool ret = ImGui::Selectable(label, p_selected, flags, size_arg);
 
     return ret;
+}
+
+bool ImGuiMenuItem(const char* label, const char* icon, const char* shortcut, bool* p_checked, bool enabled)
+{
+	// classic menu item in comparison
+//	return ImGui::MenuItem(label, shortcut, p_checked, enabled);
+
+	ImGui::PushID(label);
+
+	ImVec4 hideColor = ImVec4(0,0,0,0);
+	ImVec4 disabledColor = ImGui::GetStyle().Colors[ImGuiCol_TextDisabled];
+	ImVec4 normalColor = ImGui::GetStyle().Colors[ImGuiCol_Text];
+
+	if (!enabled)
+		ImGui::PushStyleColor(ImGuiCol_Text, disabledColor);
+
+	const char* checkIcon = "\xef\x80\x8c";
+
+	ImVec4 color = enabled ? normalColor : disabledColor;
+
+	if (p_checked)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, *p_checked ? color : hideColor);
+
+		if (ImGui::SmallButton(checkIcon) && enabled)
+			*p_checked = !*p_checked;
+
+		ImGui::PopStyleColor();
+
+		ImGui::SameLine();
+	}
+	else if(icon)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, color);
+		ImGui::PushStyleColor(ImGuiCol_Button, hideColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, hideColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hideColor);
+
+		if (ImGui::SmallButton(icon))
+			*p_checked = !*p_checked;
+
+		ImGui::PopStyleColor(4);
+		ImGui::SameLine();
+	}
+	else
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, hideColor);
+		ImGui::PushStyleColor(ImGuiCol_Button, hideColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, hideColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hideColor);
+		ImGui::SmallButton(checkIcon);
+		ImGui::PopStyleColor(4);
+		ImGui::SameLine();
+	}
+
+	// Use Selectable for the main logic of a menu item
+	// Pass 'p_checked' state to ImGui::Selectable to handle selection logic, 
+	// but we won't let it draw the built-in checkmark (by manually handling the bool state)
+	bool selected = false;
+	bool ret = false;
+	if (ImGui::Selectable(label, &selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap | ImGuiSelectableFlags_DontClosePopups))
+	{
+		// Toggle the checkbox state when the item is clicked
+		if(p_checked)
+			*p_checked = !*p_checked;
+		ret = true;
+	}
+
+	// uncomment to test
+//	shortcut = "ABCDEF";
+
+	if (shortcut)
+	{
+		ImGui::SameLine();
+		// see https://github.com/ocornut/imgui/issues/7805
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImMax(0.0f, ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(shortcut).x));
+		ImGui::TextDisabled("%s", shortcut);
+	}
+
+	if (!enabled)
+		ImGui::PopStyleColor();
+
+	ImGui::PopID();
+
+	return ret;
 }
 
 // @return printUnit e.g. "%.3f GB" or "%.3f MB" 
