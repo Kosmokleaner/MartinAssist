@@ -13,7 +13,7 @@ typedef signed int int32;
 //typedef signed long long int64;
 typedef int64_t int64;
 
-#ifndef WIN32
+#ifndef _WIN32
 typedef uint64_t __time64_t;
 #endif
 
@@ -21,7 +21,8 @@ typedef uint64_t __time64_t;
 //#define MAX_PATH 4096
 
 #ifdef _WIN32
-  #include <windows.h> // Where LARGE_INTEGER is defined
+    #define NOMINMAX
+    #include <windows.h> // Where LARGE_INTEGER is defined
 #else
   // Define LARGE_INTEGER for non-Windows platforms (like Linux)
   typedef union _LARGE_INTEGER {

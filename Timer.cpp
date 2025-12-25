@@ -2,9 +2,11 @@
 #include "global.h"
 #include "Timer.h"
 #include <assert.h>
-#include <windows.h>	// OutputDebugString()
-#undef max
-#undef min
+
+#ifdef _WIN32
+    #define NOMINMAX
+    #include <windows.h>	// OutputDebugString()
+#endif
 
 CTimer g_Timer;
 

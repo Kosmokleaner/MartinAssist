@@ -7,11 +7,10 @@
 #include <string.h>														// strlen
 #include <assert.h>													  // assert
 
-#ifdef WIN32
+#ifdef _WIN32
     #include <io.h> // filesize
+    #define NOMINMAX
     #include <windows.h> // GetFileSize()
-    #undef max
-    #undef min
 #endif
 
 #include "ASCIIFile.h"
@@ -52,7 +51,7 @@ size_t IO_GetFileSize( const char *Name )
 	if(handle==-1)
 		return 0;
 
-#ifdef WIN32
+#ifdef _WIN32
 	size_t size = _filelengthi64(handle);
 	close(handle);
 #else
@@ -68,7 +67,7 @@ size_t IO_GetFileSize(const wchar_t* filePath)
 {
 	assert(filePath);
 
-#ifdef WIN32
+#ifdef _WIN32
 	HANDLE handle = CreateFile(filePath,
 		GENERIC_READ,
 		0 /* exclusive access */,
@@ -158,7 +157,7 @@ bool CASCIIFile::IO_GetAvailability( const char *pathname )
 	if(handle==-1)
 		return false;
 
-#ifdef WIN32
+#ifdef _WIN32
 	close(handle);
 #else
     assert(0); // todo
@@ -176,7 +175,7 @@ bool CASCIIFile::IO_SaveASCIIFile(const wchar_t* pathname)
 
 	FILE* file;
 
-#ifdef WIN32
+#ifdef _WIN32
 	if ((file = _wfopen(pathname, L"wb")) != NULL)
 	{
 		fwrite(m_Data, m_Size - 1, 1, file);
@@ -254,7 +253,7 @@ bool CASCIIFile::IO_LoadASCIIFile(const wchar_t* pathname)
 
 	FILE* file;
 
-#ifdef WIN32
+#ifdef _WIN32
 	if ((file = _wfopen(pathname, L"rb")) != NULL)
 	{
 		fread(ret, size, 1, file);

@@ -86,7 +86,7 @@ struct IDriveTraverse {
 struct IDirectoryTraverse {
   virtual void OnStart() {}
 
-#ifdef WIN32 // todo: port later
+#ifdef _WIN32 // todo: port later
   // @param filePath without directory e.g. L"D:\temp"
   // @param directory name e.g. L"sub"
   // @return true to recurse into the folder

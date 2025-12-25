@@ -1,6 +1,8 @@
 #pragma once
 
+#ifndef _WIN32
 #pragma GCC diagnostic ignored "-Wmultichar"
+#endif
 
 // minimal granular sound synth without UI and backend specifics
 

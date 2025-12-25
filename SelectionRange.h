@@ -1,7 +1,7 @@
 #pragma once
 #include "types.h"
 #include <vector>
-#include <algorithm>
+#include <algorithm> // std::min()
 
 
 class SelectionRange

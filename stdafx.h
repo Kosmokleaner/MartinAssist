@@ -14,7 +14,7 @@ inline void check(bool a)
 
 #include <stdint.h>   // uint32_t
 
-#ifndef WIN32
+#ifndef _WIN32
 //    #define sprintf_s(buf, ...) snprintf((buf), sizeof(buf), __VA_ARGS__)
     #define sprintf_s(buf,size, ...) snprintf((buf), (size), __VA_ARGS__)
 #endif

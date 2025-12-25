@@ -31,7 +31,7 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
         startTime = g_Timer.GetAbsoluteTime();
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) {
         // to prevent compiler warning
         filePath;directory;findData;

@@ -3,7 +3,7 @@
 #include <string>
 #include "types.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define _AMD64_
 #include <profileapi.h>
 #endif

@@ -220,6 +220,7 @@
     <ClInclude Include="ERedundancy.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="PooledString.h" />
+    <ClInclude Include="stdafx.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="WindowDrives.h" />

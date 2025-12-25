@@ -3,11 +3,10 @@
 #include "FileSystem.h"
 #include "Timer.h"
 
-#ifdef WIN32
+#ifdef _WIN32
     #include <io.h>	// _A_SUBDIR, _findclose()
+    #define NOMINMAX
     #include <windows.h>    // GetVolumePathNamesForVolumeNameW()
-    #undef max
-    #undef min
 #endif
 
 
@@ -150,7 +149,7 @@ bool FilePath::IsValid() const {
 // depth first
 static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	assert(pattern);
 
 	// https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/findfirst-functions?view=vs-2019
@@ -214,7 +213,7 @@ void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const
 
 void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, uint64 totalExpectedFileSize, const wchar_t* pattern) 
 {
-#ifdef WIN32
+#ifdef _WIN32
 	// 59sec C:
 	CScopedCPUTimerLog timer("directoryTraverse2");
 
@@ -298,7 +297,7 @@ void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, ui
 // from https://learn.microsoft.com/en-us/windows/win32/fileio/displaying-volume-paths?redirectedfrom=MSDN
 static std::wstring getVolumePaths(PWCHAR InternalName)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	DWORD  CharCount = MAX_PATH + 1;
 	PWCHAR Names = NULL;
 	BOOL   Success = FALSE;
@@ -355,7 +354,7 @@ static std::wstring getVolumePaths(PWCHAR InternalName)
 
 void driveTraverse(IDriveTraverse& sink) 
 {
-#ifdef WIN32
+#ifdef _WIN32
 	DWORD  CharCount = 0;
 	WCHAR  deviceName[MAX_PATH] = L"";
 	DWORD  Error = ERROR_SUCCESS;

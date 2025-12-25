@@ -7,9 +7,11 @@
 #include "Gui.h"
 #include <sys/timeb.h>
 #include <thread>
-#include <windows.h>  // GetDiskFreeSpaceW()
-#undef min
-#undef max
+
+#ifdef _WIN32
+    #define NOMINMAX
+    #include <windows.h>  // GetDiskFreeSpaceW()
+#endif
 
 #pragma warning(disable: 4996) // open and close depreacted
 #pragma warning(disable: 4100) // unreferenced formal parameter

@@ -1,9 +1,8 @@
 #include "stdafx.h" 
 
-#ifdef WIN32
+#ifdef _WIN32
+    #define NOMINMAX
     #include <windows.h> // HICON
-    #undef max
-    #undef min
 #endif
 
 #include "Gui.h"
@@ -32,7 +31,7 @@
 #include <vector>
 #include <algorithm> // std::max()
 
-#ifdef WIN32
+#ifdef _WIN32
     #include <shlobj.h> // _wfinddata_t
 #endif
 
@@ -59,7 +58,7 @@ unsigned int RGBSwizzle(unsigned int c) {
 
 void openEFUsFolder()
 {
-#ifdef WIN32
+#ifdef _WIN32
     ShellExecuteA(0, 0, EFU_FOLDER, 0, 0, SW_SHOW);
 #else
     assert(0);
@@ -474,7 +473,7 @@ int Gui::test()
     ImFont* fontAwesome = nullptr;
     ImFont* fontAwesomeLarge = nullptr;
 
-#ifdef WIN32
+#ifdef _WIN32
     // https://stackoverflow.com/questions/2414828/get-path-to-my-documents
     char fonts[MAX_PATH];
     HRESULT result = SHGetFolderPathA(NULL, CSIDL_FONTS, NULL, SHGFP_TYPE_CURRENT, fonts);

@@ -162,6 +162,9 @@
       <Filter>Hidden</Filter>
     </ClInclude>
     <ClInclude Include="GranularSynth.h" />
+    <ClInclude Include="stdafx.h">
+      <Filter>Hidden</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">
