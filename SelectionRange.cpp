@@ -1,4 +1,5 @@
 #include "SelectionRange.h"
+#include "EFileList.h"
 
 void SelectionRangeWithDriveUpdate::addRedundancy(int64 line_no, int32 delta)
 {

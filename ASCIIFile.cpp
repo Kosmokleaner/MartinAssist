@@ -4,12 +4,15 @@
 #include <malloc.h>														// malloc,free
 #include <stdio.h>														// FILE
 #include <fcntl.h>														// filesize
-#include <io.h>																// filesize
 #include <string.h>														// strlen
 #include <assert.h>													  // assert
-#include <windows.h>	// GetFileSize()
-#undef max
-#undef min
+
+#ifdef WIN32
+    #include <io.h> // filesize
+    #include <windows.h> // GetFileSize()
+    #undef max
+    #undef min
+#endif
 
 #include "ASCIIFile.h"
 
@@ -47,12 +50,15 @@ size_t IO_GetFileSize( const char *Name )
 
 	handle = open(Name,O_RDONLY);
 	if(handle==-1)
-	{
 		return 0;
-	}
 
+#ifdef WIN32
 	size_t size = _filelengthi64(handle);
 	close(handle);
+#else
+    assert(0); // todo
+    size_t size = 0;
+#endif
 
 	return size;
 }
@@ -62,6 +68,7 @@ size_t IO_GetFileSize(const wchar_t* filePath)
 {
 	assert(filePath);
 
+#ifdef WIN32
 	HANDLE handle = CreateFile(filePath,
 		GENERIC_READ,
 		0 /* exclusive access */,
@@ -81,6 +88,10 @@ size_t IO_GetFileSize(const wchar_t* filePath)
 	CloseHandle(handle);
 
 	return (((size_t)highFileSize)<<32) | (size_t)lowFileSize;
+#else
+    assert(0); // todo
+    return 0;
+#endif
 }
 
 
@@ -147,7 +158,11 @@ bool CASCIIFile::IO_GetAvailability( const char *pathname )
 	if(handle==-1)
 		return false;
 
+#ifdef WIN32
 	close(handle);
+#else
+    assert(0); // todo
+#endif
 
 	return true;
 }
@@ -161,12 +176,16 @@ bool CASCIIFile::IO_SaveASCIIFile(const wchar_t* pathname)
 
 	FILE* file;
 
+#ifdef WIN32
 	if ((file = _wfopen(pathname, L"wb")) != NULL)
 	{
 		fwrite(m_Data, m_Size - 1, 1, file);
 		fclose(file);
 		return true;
 	}
+#else
+    assert(0); // todo
+#endif
 
 	return false;
 }
@@ -235,6 +254,7 @@ bool CASCIIFile::IO_LoadASCIIFile(const wchar_t* pathname)
 
 	FILE* file;
 
+#ifdef WIN32
 	if ((file = _wfopen(pathname, L"rb")) != NULL)
 	{
 		fread(ret, size, 1, file);
@@ -246,6 +266,9 @@ bool CASCIIFile::IO_LoadASCIIFile(const wchar_t* pathname)
 		fclose(file);
 		return true;
 	}
+#else
+    assert(0); // todo
+#endif
 
 	free(ret);
 	return false;

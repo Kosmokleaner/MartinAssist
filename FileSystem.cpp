@@ -2,10 +2,14 @@
 #include "global.h"
 #include "FileSystem.h"
 #include "Timer.h"
-#include <io.h>	// _A_SUBDIR, _findclose()
-#include <windows.h>    // GetVolumePathNamesForVolumeNameW()
-#undef max
-#undef min
+
+#ifdef WIN32
+    #include <io.h>	// _A_SUBDIR, _findclose()
+    #include <windows.h>    // GetVolumePathNamesForVolumeNameW()
+    #undef max
+    #undef min
+#endif
+
 
 #include <algorithm>
 #include <list>
@@ -144,7 +148,9 @@ bool FilePath::IsValid() const {
 // ---------------------------------------------------------------------------
 
 // depth first
-static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern) {
+static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const wchar_t* pattern)
+{
+#ifdef WIN32
 	assert(pattern);
 
 	// https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/findfirst-functions?view=vs-2019
@@ -177,6 +183,9 @@ static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePat
 	} while (_wfindnext(hFile, &c_file) == 0);
 
 	_findclose(hFile);
+#else
+    assert(0);
+#endif
 }
 
 std::wstring DriveInfo::generateKeyName() const
@@ -205,6 +214,7 @@ void directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePath, const
 
 void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, uint64 totalExpectedFileSize, const wchar_t* pattern) 
 {
+#ifdef WIN32
 	// 59sec C:
 	CScopedCPUTimerLog timer("directoryTraverse2");
 
@@ -278,13 +288,17 @@ void directoryTraverse2(IDirectoryTraverse& sink, const FilePath& inFilePath, ui
 		workItems.pop_front();
 	}
 	sink.OnEnd();
+#else
+    assert(0);
+#endif
 }
 
 // ---------------------------------------------------------------------------
 
 // from https://learn.microsoft.com/en-us/windows/win32/fileio/displaying-volume-paths?redirectedfrom=MSDN
-static std::wstring getVolumePaths(__in PWCHAR InternalName)
+static std::wstring getVolumePaths(PWCHAR InternalName)
 {
+#ifdef WIN32
 	DWORD  CharCount = MAX_PATH + 1;
 	PWCHAR Names = NULL;
 	BOOL   Success = FALSE;
@@ -332,11 +346,16 @@ static std::wstring getVolumePaths(__in PWCHAR InternalName)
 	}
 
 	return ret;
+#else
+    assert(0);
+    return std::wstring();
+#endif
 }
 
 
 void driveTraverse(IDriveTraverse& sink) 
 {
+#ifdef WIN32
 	DWORD  CharCount = 0;
 	WCHAR  deviceName[MAX_PATH] = L"";
 	DWORD  Error = ERROR_SUCCESS;
@@ -436,6 +455,9 @@ void driveTraverse(IDriveTraverse& sink)
 	FindHandle = INVALID_HANDLE_VALUE;
 
 	sink.OnEnd();
+#else
+    assert(0);
+#endif
 }
 
 void FilePath::Test() 
@@ -600,10 +622,10 @@ void FilePath::Test()
 using convert_t = std::codecvt_utf8<wchar_t>;
 std::wstring_convert<convert_t, wchar_t> strconverter;
 
-std::string to_string(std::wstring wstr) {
+std::string to_string(const std::wstring wstr) {
 	return strconverter.to_bytes(wstr);
 }
 
-std::wstring to_wstring(std::string str) {
+std::wstring to_wstring(const std::string str) {
 	return strconverter.from_bytes(str);
 }

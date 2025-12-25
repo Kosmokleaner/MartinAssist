@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "ASCIIFile.h"
 #include "LiterateProcessor.h"
 #include "CppParser.h"  // this is only include needed to get the cpp parser
@@ -30,6 +31,7 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
         startTime = g_Timer.GetAbsoluteTime();
     }
 
+#ifdef WIN32
     virtual bool OnDirectory(const FilePath& filePath, const wchar_t* directory, const _wfinddata_t& findData) {
         // to prevent compiler warning
         filePath;directory;findData;
@@ -66,14 +68,9 @@ struct CppDirectoryTraverse : public IDirectoryTraverse {
             ++fileEntryCount;
         }
     }
-};
+#endif
 
-void check(bool a) 
-{
-    assert(a);
-    if(!a)
-        __debugbreak();
-}
+};
 
 /* This is the main function
    ** just a few parser confusing constructs / *** *  * / \/ *

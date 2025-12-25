@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "LiterateProcessor.h"
 #include "ASCIIFile.h"
 #include "Parse.h"

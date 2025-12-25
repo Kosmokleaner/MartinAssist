@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.h"
+#include <cstdlib>  // unix size_t 
 
 //! 0 byte terminted char ASCII file
 class CASCIIFile  

@@ -1,9 +1,13 @@
 #pragma once
 
+#pragma GCC diagnostic ignored "-Wmultichar"
+
 // minimal granular sound synth without UI and backend specifics
 
 #include <string>
 #include <vector>
+#include <cmath> // floor()
+#include <memory>   // std::shared_ptr<>
 #include <assert.h>
 #include "types.h"
 #include <mutex>

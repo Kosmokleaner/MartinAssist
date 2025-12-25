@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <string.h> // strlen()
 #include "Parse.h"
 
 class PooledString

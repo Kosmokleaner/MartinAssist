@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "CppParser.h"
 
 // call parseWhiteSpace before
@@ -24,7 +25,7 @@ bool parseCpp(CppParser& parser, const Char*& p)
 #pragma warning (push)
 #pragma warning (disable: 4189)
     // e.g. 
-    const char* challenge = "ô";
+    const char* challenge = "ï¿½";
 #pragma warning (pop)
 
     return true;

@@ -1,8 +1,12 @@
 #pragma once
 
 #include <string>
+#include "types.h"
+
+#ifdef WIN32
 #define _AMD64_
 #include <profileapi.h>
+#endif
 
 // very simple CPU timer class
 class CTimer

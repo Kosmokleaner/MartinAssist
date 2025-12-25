@@ -1,6 +1,10 @@
 /x64/*
 /.vs
 /MartinAssist/x64/*
+/build/*
+/CMakeFiles/*
+CMakeCache.txt
+cmake_install.cmake
 
 /temp
 /Backup

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "AllFilesInFolder.h"
 #include <algorithm>
+#include <string>
 
 
 static bool IsDigit(char c) {
@@ -94,7 +95,7 @@ void AllFilesInFolder::Update() {
 
   isValid = true;
   files.clear();
-  DirectoryTraverse(*this, FilePath(path), endsWith);
+  directoryTraverse(*this, FilePath(to_wstring(path)), to_wstring(std::string(endsWith)).c_str());
   std::sort(files.begin(), files.end(), comp());
 }
 

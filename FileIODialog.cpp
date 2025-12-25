@@ -1,7 +1,12 @@
+#include "types.h"
 #include "FileIODialog.h"
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <commdlg.h>																		// OPENFILENAME, GetOpenFileName
+
+#ifdef WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+    #include <commdlg.h>																		// OPENFILENAME, GetOpenFileName
+#endif
+
 #include <assert.h>
 
 
@@ -54,6 +59,7 @@ inline void RemoveFilename(std::string& v)
 
 bool CFileIODialog::FileDialogLoad( const char *szDialogTitle, const char *szExtension, const char *szFilter, std::string &rInOutFilename)
 {
+#ifdef WIN32
 	char back[MAX_PATH];
 	if(GetCurrentDirectoryA(MAX_PATH,back)==0)
 	{
@@ -85,7 +91,7 @@ bool CFileIODialog::FileDialogLoad( const char *szDialogTitle, const char *szExt
 
 //    TCHAR szFile[MAX_PATH] = TEXT(""); // Buffer for file name
     rInOutFilename.reserve(MAX_PATH);
-	ofn.lpstrFile = rInOutFilename.data();
+	ofn.lpstrFile = rInOutFilename.data();bOk
 //    ofn.lpstrFile = szFile;
 	ofn.nMaxFile=MAX_PATH;
 
@@ -124,12 +130,17 @@ bool CFileIODialog::FileDialogLoad( const char *szDialogTitle, const char *szExt
 
 	SetCurrentDirectoryA(back);
 	return bOk;
+#else
+    assert(0);
+	return false;
+#endif
 }
 
 
 
 bool CFileIODialog::FileDialogSave( const char *szDialogTitle, const char *szExtension, const char *szFilter, std::string &rInOutFilename )
 {
+#ifdef WIN32
 	char back[MAX_PATH];
 	if(GetCurrentDirectoryA(MAX_PATH,back)==0)
 		return false;
@@ -181,5 +192,9 @@ bool CFileIODialog::FileDialogSave( const char *szDialogTitle, const char *szExt
 
 	SetCurrentDirectoryA(back);
 	return bOk;
+#else
+    assert(0);
+	return false;
+#endif
 }
 

@@ -1,6 +1,10 @@
-#include <windows.h> // HICON
-#undef max
-#undef min
+#include "stdafx.h" 
+
+#ifdef WIN32
+    #include <windows.h> // HICON
+    #undef max
+    #undef min
+#endif
 
 #include "Gui.h"
 
@@ -28,8 +32,10 @@
 #include <vector>
 #include <algorithm> // std::max()
 
+#ifdef WIN32
+    #include <shlobj.h> // _wfinddata_t
+#endif
 
-#include <shlobj.h> // _wfinddata_t
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -53,7 +59,11 @@ unsigned int RGBSwizzle(unsigned int c) {
 
 void openEFUsFolder()
 {
+#ifdef WIN32
     ShellExecuteA(0, 0, EFU_FOLDER, 0, 0, SW_SHOW);
+#else
+    assert(0);
+#endif
 }
 
 // copied from ImGui, the optional endMarker adds a rectangle to the triangle arrow indicating a stop
@@ -245,7 +255,7 @@ void showIconsWindow(ImFont *font, bool &show)
                     // static to avoid memory allocations
                     static std::wstring wstr;
                     wstr.clear();
-                    wstr.push_back((TCHAR)(base + n));
+                    wstr.push_back((wchar_t)(base + n));
                     ImGui::PushID(n);
                     // inefficient (memory allocation) but simple
                     ImGui::PushFont(font);
@@ -461,12 +471,14 @@ int Gui::test()
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
 
+    ImFont* fontAwesome = nullptr;
+    ImFont* fontAwesomeLarge = nullptr;
+
+#ifdef WIN32
     // https://stackoverflow.com/questions/2414828/get-path-to-my-documents
     char fonts[MAX_PATH];
     HRESULT result = SHGetFolderPathA(NULL, CSIDL_FONTS, NULL, SHGFP_TYPE_CURRENT, fonts);
 
-    ImFont* fontAwesome = nullptr;
-    ImFont* fontAwesomeLarge = nullptr;
     if(result == S_OK)
     {
         io.Fonts->AddFontFromFileTTF((std::string(fonts) +  "\\Arial.ttf").c_str(), 21.0f);
@@ -482,6 +494,7 @@ int Gui::test()
 
         io.Fonts->Build();
     }
+#endif
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 

@@ -1,6 +1,7 @@
 //#include "stdafx.h"
 #include "global.h"
 #include "Parse.h"
+#include <string.h> // memcpy()
 
 bool isWhiteSpaceOrLF(const Char c) {
 	// todo: refine

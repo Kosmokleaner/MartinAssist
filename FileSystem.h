@@ -33,7 +33,7 @@ public:
     const wchar_t* getPathWithoutDrive() const;
 
     // constructor e.g. FilePath(pathString)
-    FilePath(std::wstring& in) : path(in) { }
+    FilePath(const std::wstring& in) : path(in) { }
 
     // inserts forward slash if needed and appends
     // @param rhs filename, can be with relative path or extension, must not be 0
@@ -85,6 +85,8 @@ struct IDriveTraverse {
 // implement for directoryTraverse()
 struct IDirectoryTraverse {
   virtual void OnStart() {}
+
+#ifdef WIN32 // todo: port later
   // @param filePath without directory e.g. L"D:\temp"
   // @param directory name e.g. L"sub"
   // @return true to recurse into the folder
@@ -93,6 +95,8 @@ struct IDirectoryTraverse {
   // @param file with extension
   // @param progress 0:unknown or just started .. 1:done
   virtual void OnFile(const FilePath& path, const wchar_t* file, const _wfinddata_t& findData, float progress) = 0;
+#endif
+
   virtual void OnEnd() {}
 };
 

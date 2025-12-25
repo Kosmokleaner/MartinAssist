@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "EFileList.h"
 #include "ASCIIFile.h"
 #include "Timer.h" // CScopedCPUTimerLog
@@ -135,7 +136,7 @@ bool FileList::load(const wchar_t* fileName, IFileLoadSink* fileLoadSink)
                 break;
             }
 
-            if (!parseInt64(p, entry.key.time_write) ||
+            if (!parseInt64(p, (int64_t&)entry.key.time_write) ||
                 !parseStartsWith(p, ","))
             {
                 error = true;
@@ -147,7 +148,7 @@ bool FileList::load(const wchar_t* fileName, IFileLoadSink* fileLoadSink)
             {
                 entry.value.time_create = -1;
             }
-            else if (!parseInt64(p, entry.value.time_create) ||
+            else if (!parseInt64(p, (int64_t&)entry.value.time_create) ||
                 !parseStartsWith(p, ","))
             {
                 int32_t errLine, errCol;
