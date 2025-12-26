@@ -30,16 +30,28 @@ add_executable(MartinAssist
 	external/miniAudio/miniaudio.cpp
     ImGui/imgui.cpp
     ImGui/imgui_draw.cpp
+    ImGui/imgui_demo.cpp
     ImGui/imgui_tables.cpp
+    ImGui/misc/cpp/imgui_stdlib.cpp
     ImGui/imgui_widgets.cpp
     ImGui/backends/imgui_impl_glfw.cpp
     ImGui/backends/imgui_impl_opengl3.cpp
 )
+
+find_package(OpenGL REQUIRED)
+# sudo apt install libglfw3-dev libgl1-mesa-dev
+find_package(glfw3 CONFIG REQUIRED)
 
 #target_include_directories(MartinAssist PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(MartinAssist PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGui
 )
+
+target_link_libraries(MartinAssist PRIVATE
+    glfw
+    OpenGL::GL
+)
+
 #target_link_libraries(MartinAssist PRIVATE YourLibraryTargetName)
 

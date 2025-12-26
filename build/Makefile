@@ -393,6 +393,54 @@ Gui.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/Gui.cpp.s
 .PHONY : Gui.cpp.s
 
+ImGui/backends/imgui_impl_glfw.o: ImGui/backends/imgui_impl_glfw.cpp.o
+.PHONY : ImGui/backends/imgui_impl_glfw.o
+
+# target to build an object file
+ImGui/backends/imgui_impl_glfw.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/backends/imgui_impl_glfw.cpp.o
+.PHONY : ImGui/backends/imgui_impl_glfw.cpp.o
+
+ImGui/backends/imgui_impl_glfw.i: ImGui/backends/imgui_impl_glfw.cpp.i
+.PHONY : ImGui/backends/imgui_impl_glfw.i
+
+# target to preprocess a source file
+ImGui/backends/imgui_impl_glfw.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/backends/imgui_impl_glfw.cpp.i
+.PHONY : ImGui/backends/imgui_impl_glfw.cpp.i
+
+ImGui/backends/imgui_impl_glfw.s: ImGui/backends/imgui_impl_glfw.cpp.s
+.PHONY : ImGui/backends/imgui_impl_glfw.s
+
+# target to generate assembly for a file
+ImGui/backends/imgui_impl_glfw.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/backends/imgui_impl_glfw.cpp.s
+.PHONY : ImGui/backends/imgui_impl_glfw.cpp.s
+
+ImGui/backends/imgui_impl_opengl3.o: ImGui/backends/imgui_impl_opengl3.cpp.o
+.PHONY : ImGui/backends/imgui_impl_opengl3.o
+
+# target to build an object file
+ImGui/backends/imgui_impl_opengl3.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/backends/imgui_impl_opengl3.cpp.o
+.PHONY : ImGui/backends/imgui_impl_opengl3.cpp.o
+
+ImGui/backends/imgui_impl_opengl3.i: ImGui/backends/imgui_impl_opengl3.cpp.i
+.PHONY : ImGui/backends/imgui_impl_opengl3.i
+
+# target to preprocess a source file
+ImGui/backends/imgui_impl_opengl3.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/backends/imgui_impl_opengl3.cpp.i
+.PHONY : ImGui/backends/imgui_impl_opengl3.cpp.i
+
+ImGui/backends/imgui_impl_opengl3.s: ImGui/backends/imgui_impl_opengl3.cpp.s
+.PHONY : ImGui/backends/imgui_impl_opengl3.s
+
+# target to generate assembly for a file
+ImGui/backends/imgui_impl_opengl3.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/backends/imgui_impl_opengl3.cpp.s
+.PHONY : ImGui/backends/imgui_impl_opengl3.cpp.s
+
 ImGui/imgui.o: ImGui/imgui.cpp.o
 .PHONY : ImGui/imgui.o
 
@@ -416,6 +464,30 @@ ImGui/imgui.s: ImGui/imgui.cpp.s
 ImGui/imgui.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui.cpp.s
 .PHONY : ImGui/imgui.cpp.s
+
+ImGui/imgui_demo.o: ImGui/imgui_demo.cpp.o
+.PHONY : ImGui/imgui_demo.o
+
+# target to build an object file
+ImGui/imgui_demo.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_demo.cpp.o
+.PHONY : ImGui/imgui_demo.cpp.o
+
+ImGui/imgui_demo.i: ImGui/imgui_demo.cpp.i
+.PHONY : ImGui/imgui_demo.i
+
+# target to preprocess a source file
+ImGui/imgui_demo.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_demo.cpp.i
+.PHONY : ImGui/imgui_demo.cpp.i
+
+ImGui/imgui_demo.s: ImGui/imgui_demo.cpp.s
+.PHONY : ImGui/imgui_demo.s
+
+# target to generate assembly for a file
+ImGui/imgui_demo.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_demo.cpp.s
+.PHONY : ImGui/imgui_demo.cpp.s
 
 ImGui/imgui_draw.o: ImGui/imgui_draw.cpp.o
 .PHONY : ImGui/imgui_draw.o
@@ -488,6 +560,30 @@ ImGui/imgui_widgets.s: ImGui/imgui_widgets.cpp.s
 ImGui/imgui_widgets.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_widgets.cpp.s
 .PHONY : ImGui/imgui_widgets.cpp.s
+
+ImGui/misc/cpp/imgui_stdlib.o: ImGui/misc/cpp/imgui_stdlib.cpp.o
+.PHONY : ImGui/misc/cpp/imgui_stdlib.o
+
+# target to build an object file
+ImGui/misc/cpp/imgui_stdlib.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/misc/cpp/imgui_stdlib.cpp.o
+.PHONY : ImGui/misc/cpp/imgui_stdlib.cpp.o
+
+ImGui/misc/cpp/imgui_stdlib.i: ImGui/misc/cpp/imgui_stdlib.cpp.i
+.PHONY : ImGui/misc/cpp/imgui_stdlib.i
+
+# target to preprocess a source file
+ImGui/misc/cpp/imgui_stdlib.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/misc/cpp/imgui_stdlib.cpp.i
+.PHONY : ImGui/misc/cpp/imgui_stdlib.cpp.i
+
+ImGui/misc/cpp/imgui_stdlib.s: ImGui/misc/cpp/imgui_stdlib.cpp.s
+.PHONY : ImGui/misc/cpp/imgui_stdlib.s
+
+# target to generate assembly for a file
+ImGui/misc/cpp/imgui_stdlib.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/misc/cpp/imgui_stdlib.cpp.s
+.PHONY : ImGui/misc/cpp/imgui_stdlib.cpp.s
 
 LiterateProcessor.o: LiterateProcessor.cpp.o
 .PHONY : LiterateProcessor.o
@@ -771,9 +867,18 @@ help:
 	@echo "... Gui.o"
 	@echo "... Gui.i"
 	@echo "... Gui.s"
+	@echo "... ImGui/backends/imgui_impl_glfw.o"
+	@echo "... ImGui/backends/imgui_impl_glfw.i"
+	@echo "... ImGui/backends/imgui_impl_glfw.s"
+	@echo "... ImGui/backends/imgui_impl_opengl3.o"
+	@echo "... ImGui/backends/imgui_impl_opengl3.i"
+	@echo "... ImGui/backends/imgui_impl_opengl3.s"
 	@echo "... ImGui/imgui.o"
 	@echo "... ImGui/imgui.i"
 	@echo "... ImGui/imgui.s"
+	@echo "... ImGui/imgui_demo.o"
+	@echo "... ImGui/imgui_demo.i"
+	@echo "... ImGui/imgui_demo.s"
 	@echo "... ImGui/imgui_draw.o"
 	@echo "... ImGui/imgui_draw.i"
 	@echo "... ImGui/imgui_draw.s"
@@ -783,6 +888,9 @@ help:
 	@echo "... ImGui/imgui_widgets.o"
 	@echo "... ImGui/imgui_widgets.i"
 	@echo "... ImGui/imgui_widgets.s"
+	@echo "... ImGui/misc/cpp/imgui_stdlib.o"
+	@echo "... ImGui/misc/cpp/imgui_stdlib.i"
+	@echo "... ImGui/misc/cpp/imgui_stdlib.s"
 	@echo "... LiterateProcessor.o"
 	@echo "... LiterateProcessor.i"
 	@echo "... LiterateProcessor.s"

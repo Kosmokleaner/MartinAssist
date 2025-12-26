@@ -2,6 +2,7 @@
 /.vs
 /MartinAssist/x64/*
 /build/*
+/build/Makefile
 /CMakeFiles/*
 /Backup/*
 CMakeCache.txt
