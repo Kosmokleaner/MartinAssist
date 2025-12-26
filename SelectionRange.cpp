@@ -1,6 +1,7 @@
 #include "SelectionRange.h"
 #include "EFileList.h"
 
+/*
 void SelectionRangeWithDriveUpdate::addRedundancy(int64 line_no, int32 delta)
 {
     const ViewEntry& viewEntry = everyHere.fileView[line_no];
@@ -43,3 +44,4 @@ void SelectionRangeWithDriveUpdate::toggle(int64 x)
 
     SelectionRange::toggle(x);
 }
+*/

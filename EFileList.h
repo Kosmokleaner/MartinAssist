@@ -1,7 +1,6 @@
 #pragma once
 #include "PooledString.h"
 #include "types.h"
-#include <ctime>    // __time64_t
 
 class Redundancy;
 

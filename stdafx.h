@@ -17,4 +17,5 @@ inline void check(bool a)
 #ifndef _WIN32
 //    #define sprintf_s(buf, ...) snprintf((buf), sizeof(buf), __VA_ARGS__)
     #define sprintf_s(buf,size, ...) snprintf((buf), (size), __VA_ARGS__)
+    inline void OutputDebugStringA(const char*) {}
 #endif

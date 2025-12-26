@@ -132,6 +132,7 @@ private:
     }
 };
 
+/*
 class SelectionRangeWithDriveUpdate : public SelectionRange
 {
     struct EveryHere& everyHere;
@@ -149,3 +150,4 @@ private:
     // @param delta -1 or 1
     void addRedundancy(int64 line_no, int32 delta);
 };
+*/

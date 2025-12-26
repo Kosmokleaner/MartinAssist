@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "WindowDrives.h"
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_internal.h"
@@ -8,18 +9,17 @@
 #include <sys/timeb.h>
 #include <thread>
 
-#ifdef _WIN32
-    #define NOMINMAX
-    #include <windows.h>  // GetDiskFreeSpaceW()
-#endif
-
 #pragma warning(disable: 4996) // open and close depreacted
 #pragma warning(disable: 4100) // unreferenced formal parameter
 
 #define SERIALIZE_VERSION "2"
 
-#include <io.h>															// open
-#include <fcntl.h>														// O_RDONLY
+#ifdef _WIN32
+    #define NOMINMAX
+    #include <windows.h>    // GetDiskFreeSpaceW()
+    #include <io.h>         // open
+    #include <fcntl.h>      // O_RDONLY
+#endif
 
 #include <time.h>   // _localtime64_s()
 
@@ -36,6 +36,7 @@ void RightAlignedText(const char* txt)
 
 void dateToCString(__time64_t t, char outTimeStr[80])
 {
+#ifdef _WIN32
     struct tm tm;
     errno_t err = _localtime64_s(&tm, &t);
     assert(!err);
@@ -46,11 +47,15 @@ void dateToCString(__time64_t t, char outTimeStr[80])
     }
     // https://support.echo360.com/hc/en-us/articles/360035034372-Formatting-Dates-for-CSV-Imports#:~:text=Some%20of%20the%20CSV%20imports,program%20like%20Microsoft%C2%AE%20Excelf
     strftime(outTimeStr, 80, "%m/%d/%Y %H:%M:%S", &tm);
+#else
+    assert(0);
+#endif
 }
 
 // @param inTime date in this form: "%02d/%02d/%04d %02d:%02d:%02d"
 int64 timeStringToValue(const char* inTime)
 {
+#ifdef _WIN32
     assert(inTime);
 
     int year = 0;
@@ -86,11 +91,16 @@ int64 timeStringToValue(const char* inTime)
     v_ui.LowPart = v_ftime.dwLowDateTime;
     v_ui.HighPart = v_ftime.dwHighDateTime;
     return v_ui.QuadPart;
+#else
+    assert(0);
+    return 0;
+#endif
 }
 
 
 bool IO_FileExists(const char* Name)
 {
+#ifdef _WIN32
     assert(Name);
     int handle;
 
@@ -101,6 +111,10 @@ bool IO_FileExists(const char* Name)
     close(handle);
 
     return true;
+#else
+    assert(0);
+    return false;
+#endif
 }
 
 
@@ -297,6 +311,7 @@ void build(DriveInfo2 & drive)
 
     printf("%s %s\n", command, cmdLine.c_str());
 
+#ifdef _WIN32    
 //    HINSTANCE inst = 
 //    ShellExecuteA(0, 0, command, cmdLine.c_str(), 0, SW_HIDE);
     // https://stackoverflow.com/questions/10896778/how-to-get-return-value-of-an-exe-called-by-shellexecute
@@ -327,15 +342,22 @@ void build(DriveInfo2 & drive)
             printf("Everything ExitCode: %d %s\n", exitCode, meaning);
         }
     }
-
+#else
+    assert(0);
+#endif
+    
     CASCIIFile file;
     std::string fileData;
     // to avoid reallocations
     fileData.reserve(10 * 1024 * 1024);
     char str[1024];
 
+#ifdef _WIN32
     // time when we got the EFU
     drive.date = _time64(0);
+#else
+    assert(0);
+#endif
 
 #define EL_STRING(NAME) \
     if (!drive.NAME.empty()) \
@@ -345,7 +367,7 @@ void build(DriveInfo2 & drive)
         fileData += "\n"; \
     }
 #define EL_INT64(NAME) \
-    sprintf_s(str, sizeof(str), "# " #NAME "=%llu\n", drive.NAME); \
+    sprintf_s(str, sizeof(str), "# " #NAME "=%llu\n", (long long unsigned int)drive.NAME); \
     fileData += str;
 
     EL_STRING(drivePath);
@@ -519,7 +541,7 @@ void WindowDrives::gui()
                         ImGui::TableSetColumnIndex(1);
 
                         if (fileListSize)
-                            ImGui::Text("%llu", (uint64)fileListSize);
+                            ImGui::Text("%llu", (long long unsigned int)fileListSize);
                         else
                             ImGui::Text("? (load with left click)");
                     }
@@ -608,8 +630,8 @@ void WindowDrives::gui()
                 ImGui::Text("computerName: '%s'", drive.computerName.c_str());
                 ImGui::Text("efuFileName: '%s'", drive.efuFileName.c_str());
                 ImGui::Text("userName: '%s'", drive.userName.c_str());
-                ImGui::Text("driveFlags: %x", drive.driveFlags);
-                ImGui::Text("serialNumber: %x", drive.serialNumber);
+                ImGui::Text("driveFlags: %lx", drive.driveFlags);
+                ImGui::Text("serialNumber: %lx", drive.serialNumber);
                 if(drive.date)
                 {
                     char date[80];
@@ -624,7 +646,7 @@ void WindowDrives::gui()
             }
 
             ImGui::SameLine();
-            ImGui::TextColored(drive.localDrive ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.5f), item);
+            ImGui::TextColored(drive.localDrive ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.5f), "%s", item);
 
             // for debugging, orange
             ImGui::SameLine();
@@ -632,6 +654,7 @@ void WindowDrives::gui()
 
             if(drive.date)
             {
+#ifdef _WIN32
 //                char date[80];
 //                dateToCString(drive.date, date);
                 __timeb64 timeptr;
@@ -654,6 +677,9 @@ void WindowDrives::gui()
                     ImGui::SameLine();
                     ImGui::TextColored(ImVec4(1, 1, 1, 0.3f), ", %lluK files", (fileListSize + 999) / 1000 );
                 }
+#else
+                assert(0);
+#endif
             }
         }
     }
@@ -671,12 +697,15 @@ void WindowDrives::gui()
 
 void WindowDrives::openDrive()
 {
+#ifdef _WIN32
     driveSelectionRange.foreach([&](int64 index) {
         auto& drive = drives[index];
         FilePath filePath(to_wstring(drive->drivePath).c_str());
         ShellExecuteA(0, 0, to_string(filePath.extractPath()).c_str(), 0, 0, SW_SHOW);
         });
-
+#else
+    assert(0);
+#endif
 }
 
 void WindowDrives::popup()
@@ -729,6 +758,7 @@ public:
     DriveScan(std::vector<std::shared_ptr<DriveInfo2> > &inDrives)
         : drives(inDrives)
     {
+#ifdef _WIN32
         char name[256];
         DWORD size = sizeof(name);
         if (GetComputerNameA(name, &size))
@@ -741,6 +771,9 @@ public:
             // e.g. "Hans"
             userName = name;
         }
+#else
+        assert(0);
+#endif
     }
     virtual void OnDrive(const DriveInfo& driveInfo)
     {
@@ -756,6 +789,7 @@ public:
         el.localDrive = true;
         el.computerName = computerName;
         el.userName = userName;
+#ifdef _WIN32
         DWORD lpSectorsPerCluster;
         DWORD lpBytesPerSector;
         DWORD lpNumberOfFreeClusters;
@@ -765,6 +799,9 @@ public:
             el.freeSpace = (uint64)lpSectorsPerCluster * lpBytesPerSector * lpNumberOfFreeClusters;
             el.totalSpace = (uint64)lpSectorsPerCluster * lpBytesPerSector * lpTotalNumberOfClusters;
         }
+#else
+        assert(0);
+#endif
 
         // if we found it already we don't need to add it to the drives
         for (auto& it : drives)
@@ -791,7 +828,7 @@ public:
         : drives(inDrives)
     {
     }
-
+/*
     // @param filePath without directory e.g. L"D:\temp"
     // @param directory name e.g. L"sub"
     // @return true to recurse into the folder
@@ -885,6 +922,7 @@ public:
             drives.push_back(ptr);
         }
     }
+*/
 };
 
 void WindowDrives::rescan()

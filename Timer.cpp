@@ -1,4 +1,4 @@
-//#include "StdAfx.h"
+#include "stdafx.h"
 #include "global.h"
 #include "Timer.h"
 #include <assert.h>
@@ -12,7 +12,11 @@ CTimer g_Timer;
 
 CTimer::CTimer()
 {
+#ifdef _WIN32
 	QueryPerformanceFrequency(&m_PerformanceFrequency);
+#else
+    assert(0);
+#endif
 }
 
 
@@ -20,11 +24,15 @@ double CTimer::GetAbsoluteTime() const
 {
 	assert(m_PerformanceFrequency.QuadPart);
 
+#ifdef _WIN32
 	LARGE_INTEGER b;
 
 	QueryPerformanceCounter(&b);
 
 	return (double)(b.QuadPart) / (double)m_PerformanceFrequency.QuadPart;
+#else
+    assert(0);
+#endif
 }
 
 

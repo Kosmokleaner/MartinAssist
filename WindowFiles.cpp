@@ -1,6 +1,9 @@
-#include <windows.h> // HICON
-#undef max
-#undef min
+#include "stdafx.h"
+#ifdef _WIN32
+    #include <io.h> // filesize
+    #define NOMINMAX
+    #include <windows.h> // GetFileSize()
+#endif
 
 #include "ImGui/imgui.h"
 #include "Gui.h"
@@ -43,11 +46,19 @@ void WindowFiles::fileLineUI(const std::vector<std::shared_ptr<DriveInfo2> >& dr
 
                 fullPath += "/";
                 fullPath += entry.key.fileName.c_str();
+#ifdef _WIN32
                 ShellExecuteA(0, 0, fullPath.c_str(), 0, 0, SW_SHOW);
+#else
+    assert(0); // todo
+#endif
             }
             if (ImGui::MenuItem("Open path (in Explorer)"))
             {
+#ifdef _WIN32
                 ShellExecuteA(0, 0, entry.value.path.c_str(), 0, 0, SW_SHOW);
+#else
+    assert(0); // todo
+#endif
             }
         }
 
@@ -410,7 +421,7 @@ void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
 
     if (fileSelectionRange.empty())
     {
-        ImGui::Text("Files: %lld", (int64)fileViewEx.size());
+        ImGui::Text("Files: %lld", (unsigned long long)fileViewEx.size());
         ImGui::SameLine();
 //todo        ImGui::Text("Size: ");
 //        ImGui::SameLine();
@@ -421,7 +432,7 @@ void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
     }
     else
     {
-        ImGui::Text("Selected: %lld", (int64)fileSelectionRange.count());
+        ImGui::Text("Selected: %lld", (unsigned long long)fileSelectionRange.count());
   /*      ImGui::SameLine();
 
         // Can be optimized when using drives instead but then we need selectedFileSize there as well
