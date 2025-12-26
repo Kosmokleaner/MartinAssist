@@ -3,6 +3,7 @@
 /MartinAssist/x64/*
 /build/*
 /CMakeFiles/*
+/Backup/*
 CMakeCache.txt
 cmake_install.cmake
 

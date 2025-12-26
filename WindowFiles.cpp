@@ -4,7 +4,7 @@
 
 #include "ImGui/imgui.h"
 #include "Gui.h"
-#include "ImGui/imgui_stdlib.h"
+#include "ImGui/misc/cpp/imgui_stdlib.h"
 #include "ImGui/imgui_internal.h"
 #include "FileSystem.h"
 #include "Timer.h"
@@ -373,7 +373,7 @@ void WindowFiles::gui(const std::vector<std::shared_ptr<DriveInfo2> >& drives)
                     int columnId = 0;
 
                     ImGui::TableSetColumnIndex(columnId++);
-                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap;
+                    ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
                     bool selected = fileSelectionRange.isSelected(line_no);
 
                     ImGui::Selectable(line.c_str(), &selected, selectable_flags);

@@ -18,10 +18,10 @@
 #include "resource.h"
 
 #include "ImGui/imgui.h"
-#include "ImGui/imgui_stdlib.h"
+#include "ImGui/misc/cpp/imgui_stdlib.h"
 #include "ImGui/imgui_internal.h"
-#include "ImGui/imgui_impl_glfw.h"
-#include "ImGui/imgui_impl_opengl3.h"
+#include "ImGui/backends/imgui_impl_glfw.h"
+#include "ImGui/backends/imgui_impl_opengl3.h"
 #include <stdio.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -92,8 +92,8 @@ bool ArrowButton2(const char* str_id, ImGuiDir dir, bool smallButton, bool endMa
         return false;
     }
 
-    if (g.LastItemData.InFlags & ImGuiItemFlags_ButtonRepeat)
-        flags |= ImGuiButtonFlags_Repeat;
+//    if (g.LastItemData.ItemFlags & ImGuiItemFlags_ButtonRepeat)
+//        flags |= ImGuiButtonFlags_Repeat;
 
     bool hovered, held;
     bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held, flags);
@@ -203,7 +203,8 @@ void showIconsWindow(ImFont *font, bool &show)
             }
             for (unsigned int n = 0; n < 256; n++)
             {
-                const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
+                ImFontBaked* baked = font->GetFontBaked(ImGui::GetFontSize());
+                const ImFontGlyph* glyph = baked->FindGlyphNoFallback((ImWchar)(base + n));
                 if (glyph)
                 {
                     fontWidth = std::max(fontWidth, glyph->X1 - glyph->X0);
@@ -246,7 +247,8 @@ void showIconsWindow(ImFont *font, bool &show)
 
             for (unsigned int n = 0; n < 256; n++)
             {
-                const ImFontGlyph* glyph = font->FindGlyphNoFallback((ImWchar)(base + n));
+                ImFontBaked* baked = font->GetFontBaked(ImGui::GetFontSize());
+                const ImFontGlyph* glyph = baked->FindGlyphNoFallback((ImWchar)(base + n));
                 if (glyph && glyph->Visible)
                 {
                     ImGui::SetCursorPosX((printedCharId % IconsPerLine) * (cell_size + itemSpacing.x));
@@ -731,7 +733,7 @@ bool ImGuiMenuItem(const char* label, const char* icon, const char* shortcut, bo
 	// but we won't let it draw the built-in checkmark (by manually handling the bool state)
 	bool selected = false;
 	bool ret = false;
-	if (ImGui::Selectable(label, &selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap | ImGuiSelectableFlags_DontClosePopups))
+	if (ImGui::Selectable(label, &selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap | ImGuiSelectableFlags_DontClosePopups))
 	{
 		// Toggle the checkbox state when the item is clicked
 		if(p_checked)
