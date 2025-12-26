@@ -393,6 +393,102 @@ Gui.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/Gui.cpp.s
 .PHONY : Gui.cpp.s
 
+ImGui/imgui.o: ImGui/imgui.cpp.o
+.PHONY : ImGui/imgui.o
+
+# target to build an object file
+ImGui/imgui.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui.cpp.o
+.PHONY : ImGui/imgui.cpp.o
+
+ImGui/imgui.i: ImGui/imgui.cpp.i
+.PHONY : ImGui/imgui.i
+
+# target to preprocess a source file
+ImGui/imgui.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui.cpp.i
+.PHONY : ImGui/imgui.cpp.i
+
+ImGui/imgui.s: ImGui/imgui.cpp.s
+.PHONY : ImGui/imgui.s
+
+# target to generate assembly for a file
+ImGui/imgui.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui.cpp.s
+.PHONY : ImGui/imgui.cpp.s
+
+ImGui/imgui_draw.o: ImGui/imgui_draw.cpp.o
+.PHONY : ImGui/imgui_draw.o
+
+# target to build an object file
+ImGui/imgui_draw.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_draw.cpp.o
+.PHONY : ImGui/imgui_draw.cpp.o
+
+ImGui/imgui_draw.i: ImGui/imgui_draw.cpp.i
+.PHONY : ImGui/imgui_draw.i
+
+# target to preprocess a source file
+ImGui/imgui_draw.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_draw.cpp.i
+.PHONY : ImGui/imgui_draw.cpp.i
+
+ImGui/imgui_draw.s: ImGui/imgui_draw.cpp.s
+.PHONY : ImGui/imgui_draw.s
+
+# target to generate assembly for a file
+ImGui/imgui_draw.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_draw.cpp.s
+.PHONY : ImGui/imgui_draw.cpp.s
+
+ImGui/imgui_tables.o: ImGui/imgui_tables.cpp.o
+.PHONY : ImGui/imgui_tables.o
+
+# target to build an object file
+ImGui/imgui_tables.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_tables.cpp.o
+.PHONY : ImGui/imgui_tables.cpp.o
+
+ImGui/imgui_tables.i: ImGui/imgui_tables.cpp.i
+.PHONY : ImGui/imgui_tables.i
+
+# target to preprocess a source file
+ImGui/imgui_tables.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_tables.cpp.i
+.PHONY : ImGui/imgui_tables.cpp.i
+
+ImGui/imgui_tables.s: ImGui/imgui_tables.cpp.s
+.PHONY : ImGui/imgui_tables.s
+
+# target to generate assembly for a file
+ImGui/imgui_tables.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_tables.cpp.s
+.PHONY : ImGui/imgui_tables.cpp.s
+
+ImGui/imgui_widgets.o: ImGui/imgui_widgets.cpp.o
+.PHONY : ImGui/imgui_widgets.o
+
+# target to build an object file
+ImGui/imgui_widgets.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_widgets.cpp.o
+.PHONY : ImGui/imgui_widgets.cpp.o
+
+ImGui/imgui_widgets.i: ImGui/imgui_widgets.cpp.i
+.PHONY : ImGui/imgui_widgets.i
+
+# target to preprocess a source file
+ImGui/imgui_widgets.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_widgets.cpp.i
+.PHONY : ImGui/imgui_widgets.cpp.i
+
+ImGui/imgui_widgets.s: ImGui/imgui_widgets.cpp.s
+.PHONY : ImGui/imgui_widgets.s
+
+# target to generate assembly for a file
+ImGui/imgui_widgets.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/ImGui/imgui_widgets.cpp.s
+.PHONY : ImGui/imgui_widgets.cpp.s
+
 LiterateProcessor.o: LiterateProcessor.cpp.o
 .PHONY : LiterateProcessor.o
 
@@ -609,6 +705,30 @@ audioSample.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/audioSample.cpp.s
 .PHONY : audioSample.cpp.s
 
+external/miniAudio/miniaudio.o: external/miniAudio/miniaudio.cpp.o
+.PHONY : external/miniAudio/miniaudio.o
+
+# target to build an object file
+external/miniAudio/miniaudio.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/external/miniAudio/miniaudio.cpp.o
+.PHONY : external/miniAudio/miniaudio.cpp.o
+
+external/miniAudio/miniaudio.i: external/miniAudio/miniaudio.cpp.i
+.PHONY : external/miniAudio/miniaudio.i
+
+# target to preprocess a source file
+external/miniAudio/miniaudio.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/external/miniAudio/miniaudio.cpp.i
+.PHONY : external/miniAudio/miniaudio.cpp.i
+
+external/miniAudio/miniaudio.s: external/miniAudio/miniaudio.cpp.s
+.PHONY : external/miniAudio/miniaudio.s
+
+# target to generate assembly for a file
+external/miniAudio/miniaudio.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/external/miniAudio/miniaudio.cpp.s
+.PHONY : external/miniAudio/miniaudio.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -651,6 +771,18 @@ help:
 	@echo "... Gui.o"
 	@echo "... Gui.i"
 	@echo "... Gui.s"
+	@echo "... ImGui/imgui.o"
+	@echo "... ImGui/imgui.i"
+	@echo "... ImGui/imgui.s"
+	@echo "... ImGui/imgui_draw.o"
+	@echo "... ImGui/imgui_draw.i"
+	@echo "... ImGui/imgui_draw.s"
+	@echo "... ImGui/imgui_tables.o"
+	@echo "... ImGui/imgui_tables.i"
+	@echo "... ImGui/imgui_tables.s"
+	@echo "... ImGui/imgui_widgets.o"
+	@echo "... ImGui/imgui_widgets.i"
+	@echo "... ImGui/imgui_widgets.s"
 	@echo "... LiterateProcessor.o"
 	@echo "... LiterateProcessor.i"
 	@echo "... LiterateProcessor.s"
@@ -678,6 +810,9 @@ help:
 	@echo "... audioSample.o"
 	@echo "... audioSample.i"
 	@echo "... audioSample.s"
+	@echo "... external/miniAudio/miniaudio.o"
+	@echo "... external/miniAudio/miniaudio.i"
+	@echo "... external/miniAudio/miniaudio.s"
 .PHONY : help
 
 
