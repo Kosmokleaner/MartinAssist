@@ -6,6 +6,8 @@
 #ifdef _WIN32
     #define NOMINMAX
     #include <windows.h>	// OutputDebugString()
+#else
+    #include <time.h>
 #endif
 
 CTimer g_Timer;
@@ -15,7 +17,8 @@ CTimer::CTimer()
 #ifdef _WIN32
 	QueryPerformanceFrequency(&m_PerformanceFrequency);
 #else
-    assert(0);
+    // clock_gettime()
+    m_PerformanceFrequency.QuadPart = 1000000000;
 #endif
 }
 
@@ -24,15 +27,21 @@ double CTimer::GetAbsoluteTime() const
 {
 	assert(m_PerformanceFrequency.QuadPart);
 
-#ifdef _WIN32
 	LARGE_INTEGER b;
 
+#ifdef _WIN32
 	QueryPerformanceCounter(&b);
-
-	return (double)(b.QuadPart) / (double)m_PerformanceFrequency.QuadPart;
 #else
-    assert(0);
+    struct timespec ts;
+    // Use CLOCK_MONOTONIC for time-interval measurements
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+        return -1; // Failure
+
+    // Combine seconds and nanoseconds into a 64-bit integer (nanoseconds)
+    b.QuadPart = ts.tv_sec * 1000000000LL + ts.tv_nsec;
 #endif
+
+return (double)(b.QuadPart) / (double)m_PerformanceFrequency.QuadPart;
 }
 
 

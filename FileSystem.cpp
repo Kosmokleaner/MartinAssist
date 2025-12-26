@@ -183,7 +183,7 @@ static void _directoryTraverse(IDirectoryTraverse& sink, const FilePath& filePat
 
 	_findclose(hFile);
 #else
-    assert(0);
+//later    assert(0);
 #endif
 }
 
@@ -455,7 +455,7 @@ void driveTraverse(IDriveTraverse& sink)
 
 	sink.OnEnd();
 #else
-    assert(0);
+//later    assert(0);
 #endif
 }
 

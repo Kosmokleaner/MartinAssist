@@ -772,7 +772,7 @@ public:
             userName = name;
         }
 #else
-        assert(0);
+//later        assert(0);
 #endif
     }
     virtual void OnDrive(const DriveInfo& driveInfo)

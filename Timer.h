@@ -14,7 +14,7 @@ class CTimer
 public:
 	CTimer();
 
-	// @return in seconds
+	// @return in seconds, -1 if failed to get time (rare)
 	double GetAbsoluteTime() const;
 
 private: // -------------------------------------------
