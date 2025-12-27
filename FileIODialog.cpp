@@ -97,6 +97,8 @@ bool CFileIODialog::FileDialogLoad( const char *szDialogTitle, const char *szExt
 	ofn.lpstrFile = rInOutFilename.data();
 //    ofn.lpstrFile = szFile;
 	ofn.nMaxFile=MAX_PATH;
+    return false;
+
 
 	// the following is needed for the win32 function
 	for(char *p=&rInOutFilename[0];*p!=0;++p)
@@ -136,20 +138,18 @@ bool CFileIODialog::FileDialogLoad( const char *szDialogTitle, const char *szExt
 #else
 
     nfdchar_t *outPath = NULL;
-    nfdresult_t result = NFD_OpenDialog( NULL, NULL, &outPath );
+    // todo: NFD_OpenDialog( const nfdchar_t *filterList, nfdchar_t *defaultPath, ..
+    // e.g. "png,jpg;pdf" 
+    // todo: fix hard coded extension
+    nfdresult_t result = NFD_OpenDialog("wav;wav", NULL, &outPath );
+    //    nfdresult_t result = NFD_OpenDialog( NULL, "wav", &outPath );
         
-    if ( result == NFD_OKAY ) {
-        puts("Success!");
-        puts(outPath);
+    if ( result == NFD_OKAY )
+    {
+        rInOutFilename = outPath;
         free(outPath);
+        return true;
     }
-    else if ( result == NFD_CANCEL ) {
-        puts("User pressed cancel.");
-    }
-    else {
-        printf("Error: %s\n", NFD_GetError() );
-    }
-
     return false;
 #endif
 }
@@ -211,8 +211,20 @@ bool CFileIODialog::FileDialogSave( const char *szDialogTitle, const char *szExt
 	SetCurrentDirectoryA(back);
 	return bOk;
 #else
-    assert(0);
-	return false;
+    nfdchar_t *outPath = NULL;
+    // todo: NFD_SaveDialog( const nfdchar_t *filterList, nfdchar_t *defaultPath, ..
+    // e.g. "png,jpg;pdf" 
+    // todo: fix hard coded extension
+    //    nfdresult_t result =  ("wav;wav", NULL, &rInOutFilename );
+    nfdresult_t result = NFD_SaveDialog( NULL, "wav", &outPath );
+        
+    if ( result == NFD_OKAY )
+    {
+        rInOutFilename = outPath;
+        free(outPath);
+        return true;
+    }
+    return false;
 #endif
 }
 
