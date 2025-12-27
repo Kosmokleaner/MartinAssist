@@ -1,5 +1,23 @@
+# works on ubunutu 64bit
+# cmake -DCMAKE_BUILD_TYPE=Release ..
+# ../MartinAssist
+#
+# cmake -DCMAKE_BUILD_TYPE=Debug ..
+# gdb ../MartinAssist
+#   run
+#   backtrace
+#   quit
+
 cmake_minimum_required(VERSION 3.12) # Use an appropriate version
 project(MartinAssistProject CXX C)
+
+# Global C++ standard settings:
+#   - Use C++ 17
+#   - Require C++ 17 support from compiler
+#   - Dissalow compiler-specific extensions
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED On)
+set(CMAKE_CXX_EXTENSIONS Off)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 

@@ -11,6 +11,9 @@
     #include <io.h> // filesize
     #define NOMINMAX
     #include <windows.h> // GetFileSize()
+#else
+    #include <sys/stat.h>
+    #include <unistd.h>
 #endif
 
 #include "ASCIIFile.h"
@@ -53,11 +56,12 @@ size_t IO_GetFileSize( const char *Name )
 
 #ifdef _WIN32
 	size_t size = _filelengthi64(handle);
-	close(handle);
 #else
-    assert(0); // todo
-    size_t size = 0;
+    struct stat st;
+    fstat(handle, &st);
+    off_t size = st.st_size;
 #endif
+	close(handle);
 
 	return size;
 }
