@@ -19,6 +19,37 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_CXX_EXTENSIONS Off)
 
+# --- Native File Dialog ---
+# .. in parent of build folder
+# git submodule add https://github.com/mlabbe/nativefiledialog.git external/nativefiledialog
+# git submodule update --init --recursive
+# sudo apt install libgtk-3-dev               # GTK is the backend for linux
+#add_subdirectory(external/nativefiledialog)   ndf does not come with CMakeList.txt
+# --- Native File Dialog ---
+set(NFD_COMMON
+    external/nativefiledialog/src/nfd_common.c
+)
+if (WIN32)
+    set(NFD_PLATFORM external/nativefiledialog/src/nfd_win.c)
+elseif(APPLE)
+    set(NFD_PLATFORM external/nativefiledialog/src/nfd_cocoa.m)
+elseif(UNIX)
+    set(NFD_PLATFORM external/nativefiledialog/src/nfd_gtk.c)
+else()
+    message(FATAL_ERROR "Unsupported platform for NFD")
+endif()
+add_library(nfd STATIC ${NFD_COMMON} ${NFD_PLATFORM})
+target_include_directories(nfd PUBLIC external/nativefiledialog/src/include)
+# For Linux, link GTK libraries
+if(UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    target_include_directories(nfd PUBLIC ${GTK3_INCLUDE_DIRS})
+    target_link_libraries(nfd PRIVATE ${GTK3_LIBRARIES})
+endif()
+
+
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 add_executable(MartinAssist
@@ -69,6 +100,7 @@ target_include_directories(MartinAssist PRIVATE
 target_link_libraries(MartinAssist PRIVATE
     glfw
     OpenGL::GL
+    nfd             # Native File Dialogs
 )
 
 #target_link_libraries(MartinAssist PRIVATE YourLibraryTargetName)

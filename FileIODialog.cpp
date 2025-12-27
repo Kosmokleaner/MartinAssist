@@ -6,6 +6,8 @@
     #define NOMINMAX
     #include <windows.h>
     #include <commdlg.h>																		// OPENFILENAME, GetOpenFileName
+#else
+    #include <nfd.h>
 #endif
 
 #include <assert.h>
@@ -132,8 +134,23 @@ bool CFileIODialog::FileDialogLoad( const char *szDialogTitle, const char *szExt
 	SetCurrentDirectoryA(back);
 	return bOk;
 #else
-    assert(0);
-	return false;
+
+    nfdchar_t *outPath = NULL;
+    nfdresult_t result = NFD_OpenDialog( NULL, NULL, &outPath );
+        
+    if ( result == NFD_OKAY ) {
+        puts("Success!");
+        puts(outPath);
+        free(outPath);
+    }
+    else if ( result == NFD_CANCEL ) {
+        puts("User pressed cancel.");
+    }
+    else {
+        printf("Error: %s\n", NFD_GetError() );
+    }
+
+    return false;
 #endif
 }
 

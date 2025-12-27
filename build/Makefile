@@ -117,6 +117,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named nfd
+
+# Build rule for target.
+nfd: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 nfd
+.PHONY : nfd
+
+# fast build rule for target.
+nfd/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nfd.dir/build.make CMakeFiles/nfd.dir/build
+.PHONY : nfd/fast
+
+#=============================================================================
 # Target rules for targets named MartinAssist
 
 # Build rule for target.
@@ -825,6 +838,54 @@ external/miniAudio/miniaudio.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MartinAssist.dir/build.make CMakeFiles/MartinAssist.dir/external/miniAudio/miniaudio.cpp.s
 .PHONY : external/miniAudio/miniaudio.cpp.s
 
+external/nativefiledialog/src/nfd_common.o: external/nativefiledialog/src/nfd_common.c.o
+.PHONY : external/nativefiledialog/src/nfd_common.o
+
+# target to build an object file
+external/nativefiledialog/src/nfd_common.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nfd.dir/build.make CMakeFiles/nfd.dir/external/nativefiledialog/src/nfd_common.c.o
+.PHONY : external/nativefiledialog/src/nfd_common.c.o
+
+external/nativefiledialog/src/nfd_common.i: external/nativefiledialog/src/nfd_common.c.i
+.PHONY : external/nativefiledialog/src/nfd_common.i
+
+# target to preprocess a source file
+external/nativefiledialog/src/nfd_common.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nfd.dir/build.make CMakeFiles/nfd.dir/external/nativefiledialog/src/nfd_common.c.i
+.PHONY : external/nativefiledialog/src/nfd_common.c.i
+
+external/nativefiledialog/src/nfd_common.s: external/nativefiledialog/src/nfd_common.c.s
+.PHONY : external/nativefiledialog/src/nfd_common.s
+
+# target to generate assembly for a file
+external/nativefiledialog/src/nfd_common.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nfd.dir/build.make CMakeFiles/nfd.dir/external/nativefiledialog/src/nfd_common.c.s
+.PHONY : external/nativefiledialog/src/nfd_common.c.s
+
+external/nativefiledialog/src/nfd_gtk.o: external/nativefiledialog/src/nfd_gtk.c.o
+.PHONY : external/nativefiledialog/src/nfd_gtk.o
+
+# target to build an object file
+external/nativefiledialog/src/nfd_gtk.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nfd.dir/build.make CMakeFiles/nfd.dir/external/nativefiledialog/src/nfd_gtk.c.o
+.PHONY : external/nativefiledialog/src/nfd_gtk.c.o
+
+external/nativefiledialog/src/nfd_gtk.i: external/nativefiledialog/src/nfd_gtk.c.i
+.PHONY : external/nativefiledialog/src/nfd_gtk.i
+
+# target to preprocess a source file
+external/nativefiledialog/src/nfd_gtk.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nfd.dir/build.make CMakeFiles/nfd.dir/external/nativefiledialog/src/nfd_gtk.c.i
+.PHONY : external/nativefiledialog/src/nfd_gtk.c.i
+
+external/nativefiledialog/src/nfd_gtk.s: external/nativefiledialog/src/nfd_gtk.c.s
+.PHONY : external/nativefiledialog/src/nfd_gtk.s
+
+# target to generate assembly for a file
+external/nativefiledialog/src/nfd_gtk.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nfd.dir/build.make CMakeFiles/nfd.dir/external/nativefiledialog/src/nfd_gtk.c.s
+.PHONY : external/nativefiledialog/src/nfd_gtk.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -834,6 +895,7 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... MartinAssist"
+	@echo "... nfd"
 	@echo "... ASCIIFile.o"
 	@echo "... ASCIIFile.i"
 	@echo "... ASCIIFile.s"
@@ -921,6 +983,12 @@ help:
 	@echo "... external/miniAudio/miniaudio.o"
 	@echo "... external/miniAudio/miniaudio.i"
 	@echo "... external/miniAudio/miniaudio.s"
+	@echo "... external/nativefiledialog/src/nfd_common.o"
+	@echo "... external/nativefiledialog/src/nfd_common.i"
+	@echo "... external/nativefiledialog/src/nfd_common.s"
+	@echo "... external/nativefiledialog/src/nfd_gtk.o"
+	@echo "... external/nativefiledialog/src/nfd_gtk.i"
+	@echo "... external/nativefiledialog/src/nfd_gtk.s"
 .PHONY : help
 
 
