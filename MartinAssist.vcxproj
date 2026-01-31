@@ -175,6 +175,7 @@
     <ClCompile Include="ImGui\imgui_demo.cpp" />
     <ClCompile Include="ImGui\implot_items.cpp" />
     <ClCompile Include="ImGui\misc\cpp\imgui_stdlib.cpp" />
+    <ClCompile Include="IniArchive.cpp" />
     <ClCompile Include="WindowDrives.cpp" />
     <ClCompile Include="WindowFiles.cpp" />
     <ClCompile Include="ImGui\imgui.cpp" />
@@ -217,6 +218,7 @@
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="ImGui\misc\cpp\imgui_stdlib.h" />
+    <ClInclude Include="IniArchive.h" />
     <ClInclude Include="LiterateProcessor.h" />
     <ClInclude Include="Parse.h" />
     <ClInclude Include="ERedundancy.h" />

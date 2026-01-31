@@ -28,6 +28,8 @@
 #endif
 #include <ImGui/GLFW/glfw3.h> // Will drag system OpenGL headers
 
+#include "IniArchive.h"
+
 #include <vector>
 #include <algorithm> // std::max()
 
@@ -63,6 +65,19 @@ void openEFUsFolder()
 #else
     assert(0);
 #endif
+}
+
+void Reflection(CIniArchive& archive, WindowPersist& ref)
+{
+	Reflection(archive, "Window_fullScreen", ref.fullscreen);
+	Reflection(archive, "Window_maximized", ref.maximized);
+
+	for(int i = 0; i < 4; ++i)
+	{
+		char str[256];
+		sprintf_s(str, sizeof(str), "Window_rect%d", i);
+		Reflection(archive, str, ref.rect[i]);
+	}
 }
 
 // copied from ImGui, the optional endMarker adds a rectangle to the triangle arrow indicating a stop
@@ -359,12 +374,18 @@ int Gui::test()
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
 
+	{
+		CIniArchive iniArchive;
+		iniArchive.Load("Settings.ini");
+		Reflection(iniArchive, windowPersist);
+	}
+
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "MartinAssist UI", NULL, NULL);
     if (window == NULL)
         return 1;
 
-	windowPersist.LoadState(window);
+	windowPersist.ApplyState(window);
 //    glfwMaximizeWindow(window);
 
     // https://stackoverflow.com/questions/7375003/how-to-convert-hicon-to-hbitmap-in-vc
@@ -585,7 +606,13 @@ int Gui::test()
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-	windowPersist.SaveState(window);
+	{
+		windowPersist.SaveState(window);
+
+		CIniArchive iniArchive;
+		Reflection(iniArchive, windowPersist);
+		iniArchive.Save("Settings.ini");
+	}
 
     glfwDestroyWindow(window);
     glfwTerminate();

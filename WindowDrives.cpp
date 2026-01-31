@@ -828,7 +828,7 @@ public:
         : drives(inDrives)
     {
     }
-/*
+#ifdef _WIN32
     // @param filePath without directory e.g. L"D:\temp"
     // @param directory name e.g. L"sub"
     // @return true to recurse into the folder
@@ -922,7 +922,7 @@ public:
             drives.push_back(ptr);
         }
     }
-*/
+#endif // _WIN32 
 };
 
 void WindowDrives::rescan()

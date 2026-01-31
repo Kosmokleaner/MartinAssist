@@ -79,6 +79,7 @@
       <Filter>ImGui</Filter>
     </ClCompile>
     <ClCompile Include="WindowPersist.cpp" />
+    <ClCompile Include="IniArchive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -170,6 +171,7 @@
       <Filter>ImGui</Filter>
     </ClInclude>
     <ClInclude Include="WindowPersist.h" />
+    <ClInclude Include="IniArchive.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

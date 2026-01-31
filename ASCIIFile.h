@@ -39,3 +39,5 @@ protected: // ------------------------------------------------------------------
 	const char * m_Data; //!< zero terminated text
 	size_t m_Size; //!< including the zero termination (otherwise 0)
 };
+
+size_t IO_GetFileSize(const char* Name);
