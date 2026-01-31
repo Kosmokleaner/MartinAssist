@@ -364,7 +364,8 @@ int Gui::test()
     if (window == NULL)
         return 1;
 
-    glfwMaximizeWindow(window);
+	windowPersist.LoadState(window);
+//    glfwMaximizeWindow(window);
 
     // https://stackoverflow.com/questions/7375003/how-to-convert-hicon-to-hbitmap-in-vc
 #if _WIN32
@@ -583,6 +584,8 @@ int Gui::test()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+	windowPersist.SaveState(window);
 
     glfwDestroyWindow(window);
     glfwTerminate();

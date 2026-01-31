@@ -78,6 +78,7 @@
     <ClCompile Include="ImGui\implot_items.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="WindowPersist.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -168,6 +169,7 @@
     <ClInclude Include="ImGui\misc\cpp\imgui_stdlib.h">
       <Filter>ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="WindowPersist.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Hidden">

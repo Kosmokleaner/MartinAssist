@@ -4,6 +4,7 @@
 #include "WindowDrives.h"
 #include "ERedundancy.h"
 #include "GranularSynthUI.h"
+#include "WindowPersist.h"
 #include "imgui.h"
 
 #define EFU_FOLDER "EFUs"
@@ -20,6 +21,7 @@ public:
     WindowDrives windowDrives;
     Redundancy redundancy;
     GranularSynthUI granularSynth;
+	WindowPersist windowPersist;
 };
 extern Gui g_gui;
 
