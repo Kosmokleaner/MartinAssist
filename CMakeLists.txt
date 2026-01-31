@@ -1,9 +1,9 @@
 # works on ubunutu 64bit
 # cmake -DCMAKE_BUILD_TYPE=Release ..
-# ../MartinAssist
+# ../MartinAssistExe
 #
 # cmake -DCMAKE_BUILD_TYPE=Debug ..
-# gdb ../MartinAssist
+# gdb ../MartinAssistExe
 #   run
 #   backtrace
 #   quit
@@ -52,7 +52,7 @@ endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
-add_executable(MartinAssist
+add_executable(MartinAssistExe
 	AllFilesInFolder.cpp
 	ASCIIFile.cpp
 	audioSample.cpp
@@ -91,17 +91,17 @@ find_package(OpenGL REQUIRED)
 # sudo apt install libglfw3-dev libgl1-mesa-dev
 find_package(glfw3 CONFIG REQUIRED)
 
-#target_include_directories(MartinAssist PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(MartinAssist PRIVATE
+#target_include_directories(MartinAssistExe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(MartinAssistExe PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/ImGui
 )
 
-target_link_libraries(MartinAssist PRIVATE
+target_link_libraries(MartinAssistExe PRIVATE
     glfw
     OpenGL::GL
     nfd             # Native File Dialogs
 )
 
-#target_link_libraries(MartinAssist PRIVATE YourLibraryTargetName)
+#target_link_libraries(MartinAssistExe PRIVATE YourLibraryTargetName)
 
