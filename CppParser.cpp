@@ -155,9 +155,6 @@ bool parseCppToken(CppParser& parser, const Char*& p)
         parseStartsWith(p, "-") ||
         parseStartsWith(p, "*") ||
         parseStartsWith(p, "/") ||
-        parseStartsWith(p, "+") ||
-        parseStartsWith(p, "-") ||
-        parseStartsWith(p, "*") ||
         parseStartsWith(p, "<") ||
         parseStartsWith(p, ">") ||
         parseStartsWith(p, "(") ||
